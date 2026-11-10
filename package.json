@@ -10,7 +10,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "test:acceptance": "node --test --test-concurrency=1 --test-timeout=90000 tests/acceptance.test.mjs",
     "test:e2e": "node tests/e2e-journey.cjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "postbuild": "node scripts/prepare-standalone.mjs"
   },
   "dependencies": {
