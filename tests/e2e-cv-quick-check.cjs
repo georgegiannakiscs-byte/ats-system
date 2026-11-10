@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Browser journey for the CV Builder and Quick Check (Playwright + Chromium).
  *   BASE_URL=http://localhost:3000 node tests/e2e-cv-quick-check.cjs
@@ -5,7 +6,6 @@
  * build a CV with a photo → attach → apply → take the Quick Check → review it as the recruiter.
  */
 const { chromium } = require("playwright");
-const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const assert = require("assert/strict");
