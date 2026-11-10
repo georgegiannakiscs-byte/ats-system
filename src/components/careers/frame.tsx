@@ -5,7 +5,7 @@ import { onColor } from "@/server/careers/data";
 
 type Org = { slug: string; name: string; logoUrl: string | null; branding: Record<string, unknown> };
 
-export function CareersFrame({ org, lang, path, children }: { org: Org; lang: CareersLang; path: string; children: React.ReactNode }) {
+export function CareersFrame({ org, lang, path, children, hideLanguage }: { org: Org; lang: CareersLang; path: string; children: React.ReactNode; hideLanguage?: boolean }) {
   const primary = (org.branding.primaryColor as string) || "#193329";
   const t = careersDict[lang];
   return (
@@ -16,13 +16,13 @@ export function CareersFrame({ org, lang, path, children }: { org: Org; lang: Ca
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {org.logoUrl ? <img src={org.logoUrl} alt={org.name} className="h-9 max-w-44 object-contain" /> : <span className="text-lg font-semibold tracking-tight">{org.name}</span>}
           </Link>
-          <nav aria-label="Language" className="ml-auto flex gap-1 text-xs">
+          {!hideLanguage && <nav aria-label="Language" className="ml-auto flex gap-1 text-xs">
             {(["en", "el"] as const).map((l) => (
               <Link key={l} href={`${path}?lang=${l}`} hrefLang={l} aria-current={l === lang ? "true" : undefined} className={l === lang ? "rounded px-2 py-1 font-semibold text-foreground" : "rounded px-2 py-1 text-muted-foreground hover:text-foreground"}>
                 {l === "en" ? "EN" : "ΕΛ"}
               </Link>
             ))}
-          </nav>
+          </nav>}
         </div>
       </header>
       <main className="flex-1">{children}</main>
