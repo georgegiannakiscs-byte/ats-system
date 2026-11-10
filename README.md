@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Élan — Applicant Tracking System (frontend)
 
-## Getting Started
+A premium, frontend-only ATS prototype. Every screen is interactive and backed by a
+typed mock service layer that persists to `localStorage`, ready to be swapped for a
+real API.
 
-First, run the development server:
+> **Demo data.** All people, companies and emails are fictional. No emails are sent,
+> no calendar invites are created, and no LinkedIn / Google / Microsoft APIs are called.
+> Simulated states are labelled in the UI ("Demo", "simulated", "not sent").
+
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
+npm run build && npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Reset the demo dataset any time from **Settings → Appearance → Reset demo data** (or the
+workspace menu in the sidebar).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui-style
+components on Radix primitives · Lucide icons · dnd-kit · Recharts · cmdk · sonner ·
+next-themes · date-fns.
 
-## Learn More
+## Rebranding
 
-To learn more about Next.js, take a look at the following resources:
+The product name lives in one place: `src/config/brand.ts`. The monogram, wordmark,
+page titles and storage keys all read from it. Colours are design tokens in
+`src/app/globals.css` (`--brand` is the single accent; light and dark values are
+defined separately).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  config/brand.ts          Product name & tagline
+  app/(app)/               Routes: overview, jobs, candidates, talent-pool,
+                           interviews, tasks, analytics, settings
+  components/
+    ui/                    Primitives (button, inputs, dialogs, menus, tabs, …)
+    shell/                 Sidebar, top bar, ⌘K command menu, global overlay controller
+    pipeline/              Kanban board (dnd-kit), pipeline table, candidate card
+    candidates/            Profile, slide-over preview, inline editing, dialogs
+    interviews/ tasks/ jobs/ settings/ charts/ common/
+  lib/
+    types.ts               Domain model (mirrors future API payloads)
+    api/index.ts           ← The only write path. Async methods, one per use case.
+    api/store.ts           Mock persistence (external store + localStorage)
+    api/selectors.ts       Pure read helpers
+    mock/seed.ts           Deterministic demo dataset
+    analytics.ts           Funnel, source and time-series computations
+```
 
-## Deploy on Vercel
+**Swapping in a backend:** re-implement the methods in `lib/api/index.ts` with HTTP
+calls (they already return Promises), and replace `useDb()` reads with your data
+fetching layer (e.g. TanStack Query). Components never touch `localStorage` directly.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Keyboard
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`⌘K` search & commands · `C` create · `[` toggle sidebar · `G` then `O/J/C/P/I/T/A/S`
+to navigate · `J/K` next/previous candidate in the slide-over · `?` all shortcuts.
+Kanban cards can be moved with the keyboard: focus a card, `Space`, arrow keys, `Space`.
