@@ -6,8 +6,9 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    files: ["src/**/*.{ts,tsx}"],
     rules: {
-      // The demo derives relative dates from the wall clock and hydrates UI preferences
+      // The app derives relative dates from the wall clock and restores UI preferences
       // from localStorage after mount; both patterns are intentional here.
       "react-hooks/purity": "warn",
       "react-hooks/set-state-in-effect": "warn",

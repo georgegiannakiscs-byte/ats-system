@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS script so Playwright resolves from the environment */
 const { chromium } = require('playwright');
 const FIX = require('path').join(__dirname, 'fixtures'); const SHOTS = process.env.SHOTS;
 (async () => {
