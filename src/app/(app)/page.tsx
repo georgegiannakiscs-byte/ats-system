@@ -120,7 +120,7 @@ export default function OverviewPage() {
                   const c = jobCounts(db, j.id);
                   return (
                     <li key={j.id}>
-                      <Link href={`/jobs/${j.id}`} className="grid h-10 grid-cols-[1fr_56px_56px_56px] items-center gap-2 rounded-md px-2 text-sm transition-colors hover:bg-accent">
+                      <Link href={`/jobs/view?id=${j.id}`} className="grid h-10 grid-cols-[1fr_56px_56px_56px] items-center gap-2 rounded-md px-2 text-sm transition-colors hover:bg-accent">
                         <span className="min-w-0">
                           <span className="block truncate font-medium">{j.title}</span>
                           <span className="block truncate text-[11px] text-muted-foreground">{j.department} · {j.location}{j.status === "on_hold" && " · On hold"}</span>

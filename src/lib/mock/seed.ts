@@ -23,7 +23,7 @@ import type {
 } from "@/lib/types";
 import { DEFAULT_CRITERIA } from "@/lib/constants";
 
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 /* Deterministic PRNG so the demo looks identical on every fresh load. */
 function mulberry32(seed: number) {
@@ -511,9 +511,9 @@ export function createSeed(): Database {
     notificationPrefs: { newApplication: true, stageChange: true, interviewReminder: true, scorecardDue: true, taskDue: true, weeklyDigest: false, mentions: true },
     notifications: [
       { id: "no_1", title: "Scorecard due", body: "Your feedback for yesterday's interview is pending.", href: "/interviews?tab=feedback", createdAt: at(0, 8, 30), read: false },
-      { id: "no_2", title: "4 new applications", body: "Senior Frontend Engineer received new applicants.", href: "/jobs/j_fe", createdAt: at(-1, 17, 10), read: false },
+      { id: "no_2", title: "4 new applications", body: "Senior Frontend Engineer received new applicants.", href: "/jobs/view?id=j_fe", createdAt: at(-1, 17, 10), read: false },
       { id: "no_3", title: "Task overdue", body: "Collect debrief feedback is overdue.", href: "/tasks?view=overdue", createdAt: at(-1, 12, 5), read: false },
-      { id: "no_4", title: "Offer accepted", body: "A candidate accepted the Engineering Manager offer.", href: "/jobs/j_em", createdAt: at(-3, 10), read: true },
+      { id: "no_4", title: "Offer accepted", body: "A candidate accepted the Engineering Manager offer.", href: "/jobs/view?id=j_em", createdAt: at(-3, 10), read: true },
     ],
   };
 }

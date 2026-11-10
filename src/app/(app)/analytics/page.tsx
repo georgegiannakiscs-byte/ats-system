@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
                   const hired = ja.filter((a) => a.status === "hired").length;
                   return (
                     <tr key={j.id} className="group">
-                      <td className="py-2"><Link href={`/jobs/${j.id}`} className="inline-flex items-center gap-1 font-medium hover:underline">{j.title}<ArrowRight className="size-3 opacity-0 group-hover:opacity-60" /></Link><span className="block text-xs text-muted-foreground">{j.department}</span></td>
+                      <td className="py-2"><Link href={`/jobs/view?id=${j.id}`} className="inline-flex items-center gap-1 font-medium hover:underline">{j.title}<ArrowRight className="size-3 opacity-0 group-hover:opacity-60" /></Link><span className="block text-xs text-muted-foreground">{j.department}</span></td>
                       <td className="tabular py-2 text-right">{ja.length}</td>
                       <td className="tabular py-2 text-right">{intv}</td>
                       <td className="tabular py-2 text-right">{offers}</td>

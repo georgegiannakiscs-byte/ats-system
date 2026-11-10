@@ -109,9 +109,9 @@ function Jobs() {
               {jobs.map((j) => {
                 const c = counts.get(j.id)!;
                 return (
-                  <tr key={j.id} onClick={() => router.push(`/jobs/${j.id}`)} className="group cursor-pointer transition-colors hover:bg-accent/50">
+                  <tr key={j.id} onClick={() => router.push(`/jobs/view?id=${j.id}`)} className="group cursor-pointer transition-colors hover:bg-accent/50">
                     <td className="px-4 py-2.5">
-                      <Link href={`/jobs/${j.id}`} onClick={(e) => e.stopPropagation()} className="block font-medium outline-none group-hover:underline focus-visible:underline">{j.title}</Link>
+                      <Link href={`/jobs/view?id=${j.id}`} onClick={(e) => e.stopPropagation()} className="block font-medium outline-none group-hover:underline focus-visible:underline">{j.title}</Link>
                       <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground"><span>{j.department}</span><span className="inline-flex items-center gap-0.5"><MapPin className="size-3" />{j.location}</span></span>
                     </td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{j.employmentType}<br />{j.workplace}</td>
@@ -132,10 +132,10 @@ function Jobs() {
           {jobs.map((j) => {
             const c = counts.get(j.id)!;
             return (
-              <div key={j.id} onClick={() => router.push(`/jobs/${j.id}`)} className="group flex cursor-pointer flex-col rounded-xl border border-border bg-surface p-4 shadow-xs transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-sm">
+              <div key={j.id} onClick={() => router.push(`/jobs/view?id=${j.id}`)} className="group flex cursor-pointer flex-col rounded-xl border border-border bg-surface p-4 shadow-xs transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-sm">
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
-                    <Link href={`/jobs/${j.id}`} onClick={(e) => e.stopPropagation()} className="block truncate font-medium outline-none group-hover:underline focus-visible:underline">{j.title}</Link>
+                    <Link href={`/jobs/view?id=${j.id}`} onClick={(e) => e.stopPropagation()} className="block truncate font-medium outline-none group-hover:underline focus-visible:underline">{j.title}</Link>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{j.department} · {j.location} · {j.employmentType}</p>
                   </div>
                   <div onClick={(e) => e.stopPropagation()}><JobActionsMenu job={j} /></div>

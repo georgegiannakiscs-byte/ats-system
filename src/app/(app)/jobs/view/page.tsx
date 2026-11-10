@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin, Clock, Users, Pencil, Send, Building, CalendarPlus, BriefcaseBusiness, Banknote } from "lucide-react";
 import { useDb } from "@/lib/api/store";
 import { usePageMeta } from "@/components/shell/page-meta";
@@ -33,10 +33,10 @@ export default function JobPage() {
 const TABS = ["pipeline", "candidates", "interviews", "details", "activity"] as const;
 
 function JobView() {
-  const { jobId } = useParams<{ jobId: string }>();
   const db = useDb();
   const router = useRouter();
   const sp = useSearchParams();
+  const jobId = sp.get("id") ?? "";
   const tab = (TABS as readonly string[]).includes(sp.get("tab") ?? "") ? sp.get("tab")! : "pipeline";
   const job = db.jobs.find((j) => j.id === jobId);
   const setStatus = useJobStatusChange();
@@ -48,7 +48,7 @@ function JobView() {
   const counts = jobCounts(db, job.id);
   const interviews = db.interviews.filter((i) => i.jobId === job.id);
   const inInterviews = ["hr_interview", "hm_interview", "technical", "final_review"].reduce((s, k) => s + counts.byStage[k as keyof typeof counts.byStage], 0);
-  const setTab = (t: string) => router.replace(`/jobs/${job.id}${t === "pipeline" ? "" : `?tab=${t}`}`, { scroll: false });
+  const setTab = (t: string) => router.replace(`/jobs/view?id=${job.id}${t === "pipeline" ? "" : `&tab=${t}`}`, { scroll: false });
 
   const kpis = [
     { label: "Applicants", value: counts.total },
@@ -77,7 +77,7 @@ function JobView() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" size="sm" asChild><Link href={`/jobs/${job.id}/edit`}><Pencil />Edit</Link></Button>
+            <Button variant="outline" size="sm" asChild><Link href={`/jobs/edit?id=${job.id}`}><Pencil />Edit</Link></Button>
             {job.status !== "published" && <Button size="sm" onClick={() => setStatus(job, "published")}><Send />Publish</Button>}
             <JobActionsMenu job={job} trigger="button" afterDelete={() => router.push("/jobs")} />
           </div>

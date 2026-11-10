@@ -110,15 +110,15 @@ export function JobForm({ job }: { job?: Job }) {
     if (job) {
       await api.jobs.update(job.id, payload);
       toast.success(status === "published" && job.status !== "published" ? "Job published" : "Changes saved", { description: status === "published" ? "Demo: shown on the internal careers preview only." : undefined });
-      router.push(`/jobs/${job.id}`);
+      router.push(`/jobs/view?id=${job.id}`);
     } else {
       const created = await api.jobs.create(payload);
       toast.success(status === "published" ? "Job published" : "Draft saved", { description: status === "published" ? "Demo: shown on the internal careers preview only." : "You can publish it whenever you're ready." });
-      router.push(`/jobs/${created.id}`);
+      router.push(`/jobs/view?id=${created.id}`);
     }
   };
 
-  const cancelHref = job ? `/jobs/${job.id}` : "/jobs";
+  const cancelHref = job ? `/jobs/view?id=${job.id}` : "/jobs";
   const err = (k: keyof JobInput) => errors[k];
 
   return (

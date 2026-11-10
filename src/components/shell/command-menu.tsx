@@ -60,7 +60,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
               {showPeople && (
                 <CommandGroup heading="Jobs">
                   {db.jobs.map((j) => (
-                    <CommandItem key={j.id} value={`${j.title} ${j.department} ${j.location} ${j.id}`} onSelect={() => run(() => router.push(`/jobs/${j.id}`))}>
+                    <CommandItem key={j.id} value={`${j.title} ${j.department} ${j.location} ${j.id}`} onSelect={() => run(() => router.push(`/jobs/view?id=${j.id}`))}>
                       <BriefcaseBusiness />
                       <span className="truncate">{j.title}</span>
                       <span className="truncate text-xs text-muted-foreground">{j.department} · {j.location}</span>

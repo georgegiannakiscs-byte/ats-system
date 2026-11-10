@@ -77,7 +77,7 @@ export function CandidateHeader({ candidate, app, onSelectApp, variant = "page" 
             {apps.length > 1 ? (
               <Select size="sm" className="h-7 w-auto min-w-48 border-transparent bg-transparent px-1.5 shadow-none hover:bg-accent" value={app.id} onValueChange={onSelectApp} ariaLabel="Application" options={apps.map((a) => ({ value: a.id, label: db.jobs.find((j) => j.id === a.jobId)?.title ?? "Job", hint: a.status !== "active" ? a.status : undefined }))} />
             ) : (
-              <Link href={`/jobs/${app.jobId}`} className="text-sm font-medium hover:underline">{db.jobs.find((j) => j.id === app.jobId)?.title}</Link>
+              <Link href={`/jobs/view?id=${app.jobId}`} className="text-sm font-medium hover:underline">{db.jobs.find((j) => j.id === app.jobId)?.title}</Link>
             )}
             <span className="text-xs text-muted-foreground">Applied {shortDate(app.appliedAt)} via {candidate.source}</span>
             <span className="ml-auto"><EvaluationBadge value={app.evaluation} /></span>
@@ -138,7 +138,7 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
             <Library />{candidate.inTalentPool ? "Remove from talent pool" : "Save to talent pool"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link href={`/candidates/${candidate.id}`}><ExternalLink />Open full profile</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href={`/candidates/view?id=${candidate.id}`}><ExternalLink />Open full profile</Link></DropdownMenuItem>
           {app && active && (
             <>
               <DropdownMenuSeparator />

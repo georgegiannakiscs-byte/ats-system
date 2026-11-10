@@ -39,8 +39,8 @@ export function JobActionsMenu({ job, trigger = "icon", afterDelete }: { job: Jo
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-52" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem asChild><Link href={`/jobs/${job.id}/edit`}><Pencil />Edit job</Link></DropdownMenuItem>
-          <DropdownMenuItem onSelect={async () => { const j = await api.jobs.duplicate(job.id); toast.success("Job duplicated as draft", { action: { label: "Open", onClick: () => router.push(`/jobs/${j.id}/edit`) } }); }}><Copy />Duplicate</DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href={`/jobs/edit?id=${job.id}`}><Pencil />Edit job</Link></DropdownMenuItem>
+          <DropdownMenuItem onSelect={async () => { const j = await api.jobs.duplicate(job.id); toast.success("Job duplicated as draft", { action: { label: "Open", onClick: () => router.push(`/jobs/edit?id=${j.id}`) } }); }}><Copy />Duplicate</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => navigator.clipboard?.writeText(`${db.company.careersUrl}/jobs/${job.id}`).then(() => toast.success("Careers link copied", { description: "Demo URL — the careers site isn't live yet." }))}><Link2 />Copy careers link</DropdownMenuItem>
           <DropdownMenuSeparator />
           {job.status !== "published" && <DropdownMenuItem onSelect={() => setStatus(job, "published")}><Send />{job.status === "closed" ? "Reopen & publish" : "Publish"}</DropdownMenuItem>}

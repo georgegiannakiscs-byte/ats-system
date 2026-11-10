@@ -61,7 +61,7 @@ function ActivityRow({ a, last, showContext, onCandidate, db }: { a: Activity; l
           {showContext && job && !a.message.includes(job.title) && (
             <>
               {" · "}
-              <Link href={`/jobs/${job.id}`} className="hover:text-foreground hover:underline">{job.title}</Link>
+              <Link href={`/jobs/view?id=${job.id}`} className="hover:text-foreground hover:underline">{job.title}</Link>
             </>
           )}
         </p>
