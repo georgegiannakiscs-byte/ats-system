@@ -1,4 +1,5 @@
 "use client";
+import { BRAND } from "@/config/brand";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Dialog as D } from "radix-ui";
@@ -14,8 +15,9 @@ import { Topbar } from "./topbar";
 import { CommandMenu } from "./command-menu";
 import { NAV, SETTINGS_NAV } from "./nav-items";
 import { NavLinkMobileSettings } from "./mobile-settings-link";
+import { BrandLogo } from "./brand-mark";
 
-const SIDEBAR_KEY = "elan.ui.sidebar-collapsed";
+const SIDEBAR_KEY = `${BRAND.slug}.ui.sidebar-collapsed`;
 
 function isTyping(e: KeyboardEvent) {
   const t = e.target as HTMLElement | null;
@@ -89,10 +91,11 @@ function ShellInner({ children }: { children: React.ReactNode }) {
           <D.Content className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-border bg-sidebar shadow-lg outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-left-10 data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left-10 duration-200 lg:hidden">
             <D.Title className="sr-only">Navigation</D.Title>
             <D.Description className="sr-only">Main navigation</D.Description>
-            <div className="flex h-12 items-center gap-1 px-2.5">
-              <WorkspaceSwitcher />
+            <div className="flex h-14 items-center justify-between pl-4 pr-2.5">
+              <BrandLogo height={20} />
               <D.Close className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent" aria-label="Close navigation"><X className="size-4" /></D.Close>
             </div>
+            <div className="px-2.5"><WorkspaceSwitcher /></div>
             <div className="flex-1 overflow-y-auto px-2.5 pt-3">
               <SidebarNav onNavigate={() => setMobileOpen(false)} />
             </div>

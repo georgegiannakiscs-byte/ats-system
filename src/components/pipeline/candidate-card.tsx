@@ -42,7 +42,7 @@ export function CandidateCard({
         "group/card relative select-none rounded-lg border border-border bg-surface p-2.5 text-left shadow-xs outline-none transition-[box-shadow,border-color,opacity,transform] duration-150",
         "hover:border-border-strong hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring",
         dragging && "opacity-40 shadow-none",
-        overlay && "rotate-[1.5deg] cursor-grabbing border-brand/40 shadow-drag",
+        overlay && "rotate-[1.5deg] cursor-grabbing border-signal/50 shadow-drag",
         !overlay && "cursor-grab active:cursor-grabbing",
       )}
     >

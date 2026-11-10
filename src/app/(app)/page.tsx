@@ -75,7 +75,7 @@ export default function OverviewPage() {
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-subtle-foreground">{format(new Date(), "EEEE d MMMM")}</p>
           <h2 className="mt-1 font-display text-[32px] leading-none tracking-tight">
-            {greeting()}, <span className="italic">{me.name.split(" ")[0]}</span>
+            {greeting()}, {me.name.split(" ")[0]}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             You have <Link href="/interviews" className="font-medium text-foreground hover:underline">{stats.interviewsToday} interview{stats.interviewsToday === 1 ? "" : "s"} today</Link>
@@ -149,7 +149,7 @@ export default function OverviewPage() {
                   <li key={i.id}>
                     <button onClick={() => ui.openCandidate(c.id, { applicationId: i.applicationId })} className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent">
                       <div className="w-14 shrink-0">
-                        <p className={cn("text-[11px] font-medium", isToday(new Date(i.start)) ? "text-brand" : "text-muted-foreground")}>{dayLabel(i.start)}</p>
+                        <p className={cn("text-[11px] font-medium", isToday(new Date(i.start)) ? "text-signal" : "text-muted-foreground")}>{dayLabel(i.start)}</p>
                         <p className="tabular text-sm font-semibold">{timeOf(i.start)}</p>
                       </div>
                       <div className="min-w-0 flex-1">

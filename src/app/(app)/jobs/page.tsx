@@ -1,4 +1,5 @@
 "use client";
+import { BRAND } from "@/config/brand";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,7 +20,7 @@ import { DEPARTMENTS, STAGE_ORDER, STAGE_TONE } from "@/lib/constants";
 import type { Job, JobStatus } from "@/lib/types";
 import { cn, shortDate } from "@/lib/utils";
 
-const VIEW_KEY = "elan.ui.jobs-view";
+const VIEW_KEY = `${BRAND.slug}.ui.jobs-view`;
 type StatusTab = "all" | JobStatus;
 
 export default function JobsPage() {

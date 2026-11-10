@@ -43,7 +43,7 @@ export function StageTracker({ app }: { app: Application }) {
                     rejected ? (i <= current ? "bg-destructive/40" : "bg-muted") : done ? "bg-brand/70" : active ? "bg-brand" : "bg-muted hover:bg-border-strong",
                   )}
                 >
-                  {active && !rejected && <span className="absolute -top-px right-0 size-2 translate-x-1/2 rounded-full border-2 border-surface bg-brand" />}
+                  {active && !rejected && <span className="absolute -top-px right-0 size-2.5 -top-0.5 translate-x-1/2 rounded-full border-2 border-surface bg-signal" />}
                   <span className="sr-only">{done && <Check />}</span>
                 </button>
               </Tooltip>

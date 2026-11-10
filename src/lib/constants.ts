@@ -4,14 +4,14 @@ export const STAGE_ORDER: StageId[] = ["applied", "screening", "hr_interview", "
 
 /** Subtle per-stage dot colours — a calm progression toward the accent and finally green. */
 export const STAGE_TONE: Record<StageId, string> = {
-  applied: "oklch(0.7 0.01 80)",
-  screening: "oklch(0.72 0.08 230)",
-  hr_interview: "oklch(0.64 0.11 255)",
-  hm_interview: "oklch(0.56 0.15 268)",
-  technical: "oklch(0.6 0.14 295)",
-  final_review: "oklch(0.7 0.13 65)",
-  offer: "oklch(0.66 0.12 175)",
-  hired: "oklch(0.6 0.13 150)",
+  applied: "#c9c4b8",
+  screening: "#a9bdb2",
+  hr_interview: "#86a596",
+  hm_interview: "#5f8a76",
+  technical: "#7c8ea0",
+  final_review: "#c9a46a",
+  offer: "#be7157",
+  hired: "#3f7a5f",
 };
 
 export const DEPARTMENTS = ["Engineering", "Design", "Product", "Data", "Client Services", "Marketing", "People", "Finance"];

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDb } from "@/lib/api/store";
 import { api } from "@/lib/api";
-import { BrandMark } from "./brand-mark";
+import { BrandLogo } from "./brand-mark";
 import { NAV, SETTINGS_NAV, isActive } from "./nav-items";
 import { Tooltip, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, ConfirmDialog } from "@/components/ui/overlays";
 import { Kbd } from "@/components/ui/input";
@@ -33,18 +33,15 @@ export function WorkspaceSwitcher({ collapsed }: { collapsed?: boolean }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "group flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent",
-            collapsed && "justify-center px-0",
+            "group flex h-9 w-full items-center gap-2 rounded-md border border-border bg-surface px-2 text-left shadow-xs outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:border-border-strong",
+            collapsed && "justify-center border-transparent bg-transparent px-0 shadow-none",
           )}
           aria-label="Workspace menu"
         >
-          <BrandMark collapsed />
+          <span className="flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-primary text-[10px] font-semibold text-primary-foreground">{db.company.name.charAt(0)}</span>
           {!collapsed && (
             <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold leading-tight">{db.company.name}</span>
-                <span className="block truncate text-[11px] leading-tight text-muted-foreground">Recruiting workspace</span>
-              </span>
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{db.company.name}</span>
               <ChevronsUpDown className="size-3.5 text-subtle-foreground group-hover:text-muted-foreground" />
             </>
           )}
@@ -100,7 +97,7 @@ function NavLink({ href, label, icon: Icon, collapsed, shortcut, onNavigate }: {
         collapsed && "justify-center px-0",
       )}
     >
-      {active && <span className="absolute -left-2 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-brand" aria-hidden />}
+      {active && <span className="absolute -left-2.5 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-signal" aria-hidden />}
       <Icon className={cn("size-4 shrink-0 transition-colors", active ? "text-foreground" : "text-subtle-foreground group-hover:text-muted-foreground")} />
       {!collapsed && <span className="flex-1 truncate">{label}</span>}
       {badge && !collapsed && (
@@ -108,7 +105,7 @@ function NavLink({ href, label, icon: Icon, collapsed, shortcut, onNavigate }: {
           {badge.n}
         </span>
       )}
-      {badge && collapsed && <span className={cn("absolute right-1 top-1 size-1.5 rounded-full", badge.tone === "danger" ? "bg-destructive" : "bg-brand")} aria-label={badge.label} />}
+      {badge && collapsed && <span className={cn("absolute right-1 top-1 size-1.5 rounded-full", badge.tone === "danger" ? "bg-destructive" : "bg-signal")} aria-label={badge.label} />}
     </Link>
   );
   if (!collapsed) return link;
@@ -137,7 +134,12 @@ export function Sidebar({ collapsed, onToggle, onShowShortcuts }: { collapsed: b
         collapsed ? "w-[60px]" : "w-[232px]",
       )}
     >
-      <div className={cn("flex h-12 items-center px-2.5", collapsed && "px-2")}>
+      <div className={cn("flex h-14 items-center px-4", collapsed && "justify-center px-2")}>
+        <Link href="/" aria-label="Overview" className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <BrandLogo height={collapsed ? 22 : 21} variant={collapsed ? "monogram" : "wordmark"} />
+        </Link>
+      </div>
+      <div className={cn("px-2.5", collapsed && "px-2")}>
         <WorkspaceSwitcher collapsed={collapsed} />
       </div>
       <div className={cn("flex-1 overflow-y-auto overflow-x-hidden px-2.5 pt-3 scrollbar-none", collapsed && "px-2")}>

@@ -162,7 +162,7 @@ function WeekCalendar({ interviews }: { interviews: Interview[] }) {
             {week.map((d) => (
               <div key={d.toISOString()} className="border-l border-border px-2 py-2 text-center">
                 <p className="text-[11px] font-medium uppercase tracking-wider text-subtle-foreground">{format(d, "EEE")}</p>
-                <p className={cn("tabular mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm font-semibold", isToday(d) && "bg-brand text-brand-foreground")}>{format(d, "d")}</p>
+                <p className={cn("tabular mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm font-semibold", isToday(d) && "bg-signal text-signal-foreground")}>{format(d, "d")}</p>
               </div>
             ))}
           </div>
@@ -173,7 +173,7 @@ function WeekCalendar({ interviews }: { interviews: Interview[] }) {
             {week.map((d) => {
               const dayItems = inWeek.filter((i) => isSameDay(d, new Date(i.start))).sort((a, b) => a.start.localeCompare(b.start));
               return (
-                <div key={d.toISOString()} className={cn("relative border-l border-border", isToday(d) && "bg-brand-soft/25")}>
+                <div key={d.toISOString()} className={cn("relative border-l border-border", isToday(d) && "bg-signal-soft/30")}>
                   {HOURS.map((h) => (
                     <button
                       key={h}
@@ -187,7 +187,7 @@ function WeekCalendar({ interviews }: { interviews: Interview[] }) {
                   ))}
                   {isToday(d) && nowTop > 0 && nowTop < HOURS.length * ROW && (
                     <div ref={nowRef} className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={{ top: nowTop }}>
-                      <span className="-ml-1 size-2 rounded-full bg-destructive" /><span className="h-px flex-1 bg-destructive" />
+                      <span className="-ml-1 size-2 rounded-full bg-signal" /><span className="h-px flex-1 bg-signal" />
                     </div>
                   )}
                   {dayItems.map((i, idx) => {
@@ -268,7 +268,7 @@ function InterviewList({ interviews }: { interviews: Interview[] }) {
       {list.length === 0 && <div className="rounded-xl border border-border bg-surface"><EmptyState compact icon={<CalendarDays />} title={`No ${when} interviews`} /></div>}
       {Object.entries(groups).map(([day, items]) => (
         <section key={day}>
-          <h3 className={cn("mb-1.5 text-xs font-medium", isToday(new Date(day)) ? "text-brand" : "text-muted-foreground")}>{dayLabel(items[0].start)} · {format(new Date(day), "d MMMM")}</h3>
+          <h3 className={cn("mb-1.5 text-xs font-medium", isToday(new Date(day)) ? "text-signal" : "text-muted-foreground")}>{dayLabel(items[0].start)} · {format(new Date(day), "d MMMM")}</h3>
           <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-xs">{items.map((i) => <InterviewRow key={i.id} i={i} />)}</ul>
         </section>
       ))}

@@ -1,10 +1,11 @@
 /**
  * Brand configuration — the single source of truth for the product name.
- * Replace these values to rebrand the entire interface.
+ * The logo artwork lives in src/assets/deceler-logo.png and is rendered by
+ * components/shell/brand-mark.tsx.
  */
 export const BRAND = {
-  name: "Élan",
+  name: "Déceler",
   /** ASCII-safe variant used for storage keys and identifiers. */
-  slug: "elan",
-  tagline: "Recruiting, with poise.",
+  slug: "deceler",
+  tagline: "Recruiting, with discernment.",
 } as const;

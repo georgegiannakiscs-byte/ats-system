@@ -90,7 +90,7 @@ function Notifications() {
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon-sm" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`} className="relative">
             <Bell />
-            {unread > 0 && <span className="absolute right-1 top-1 size-2 rounded-full border-2 border-background bg-brand" />}
+            {unread > 0 && <span className="absolute right-1 top-1 size-2 rounded-full border-2 border-background bg-signal" />}
           </Button>
         </PopoverTrigger>
       </Tooltip>
@@ -115,7 +115,7 @@ function Notifications() {
                   }}
                   className="flex w-full gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent focus-visible:bg-accent"
                 >
-                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-brand")} aria-hidden />
+                  <span className={cn("mt-1.5 size-1.5 shrink-0 rounded-full", n.read ? "bg-transparent" : "bg-signal")} aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className={cn("block text-sm", n.read ? "text-muted-foreground" : "font-medium")}>{n.title}</span>
                     <span className="block truncate text-xs text-muted-foreground">{n.body}</span>

@@ -135,7 +135,7 @@ function CandidatesDirectory() {
       <div className="flex items-center gap-1 overflow-x-auto border-b border-border scrollbar-none">
         {db.savedViews.map((v) => (
           <div key={v.id} className="group relative flex shrink-0 items-center">
-            <button onClick={() => applyView(v)} className={cn("-mb-px flex h-9 items-center gap-1.5 border-b-2 px-2.5 text-sm font-medium transition-colors", viewId === v.id ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
+            <button onClick={() => applyView(v)} className={cn("-mb-px flex h-9 items-center gap-1.5 border-b-2 px-2.5 text-sm font-medium transition-colors", viewId === v.id ? "border-signal text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
               {!v.system && <Layers className="size-3.5 text-subtle-foreground" />}
               {v.name}
             </button>
@@ -146,7 +146,7 @@ function CandidatesDirectory() {
             )}
           </div>
         ))}
-        {viewId === null && <span className="-mb-px flex h-9 shrink-0 items-center border-b-2 border-foreground px-2.5 text-sm font-medium italic">Unsaved view</span>}
+        {viewId === null && <span className="-mb-px flex h-9 shrink-0 items-center border-b-2 border-signal px-2.5 text-sm font-medium italic">Unsaved view</span>}
         <div className="ml-auto flex shrink-0 items-center gap-1 pb-1">
           {dirty && (
             <>

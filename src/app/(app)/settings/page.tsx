@@ -116,7 +116,7 @@ function CompanySettings() {
   return (
     <Panel className="grid gap-4 sm:grid-cols-2" footer={<><Button variant="ghost" disabled={!dirty} onClick={() => (setF(db.company), setErrors({}))}>Discard</Button><Button disabled={!dirty} onClick={save}>Save changes</Button></>}>
       <div className="flex items-center gap-4 sm:col-span-2">
-        <span className="flex size-14 items-center justify-center rounded-xl bg-primary font-display text-3xl italic text-primary-foreground">{f.name.charAt(0) || "?"}</span>
+        <span className="flex size-14 items-center justify-center rounded-xl bg-primary font-display text-3xl text-primary-foreground">{f.name.charAt(0) || "?"}</span>
         <div><p className="text-sm font-medium">Logo</p><p className="text-xs text-muted-foreground">Generated from your company name. Uploads arrive with the backend.</p></div>
       </div>
       <Field label="Company name" required error={errors.name}><Input value={f.name} onChange={set("name")} aria-invalid={!!errors.name || undefined} /></Field>

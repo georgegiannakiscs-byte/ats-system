@@ -1,4 +1,4 @@
-# Élan — Applicant Tracking System (frontend)
+# Déceler — Applicant Tracking System (frontend)
 
 A premium, frontend-only ATS prototype. Every screen is interactive and backed by a
 typed mock service layer that persists to `localStorage`, ready to be swapped for a
@@ -27,9 +27,11 @@ next-themes · date-fns.
 
 ## Rebranding
 
-The product name lives in one place: `src/config/brand.ts`. The monogram, wordmark,
-page titles and storage keys all read from it. Colours are design tokens in
-`src/app/globals.css` (`--brand` is the single accent; light and dark values are
+The product name lives in `src/config/brand.ts`; the logo is `src/assets/deceler-logo.png`
+(used unmodified, framed with CSS in `components/shell/brand-mark.tsx`). Page titles,
+and storage keys read from the config. Colours are design tokens in
+`src/app/globals.css`: forest green `--primary`/`--brand`, terracotta `--signal` for
+selected states and small details, cream `--background` (light and dark values are
 defined separately).
 
 ## Architecture

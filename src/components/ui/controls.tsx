@@ -86,7 +86,7 @@ export function TabsTrigger({ className, count, children, ...props }: React.Comp
   return (
     <TB.Trigger
       className={cn(
-        "relative -mb-px inline-flex h-9 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground data-[state=active]:border-foreground data-[state=active]:text-foreground",
+        "relative -mb-px inline-flex h-9 shrink-0 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:text-foreground data-[state=active]:border-signal data-[state=active]:text-foreground",
         className,
       )}
       {...props}

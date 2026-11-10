@@ -11,7 +11,7 @@ export function Avatar({ name, hue = 260, size = "sm", className, ring }: { name
       title={name}
       className={cn(
         "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold tracking-tight",
-        "bg-[oklch(0.935_0.03_var(--h))] text-[oklch(0.43_0.09_var(--h))] dark:bg-[oklch(0.32_0.045_var(--h))] dark:text-[oklch(0.86_0.07_var(--h))]",
+        "bg-[oklch(0.94_0.016_var(--h))] text-[oklch(0.42_0.045_var(--h))] dark:bg-[oklch(0.3_0.022_var(--h))] dark:text-[oklch(0.85_0.04_var(--h))]",
         sizes[size],
         ring && "ring-2 ring-surface",
         className,

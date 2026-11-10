@@ -1,4 +1,5 @@
 "use client";
+import { BRAND } from "@/config/brand";
 import * as React from "react";
 import { Kanban, Rows3, UserPlus, Users, Tag as TagIcon, CircleCheck, Globe, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ import { KanbanBoard } from "./kanban-board";
 import type { CardData } from "./candidate-card";
 import { api } from "@/lib/api";
 
-const VIEW_KEY = "elan.ui.pipeline-view";
+const VIEW_KEY = `${BRAND.slug}.ui.pipeline-view`;
 
 export function JobPipeline({ jobId }: { jobId: ID }) {
   const db = useDb();
