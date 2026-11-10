@@ -72,4 +72,4 @@ src/app/admin/           Platform Super Admin
 
 ## Rebranding
 
-Product name: `src/config/brand.ts`. Logo: `src/assets/deceler-logo.png`. Colours: tokens in `src/app/globals.css`.
+Product name: `src/config/brand.ts`. Logo: `src/assets/ulysse-logo.webp`. Colours: tokens in `src/app/globals.css`.
