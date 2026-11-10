@@ -11,6 +11,7 @@
     "test:acceptance": "node --test --test-concurrency=1 --test-timeout=90000 tests/acceptance.test.mjs",
     "test:quick-check": "node --test --test-concurrency=1 --test-timeout=90000 tests/quick-check.test.mjs",
     "test:e2e": "node tests/e2e-journey.cjs",
+    "test:e2e:quick-check": "node tests/e2e-cv-quick-check.cjs",
     "typecheck": "next typegen && tsc --noEmit",
     "postbuild": "node scripts/prepare-standalone.mjs"
   },

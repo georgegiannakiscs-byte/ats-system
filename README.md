@@ -31,10 +31,19 @@ or build the standalone server yourself: `npm run build && npm start` (needs `DA
 ```bash
 npm run test:acceptance    # API + database-level scenarios (multi-company, admin, branding, 3-field application,
                            # optional data, LinkedIn tracking, pipeline to hire, tenant isolation, permissions)
+npm run test:quick-check   # CV Builder & Quick Check scenarios A–G (API + database). Starts a local
+                           # Anthropic stub on :4599 — run the server with ANTHROPIC_API_KEY=stub-key
+                           # ANTHROPIC_BASE_URL=http://127.0.0.1:4599 to exercise the AI paths, or without
+                           # a key to check the no-AI fallbacks.
 npm run test:e2e           # browser journey (requires Playwright + Chromium)
+npm run test:e2e:quick-check  # browser journey: build a CV → apply → Quick Check → recruiter review
 ```
 
-Both run against a running server (`BASE_URL`, default `http://localhost:3000`). CI (`.github/workflows/ci.yml`) runs type-check, lint, migrations, production build and the acceptance suite against PostgreSQL.
+All run against a running server (`BASE_URL`, default `http://localhost:3000`). CI (`.github/workflows/ci.yml`) runs type-check, lint, migrations, production build and both API suites against PostgreSQL (AI via the local stub — no real Anthropic calls).
+
+## AI (Anthropic Claude)
+
+Set `ANTHROPIC_API_KEY` on the server (never in the browser). Optional: `ANTHROPIC_MODEL` (default: platform setting, else `claude-opus-5-5`) and `ANTHROPIC_EFFORT`. Platform admins can switch AI off, pick the model and set monthly per-company request/budget limits in **Admin → Platform settings**, and follow usage in **Admin → AI usage**. Each company can switch individual AI helpers off in **Settings → AI features**. AI drafts questions and helps candidates word their own summary; it never scores, ranks or rejects candidates, and multiple-choice answers are checked deterministically. Observations on written answers are off by default pending a compliance review.
 
 ## Architecture
 
@@ -47,9 +56,13 @@ src/server/              Server-only code
   commands.ts            every workspace write, validated (zod) and permission-checked
   workspace.ts           per-company workspace snapshot
   storage.ts, cv.ts      private file storage, content sniffing, malware-scan hook
+  cv/pdf.ts, cv/text.ts  CV Builder PDF rendering (3 templates, Greek/Latin fonts), PDF/DOCX text extraction
+  assessments.ts         Quick Check: invitations, server-side timing, deterministic checking
+  ai/claude.ts, ai/tasks.ts  Anthropic SDK wrapper (limits, usage, structured outputs) and prompts
 src/app/api/             Route handlers (auth, orgs, files, public apply, admin)
 src/app/app/[company]/   Company workspace (dashboard, jobs, candidates, pipeline, …)
-src/app/careers/         Public careers pages & application form (EN/EL)
+src/app/careers/         Public careers pages & application form with CV Builder (EN/EL)
+src/app/assess/[token]   Candidate Quick Check (token link, no account)
 src/app/admin/           Platform Super Admin
 ```
 

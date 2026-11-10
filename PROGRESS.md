@@ -2,7 +2,7 @@
 
 Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested** · **🔶 Partially implemented** · **🔑 Requires credentials** · **🤝 Requires third-party approval** · **⚖️ Requires compliance review** · **⬜ Not started**
 
-"Tested" means covered by `npm run test:acceptance` (API + database level, 13 tests) and/or the browser journey `npm run test:e2e`, both run against dev **and** the production build.
+"Tested" means covered by `npm run test:acceptance` (Phase 1, 13 API/database tests), `npm run test:quick-check` (CV Builder & Quick Check, 8 API/database scenarios A–G) and/or the browser journeys `npm run test:e2e` and `npm run test:e2e:quick-check`, run against dev **and** the production build.
 
 ## Phase 1 — Core platform & administration
 
@@ -45,8 +45,41 @@ Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested*
 | Tasks & reminders | 🔶 | CRUD persisted per company 🟡. Automated reminders ⬜. |
 | Email communication | 🔑 | Templates (persisted) and drafts logged; sending needs SMTP / Google / Microsoft. |
 | Calendar integrations (Google, Outlook, Meet, Teams, Zoom) | 🔑 | OAuth apps required; UI shows "Not configured" honestly. |
-| CV parsing (EN/EL, OCR) | ⬜ | |
-| AI-assisted CV analysis | ⬜ ⚖️ | Requires AI provider 🔑 and an EU AI Act / GDPR review (recruitment is a high-risk use case). Feature flag exists, off by default. |
+| CV parsing (EN/EL, OCR) | 🔶 | Text extraction from PDF/DOCX + deterministic contact details ✅; structuring into the CV Builder with Claude ✅ (stub-tested, see below). OCR for scanned PDFs ⬜. |
+| AI-assisted CV analysis / candidate scoring | ⬜ ⚖️ | Deliberately not built: no fit scores, rankings or hire/reject recommendations. |
+
+## CV Builder & AI-powered Quick Check
+
+The application still requires **only full name, email and a CV**. A generated PDF satisfies the CV requirement; the Quick Check is always optional and never blocks or changes the application.
+
+| Feature | Status | Notes |
+|---|---|---|
+| "Upload my CV" / "Create my CV" on the application form | ✅ | Name and email typed in the form are reused by the builder (journey test). No account needed. |
+| CV Builder editor + live preview | ✅ | Editor left, live preview right; mobile: section steps + Preview toggle (journey test). Autosaves only on the candidate's device until they generate the PDF. |
+| Sections | ✅ | Personal (name & email required), headline, summary, experience (multiple, drag to reorder, current role, description/responsibilities/achievements), education, skills (tag input + suggestions from the job), languages + level, certifications, projects, publications/awards/volunteering/links/other. |
+| Optional photo | ✅ | JPG/PNG/WebP, crop, zoom, reposition (drag or arrow keys), replace, remove, circle/rectangle. Re-encoded on the server (metadata stripped). Stored separately, never sent to AI, never used in scoring. Companies can hide photos during screening (tested). Drag-repositioning itself is 🟡 (manually verified only). |
+| Templates: Minimal (ATS-friendly), Modern, Professional | ✅ | Real text-based PDFs (pdfkit, embedded Liberation fonts covering Greek & Latin), selectable/extractable text (tested by re-extracting), page breaks, page numbers, multi-page. Platform and company can restrict templates (tested). |
+| Generate / preview / download / edit / change template / "Use this CV" | ✅ | Generated PDF stored privately as a single-use draft (6 h); attached by token, replaceable before submit, can't be reused or moved to another company's job (tested). Recruiters see "Created with the CV Builder". |
+| "Create a new CV from this file" | ✅ | Suggestions only, nothing stored; contact details found without AI; other sections via Claude when available (stub-tested), otherwise contact details only (tested). Scanned image PDFs: no OCR ⬜. |
+| "Improve my summary" | ✅ | Claude suggests wording; candidate must choose "Use this". Suggestions containing numbers not in the candidate's input are discarded (tested). Real-API quality: 🔑 untested. |
+| Expired builder drafts cleanup | ⬜ | Drafts expire after 6 h and can't be used, but files are not yet deleted by a background job. |
+| Quick Check question bank | ✅ | Manual questions, drafts → approval, edit = new version back to draft, archive/restore, delete drafts only. Question text, type, options, key, explanation, competency, difficulty, recommended time, language, version, source, model, generation version stored. |
+| AI question generation (Anthropic) | ✅ stub / 🔑 real | Official `@anthropic-ai/sdk`, server-side only, structured output with JSON schema + server-side Zod re-validation + deterministic quality checks (malformed/ambiguous questions rejected). Uses job data only — verified the prompt contains no candidate data. Saved as drafts needing approval (tested). **Real Claude calls are untested here: no API key in this environment.** |
+| Job-level Quick Check settings | ✅ | Enable, 3–4 approved questions, timed (20–60 s) or untimed, language, instructions, complete-later email, extended/untimed accommodations, recruiter notification. |
+| Candidate Quick Check | ✅ | Offered after a successful application; also by email link ("later") and recruiter invite/re-invite (old link revoked) (tested). Branded intro with position, count, duration, instructions, timing, privacy and accommodations; one question at a time; progress bar; countdown. Completion message: "Thank you! Your responses have been submitted successfully." |
+| Server-side timing | ✅ | Deadline set when each question is served; reload doesn't reset it; late answers aren't recorded; timed-out questions recorded as unanswered (tested). |
+| Connectivity handling | 🟡 | Retries with back-off and an offline notice; the timer keeps running on the server. Not covered by automated tests. |
+| Accessibility accommodations | ✅ | Extended (2×) or untimed, chosen without justification; shown to reviewers as an accommodation, never penalised (tested). Keyboard-operable, labelled controls. No webcam, recording or proctoring. |
+| Deterministic answer checking | ✅ | Multiple choice compared with the approved key on the server — never by an LLM (tested). Response speed not shown or scored. |
+| AI observations on written answers | 🟡 ⚖️ | Implemented (descriptive concepts / points to clarify / follow-up questions; no scores) but **off by default** behind the `ai_assessment_observations` flag pending legal, fairness and human-oversight review. Not covered by automated tests. |
+| Candidate-specific interview follow-up questions | 🔶 | Only as part of AI observations on written answers. CV-based follow-ups ⬜. |
+| Workspace: Assessments section | ✅ | Question bank, AI drafting dialog, jobs overview, responses list, CSV export (formula-injection safe, tested). |
+| Candidate profile "Quick Check" tab & pipeline status | ✅ | Not invited / Invited / Started / Pending human review / Completed (after reviewer notes) / Declined / Unavailable. Never advances or rejects (tested). Hiring managers can view, interviewers see status only. |
+| Company settings: CV Builder & AI | ✅ | Templates, default template, hide photos; per-feature AI switches with live availability reasons. |
+| Platform admin | ✅ / 🟡 | Per-company enable/disable of CV Builder, Quick Check and each AI feature (existing feature flags ✅). AI provider settings (on/off, model, monthly request and budget limits per company) and CV template availability ✅. AI usage page (requests, failures, tokens, cost per company, background observation jobs) 🟡 — aggregate only, no candidate data. |
+| Usage, limits, cost tracking | ✅ | Every call logged in `ai_usage` (model, tokens, estimated cost, latency, errors, blocked). Monthly per-company request and budget limits enforced. Rate limits on public endpoints. Retries (2) and 90 s timeout in the SDK client. |
+| Multi-company isolation | ✅ | All new tables have RLS + FORCE RLS; verified at API and database level (questions, attempts, responses, configs, builder profiles, photos, drafts, observations); `ai_usage` is not readable by tenants (tested). |
+| Everything works without AI | ✅ | Tested with no API key: AI actions return a clear message; builder, manual questions, Quick Check and checking unaffected. |
 
 ## Phase 3 — Integrations & growth
 
@@ -83,6 +116,6 @@ AI Copilot, workflow builder, offer management, e-signatures, careers page build
 | Signing secret | `APP_SECRET` | Server refuses to start in production. |
 | Email (SMTP) | `SMTP_URL`, `MAIL_FROM` | Emails recorded as "not configured"; invitation/recovery links shown to share manually. |
 | Malware scanning | `CLAMAV_HOST`, `CLAMAV_PORT` | CVs stored and labelled "not scanned". |
-| AI provider (Phase 2) | `AI_PROVIDER_API_KEY` | AI features stay disabled. |
+| Anthropic Claude | `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`) | AI actions show "not configured"; everything else works. Real API calls not yet verified in this environment. |
 | Google / Microsoft (Phase 2) | OAuth client IDs & secrets | Calendar/email integrations "Not configured". |
 | LinkedIn (Phase 3) | `LINKEDIN_CLIENT_ID/SECRET` + partner approval | Only tracked links work. |

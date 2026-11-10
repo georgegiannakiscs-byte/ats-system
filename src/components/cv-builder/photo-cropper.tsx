@@ -53,10 +53,13 @@ export function PhotoCropper({ shape, onShape, value, onChange, labels }: { shap
     setZoom(z);
   };
 
-  // Re-render the cropped output whenever the crop changes.
+  // Re-render the cropped output whenever the crop changes (debounced; flushed on unmount so a
+  // quick "Next" never loses the photo).
+  const pending = React.useRef<(() => void) | null>(null);
   React.useEffect(() => {
     if (!img) return;
-    const t = setTimeout(() => {
+    const render = () => {
+      pending.current = null;
       const outW = 600;
       const outH = Math.round(600 * (frameH / FRAME_W));
       const c = document.createElement("canvas");
@@ -67,10 +70,13 @@ export function PhotoCropper({ shape, onShape, value, onChange, labels }: { shap
       ctx.fillRect(0, 0, outW, outH);
       ctx.drawImage(img, view.x * k, view.y * k, w * k, h * k);
       onChange(c.toDataURL("image/jpeg", 0.9));
-    }, 120);
+    };
+    pending.current = render;
+    const t = setTimeout(render, 120);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [img, zoom, view.x, view.y, frameH]);
+  React.useEffect(() => () => pending.current?.(), []);
 
   const remove = () => { setImg(null); setSrc(null); onChange(null); if (inputRef.current) inputRef.current.value = ""; };
 

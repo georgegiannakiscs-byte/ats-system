@@ -300,7 +300,13 @@ test("E — Anthropic question generation (stub): drafts only, job data only, va
     const r = await owner.post(`/api/orgs/${S.A.id}/assessments/generate`, { jobId: S.jobA, count: 4 });
     assert.equal(r.status, 503);
     assert.match(r.data.error, /not configured/);
-    t.diagnostic("AI not configured on the server under test — verified the graceful 503 only.");
+    const gen = await pub.post("/api/public/cv/generate", { orgSlug: S.slugA, jobSlug: S.jobSlugA, template: "minimal", data: cvData("Text Source", `source-${run}@example.com`) });
+    const fd = new FormData();
+    fd.append("orgSlug", S.slugA); fd.append("jobSlug", S.jobSlugA); fd.append("cv", new File([(await pub.get(gen.data.previewUrl)).data], "cv.pdf", { type: "application/pdf" }));
+    const ex = await (await fetch(`${BASE}/api/public/cv/extract`, { method: "POST", body: fd })).json();
+    assert.equal(ex.method, "contact_only");
+    assert.equal(ex.prefill.email, `source-${run}@example.com`);
+    t.diagnostic("AI not configured on the server under test — verified graceful fallbacks only.");
     return;
   }
   stubRequests.length = 0;
@@ -328,6 +334,18 @@ test("E — Anthropic question generation (stub): drafts only, job data only, va
   assert.ok(ok.data.suggestion);
   const inv = await pub.post("/api/public/cv/improve-summary", { orgSlug: S.slugA, jobSlug: S.jobSlugA, summary: "INVENT something about my analyst work" });
   assert.equal(inv.status, 422);
+  // "Create a new CV from this file": suggestions only, nothing stored
+  const srcGen = await pub.post("/api/public/cv/generate", { orgSlug: S.slugA, jobSlug: S.jobSlugA, template: "minimal", data: cvData("Text Source", `source-${run}@example.com`) });
+  const srcPdf = (await pub.get(srcGen.data.previewUrl)).data;
+  const fd = new FormData();
+  fd.append("orgSlug", S.slugA); fd.append("jobSlug", S.jobSlugA); fd.append("cv", new File([srcPdf], "cv.pdf", { type: "application/pdf" }));
+  const ex = await fetch(`${BASE}/api/public/cv/extract`, { method: "POST", body: fd });
+  const exData = await ex.json();
+  assert.equal(ex.status, 200, JSON.stringify(exData));
+  assert.equal(exData.method, "ai");
+  assert.equal(exData.prefill.email, `source-${run}@example.com`, "contact details found deterministically from the PDF text");
+  assert.equal(exData.prefill.experience[0].company, "Acme");
+  assert.ok(!JSON.stringify(stubRequests.at(-1).body).includes("data:image"), "no images sent to AI");
   // Usage is tracked per company
   const db = new pg.Client({ connectionString: DB });
   await db.connect();
