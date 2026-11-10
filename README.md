@@ -18,6 +18,10 @@ npm run dev                               # migrations run automatically on star
 
 Open http://localhost:3000, create an account. In development the **first account becomes Platform Super Admin** (`/admin`). In production use `PLATFORM_ADMIN_EMAILS`.
 
+## Try it in GitHub Codespaces
+
+On GitHub: **Code → Codespaces → Create codespace** (on the branch you want to see). The first start installs, migrates and builds (a few minutes), then opens the app on port 3000 with demo data. Sign in with `demo@example.com` / `Ulysse-demo-2026` (platform admin + admin of "Aegean Analytics"). Details: [.devcontainer/README.md](.devcontainer/README.md). Seed the same demo data elsewhere with `node scripts/seed-demo.mjs` while the server runs.
+
 ## Production
 
 ```bash
