@@ -19,12 +19,14 @@ export type Permission =
   | "settings.manage"
   | "team.manage"
   | "branding.manage"
-  | "analytics.view";
+  | "analytics.view"
+  | "assessments.view"
+  | "assessments.manage";
 
 const MATRIX: Record<OrgRole, Permission[]> = {
-  admin: ["workspace.view", "jobs.manage", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "settings.manage", "team.manage", "branding.manage", "analytics.view"],
-  recruiter: ["workspace.view", "jobs.manage", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "analytics.view"],
-  hiring_manager: ["workspace.view", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "analytics.view"],
+  admin: ["workspace.view", "jobs.manage", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "settings.manage", "team.manage", "branding.manage", "analytics.view", "assessments.view", "assessments.manage"],
+  recruiter: ["workspace.view", "jobs.manage", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "analytics.view", "assessments.view", "assessments.manage"],
+  hiring_manager: ["workspace.view", "candidates.view", "candidates.edit", "pipeline.move", "cv.download", "notes.write", "interviews.manage", "feedback.submit", "tasks.manage", "analytics.view", "assessments.view"],
   interviewer: ["workspace.view", "candidates.view", "notes.write", "feedback.submit", "tasks.manage"],
 };
 

@@ -6,6 +6,9 @@ import { rateLimit } from "@/server/security";
 import { insertCvRow, newId, storeCv } from "@/server/cv";
 import { deleteObject } from "@/server/storage";
 import { sendMail } from "@/server/mail";
+import { sha256 } from "@/server/security";
+import { createAttempt, emailInvite } from "@/server/assessments";
+import { CvDataSchema, type CvData } from "@/lib/cv/schema";
 
 /*
  * Public application intake. ONLY three fields are required: full name, email, CV.
@@ -26,6 +29,7 @@ const Fields = z.object({
   languages: opt(500), certifications: opt(1000), salaryExpectations: opt(200), availability: opt(200), noticePeriod: opt(200), coverLetter: opt(8000), notes: opt(4000),
   utmSource: opt(80), utmMedium: opt(80), utmCampaign: opt(120), lang: z.enum(["en", "el"]).optional(),
   website: z.string().max(0, "Bot detected").optional(), // honeypot — must stay empty
+  generatedCvToken: z.string().regex(/^[A-Za-z0-9_-]{20,100}$/).optional(), // CV made with the CV Builder
 }).passthrough();
 
 const SOURCE_MAP: Record<string, string> = { linkedin: "LinkedIn", indeed: "Indeed", welcometothejungle: "Welcome to the Jungle", referral: "Referral" };
@@ -40,7 +44,8 @@ export const POST = handler(async (req) => {
   const f = Fields.parse(raw);
   const answers = Object.entries(raw).filter(([k]) => k.startsWith("q_")).map(([k, v]) => ({ questionId: k.slice(2, 42), answer: v.slice(0, 4000) })).slice(0, 10);
   const file = form.get("cv");
-  if (!(file instanceof File) || file.size === 0) throw new HttpError(400, "Attach your CV (PDF or Word)", "cv_missing", [{ path: "cv", message: "Attach your CV (PDF or Word)" }]);
+  const hasFile = file instanceof File && file.size > 0;
+  if (!hasFile && !f.generatedCvToken) throw new HttpError(400, "Attach your CV (PDF or Word) or create one with the CV Builder", "cv_missing", [{ path: "cv", message: "Attach your CV (PDF or Word) or create one with the CV Builder" }]);
 
   const [job] = await sys<{ id: string; org_id: string; title: string; recruiter_id: string | null; org_name: string; status: string; job_status: string }>(
     `select j.id, j.org_id, j.title, j.recruiter_id, o.name as org_name, o.status, j.status as job_status from jobs j join organizations o on o.id = j.org_id
@@ -53,16 +58,32 @@ export const POST = handler(async (req) => {
   const prior = await sys<{ id: string }>("select id from applications where org_id = $1 and submission_key = $2", [job.org_id, f.submissionKey]);
   if (prior.length) return json({ ok: true, reference: prior[0].id.slice(-8).toUpperCase(), duplicate: true });
 
-  const cv = await storeCv(job.org_id, file);
+  // A builder CV is validated here (before any write) and redeemed atomically in the transaction below.
+  type Draft = { id: string; template: string; data: CvData; storage_key: string; photo_key: string | null; size_bytes: number; sha256: string };
+  let draft: Draft | null = null;
+  if (!hasFile) {
+    const [d] = await sys<Draft>("select id, template, data, storage_key, photo_key, size_bytes, sha256 from cv_drafts where token_hash = $1 and org_id = $2 and job_id = $3 and consumed_at is null and expires_at > now()", [sha256(f.generatedCvToken!), job.org_id, job.id]);
+    if (!d) throw new HttpError(410, "Your generated CV has expired. Generate it again, then submit.", "cv_draft_expired", [{ path: "cv", message: "Generate your CV again" }]);
+    draft = { ...d, data: CvDataSchema.parse(d.data) };
+  }
+  const built = draft?.data;
+  const cv = hasFile
+    ? await storeCv(job.org_id, file as File)
+    : { key: draft!.storage_key, mime: "application/pdf", size: draft!.size_bytes, sha256: draft!.sha256, fileName: `${f.fullName.replace(/[^\p{L}\p{N} ]/gu, "").trim().replace(/\s+/g, "_") || "CV"}_CV.pdf`, scanStatus: "not_scanned" as const };
   const parts = f.fullName.split(/\s+/);
   const source = (f.utmSource && SOURCE_MAP[f.utmSource.toLowerCase()]) || "Careers page";
   const extra: Record<string, string> = {};
   for (const k of ["country", "yearsExperience", "education", "certifications", "salaryExpectations", "availability", "noticePeriod", "coverLetter", "notes"] as const) if (f[k]) extra[k] = f[k]!;
   const provided: Record<string, string> = { fullName: "candidate", email: "candidate" };
+  const bp = built?.personal;
+  const nonEmpty = <T,>(a: T[] | undefined) => (a && a.length ? a : undefined);
   const optionalCols: [string, string, unknown][] = [
-    ["phone", "phone", f.phone], ["location", "location", [f.city, f.country].filter(Boolean).join(", ") || undefined], ["headline", "headline", f.currentTitle], ["currentCompany", "current_company", f.currentCompany],
-    ["linkedinUrl", "linkedin_url", f.linkedinUrl], ["portfolioUrl", "portfolio_url", f.portfolioUrl], ["githubUrl", "github_url", f.githubUrl], ["summary", "summary", f.summary],
-    ["skills", "skills", f.skills ? list(f.skills) : undefined], ["languages", "languages", f.languages ? list(f.languages) : undefined],
+    ["phone", "phone", f.phone || bp?.phone || undefined], ["location", "location", [f.city, f.country].filter(Boolean).join(", ") || [bp?.location, bp?.country].filter(Boolean).join(", ") || undefined],
+    ["headline", "headline", f.currentTitle || bp?.headline || built?.experience[0]?.title || undefined], ["currentCompany", "current_company", f.currentCompany || built?.experience.find((e) => e.current)?.company || undefined],
+    ["linkedinUrl", "linkedin_url", f.linkedinUrl || bp?.linkedinUrl || undefined], ["portfolioUrl", "portfolio_url", f.portfolioUrl || bp?.portfolioUrl || undefined], ["githubUrl", "github_url", f.githubUrl], ["summary", "summary", f.summary || built?.summary || undefined],
+    ["skills", "skills", f.skills ? list(f.skills) : nonEmpty(built?.skills)], ["languages", "languages", f.languages ? list(f.languages) : nonEmpty(built?.languages.map((l) => (l.level ? `${l.language} (${l.level})` : l.language)))],
+    ["experience", "experience", built?.experience.length ? JSON.stringify(built.experience.map((e) => ({ title: e.title, company: e.company, start: e.start, end: e.current ? undefined : e.end || undefined, description: e.description || undefined }))) : undefined],
+    ["education", "education", built?.education.length ? JSON.stringify(built.education.map((e) => ({ school: e.institution, degree: [e.degree, e.field].filter(Boolean).join(", "), year: e.end || e.start }))) : undefined],
   ];
   for (const [k, , v] of optionalCols) if (v) provided[k] = "candidate";
   for (const k of Object.keys(extra)) provided[k] = "candidate";
@@ -79,7 +100,7 @@ export const POST = handler(async (req) => {
         await q(`insert into candidates (${cols.join(",")}) values (${cols.map((_, i) => `$${i + 1}`).join(",")})`, vals);
       } else {
         // Returning candidate: fill only empty fields; never overwrite recruiter-entered data.
-        for (const [, col, v] of optionalCols) if (v) await q(`update candidates set ${col} = $2 where id = $1 and (${col} is null or ${col}::text in ('', '{}'))`, [candidateId, v]);
+        for (const [, col, v] of optionalCols) if (v) await q(`update candidates set ${col} = $2 where id = $1 and (${col} is null or ${col}::text in ('', '{}', '[]'))`, [candidateId, v]);
         await q("update candidates set extra = $2::jsonb || extra, updated_at = now() where id = $1", [candidateId, JSON.stringify(extra)]);
       }
       const active = await q<{ id: string }>("select id from applications where candidate_id = $1 and job_id = $2 and status = 'active'", [candidateId, job.id]);
@@ -92,14 +113,27 @@ export const POST = handler(async (req) => {
         );
         await q("insert into stage_history (org_id, application_id, to_stage, to_status) values ($1,$2,'applied','active')", [job.org_id, applicationId]);
       }
-      await insertCvRow(q, job.org_id, candidateId, applicationId, cv, null);
+      if (draft) {
+        const redeemed = await q("update cv_drafts set consumed_at = now() where id = $1 and consumed_at is null returning id", [draft.id]);
+        if (!redeemed.length) throw new HttpError(409, "This generated CV was already used for another submission. Generate it again.", "cv_draft_used");
+        const [doc] = await q<{ id: string }>(
+          "insert into cv_documents (org_id, candidate_id, application_id, storage_key, file_name, mime_type, size_bytes, sha256, scan_status, source) values ($1,$2,$3,$4,$5,'application/pdf',$6,$7,'not_scanned','builder') returning id",
+          [job.org_id, candidateId, applicationId, cv.key, cv.fileName, cv.size, cv.sha256],
+        );
+        await q("insert into cv_builder_profiles (org_id, candidate_id, application_id, cv_document_id, template, data) values ($1,$2,$3,$4,$5,$6)", [job.org_id, candidateId, applicationId, doc.id, draft.template, JSON.stringify(draft.data)]);
+        if (draft.photo_key) await q("insert into candidate_photos (org_id, candidate_id, storage_key, mime_type) values ($1,$2,$3,'image/jpeg') on conflict (storage_key) do nothing", [job.org_id, candidateId, draft.photo_key]);
+      } else {
+        await insertCvRow(q, job.org_id, candidateId, applicationId, cv, null);
+      }
       await q("insert into activities (org_id, kind, candidate_id, job_id, message) values ($1,'applied',$2,$3,$4)", [job.org_id, candidateId, job.id, `applied for ${job.title}${source !== "Careers page" ? ` via ${source}` : ""}`]);
       if (job.recruiter_id) {
         await q("insert into workspace_records (org_id, kind, id, data) values ($1,'notification',$2,$3)", [
           job.org_id, newId("no"), JSON.stringify({ userId: job.recruiter_id, title: "New application", body: `${f.fullName} applied for ${job.title}.`, href: `/candidates/view?id=${candidateId}`, createdAt: new Date().toISOString(), read: false }),
         ]);
       }
-      return { applicationId };
+      // Optional Quick Check: invitation created only when the job has an approved, enabled set.
+      const quickCheck = await createAttempt(q, { orgId: job.org_id, applicationId, jobId: job.id, candidateId, invitedBy: null });
+      return { applicationId, quickCheck };
     });
     const lang = f.lang ?? "en";
     const subject = lang === "el" ? `Λάβαμε την αίτησή σας — ${job.title}` : `We received your application — ${job.title}`;
@@ -107,9 +141,14 @@ export const POST = handler(async (req) => {
       ? `Γεια σας ${parts[0]},\n\nΕυχαριστούμε για την αίτησή σας για τη θέση ${job.title} στην ${job.org_name}. Θα επικοινωνήσουμε μαζί σας σύντομα.\n\n${job.org_name}`
       : `Hi ${parts[0]},\n\nThank you for applying for ${job.title} at ${job.org_name}. We'll be in touch soon.\n\n${job.org_name}`;
     const delivery = await sendMail(job.org_id, f.email, subject, body, "application_confirmation");
-    return json({ ok: true, reference: result.applicationId.slice(-8).toUpperCase(), emailDelivery: delivery }, 201);
+    const qc = result.quickCheck;
+    if (qc?.config.allowLater) await emailInvite(job.org_id, f.email, parts[0], job.title, job.org_name, qc.token, lang).catch(() => {});
+    return json({
+      ok: true, reference: result.applicationId.slice(-8).toUpperCase(), emailDelivery: delivery, cvSource: draft ? "builder" : "upload",
+      quickCheck: qc ? { token: qc.token, questions: qc.count, timed: qc.config.timed, secondsPerQuestion: qc.config.secondsPerQuestion, allowLater: qc.config.allowLater } : null,
+    }, 201);
   } catch (e) {
-    await deleteObject(cv.key).catch(() => {});
+    if (hasFile) await deleteObject(cv.key).catch(() => {});
     throw e;
   }
 });

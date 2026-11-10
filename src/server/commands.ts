@@ -4,6 +4,7 @@ import { sys, tenantTx, type Q } from "./db";
 import { HttpError } from "./http";
 import { audit, slugify, type OrgAccess } from "./org";
 import { can, ROLE_FROM_LABEL, type Permission } from "./permissions";
+import { runAssessmentCommand } from "./assessment-commands";
 
 /*
  * Every write from the workspace UI goes through here. Each command:
@@ -129,6 +130,7 @@ async function moveApplication(q: Q, a: OrgAccess, id: string, stage: (typeof ST
 
 export async function runCommand(a: OrgAccess, type: string, p: Record<string, unknown>) {
   const orgId = a.org.id;
+  if (type.startsWith("assessments.") || type === "settings.cvBuilder" || type === "settings.ai") return runAssessmentCommand(a, type, p);
 
   /* ── Settings & team (owner-level tables, explicit org scoping) ── */
   if (type === "settings.company") {

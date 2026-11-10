@@ -3,6 +3,7 @@ import { sys, tenantTx, type Q } from "./db";
 import { HttpError } from "./http";
 import { ROLE_LABEL, permissionsFor, type OrgRole } from "./permissions";
 import type { OrgAccess } from "./org";
+import { aiAndCvSettings, assessmentSnapshot } from "./assessment-snapshot";
 
 /* Default configuration for a brand-new company workspace. */
 export const DEFAULT_STAGES = [
@@ -39,11 +40,8 @@ export function hueFor(id: string) {
   return h;
 }
 
-export function logoUrl(orgId: string, branding: Record<string, unknown>, variant: "light" | "dark" = "light") {
-  const key = variant === "dark" ? (branding.logoDarkKey as string | undefined) : (branding.logoKey as string | undefined);
-  if (!key) return null;
-  return `/api/public/logo/${orgId}/${variant}?v=${encodeURIComponent(String(branding[variant === "dark" ? "logoDarkVersion" : "logoVersion"] ?? "1"))}`;
-}
+export { logoUrl } from "./branding";
+import { logoUrl } from "./branding";
 
 const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOString() : undefined);
 
@@ -72,8 +70,9 @@ export async function buildSnapshot(access: OrgAccess) {
     const notes = await q("select * from notes order by created_at desc");
     const activities = await q("select * from activities order by created_at desc limit 400");
     const records = await q<{ kind: string; id: string; data: Record<string, unknown> }>("select kind, id, data from workspace_records");
-    const cvs = await q("select id, candidate_id, application_id, file_name, mime_type, size_bytes, scan_status, created_at from cv_documents order by created_at desc");
-    return { stages, jobs, candidates, applications, notes, activities, records, cvs };
+    const cvs = await q("select id, candidate_id, application_id, file_name, mime_type, size_bytes, scan_status, source, created_at from cv_documents order by created_at desc");
+    const assessment = await assessmentSnapshot(q, org.id, role);
+    return { stages, jobs, candidates, applications, notes, activities, records, cvs, assessment };
   });
 
   const recs = (kind: string) => data.records.filter((r) => r.kind === kind).map((r) => ({ ...r.data, id: r.id }));
@@ -130,7 +129,9 @@ export async function buildSnapshot(access: OrgAccess) {
       id: a.id, candidateId: a.candidate_id, jobId: a.job_id, stage: a.stage, status: a.status, appliedAt: iso(a.applied_at), stageEnteredAt: iso(a.stage_entered_at), recruiterId: a.recruiter_id ?? "",
       evaluation: a.evaluation, order: a.sort_order, rejectionReason: a.rejection_reason ?? undefined, withdrawalReason: a.withdrawal_reason ?? undefined, source: a.source, utm: a.utm, answers: a.answers,
     })),
-    cvDocuments: data.cvs.map((d) => ({ id: d.id, candidateId: d.candidate_id, applicationId: d.application_id ?? undefined, fileName: d.file_name, mimeType: d.mime_type, sizeBytes: d.size_bytes, scanStatus: d.scan_status, createdAt: iso(d.created_at) })),
+    cvDocuments: data.cvs.map((d) => ({ id: d.id, candidateId: d.candidate_id, applicationId: d.application_id ?? undefined, fileName: d.file_name, mimeType: d.mime_type, sizeBytes: d.size_bytes, scanStatus: d.scan_status, source: d.source, createdAt: iso(d.created_at) })),
+    ...data.assessment,
+    ...(await aiAndCvSettings(org.id)),
     notes: data.notes.map((n) => ({ id: n.id, candidateId: n.candidate_id, authorId: n.author_id ?? "", body: n.body, pinned: n.pinned, createdAt: iso(n.created_at) })),
     activities: data.activities.map((a) => ({ id: a.id, kind: a.kind, actorId: a.actor_id ?? undefined, candidateId: a.candidate_id ?? undefined, jobId: a.job_id ?? undefined, message: a.message, createdAt: iso(a.created_at) })),
     interviews: recs("interview"),
