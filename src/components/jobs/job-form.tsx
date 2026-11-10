@@ -1,9 +1,10 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { Segmented, Select, Switch } from "@/components/ui/controls";
@@ -14,7 +15,7 @@ import { LinkedInLogo } from "@/components/common/logos";
 import { useDb } from "@/lib/api/store";
 import { api, type JobInput } from "@/lib/api";
 import { DEPARTMENTS, EMPLOYMENT_TYPES, SENIORITIES, WORKPLACES } from "@/lib/constants";
-import type { Job, JobStatus } from "@/lib/types";
+import type { Job, JobStatus, ScreeningQuestion } from "@/lib/types";
 import { cn, formatSalary } from "@/lib/utils";
 import { Person } from "@/components/common/person";
 
@@ -109,16 +110,16 @@ export function JobForm({ job }: { job?: Job }) {
     const payload = { ...f, title: f.title.trim(), status };
     if (job) {
       await api.jobs.update(job.id, payload);
-      toast.success(status === "published" && job.status !== "published" ? "Job published" : "Changes saved", { description: status === "published" ? "Demo: shown on the internal careers preview only." : undefined });
-      router.push(`/jobs/view?id=${job.id}`);
+      toast.success(status === "published" && job.status !== "published" ? "Job published" : "Changes saved", { description: status === "published" ? "Live on your public careers page." : undefined });
+      router.push(orgPath(`/jobs/view?id=${job.id}`));
     } else {
       const created = await api.jobs.create(payload);
-      toast.success(status === "published" ? "Job published" : "Draft saved", { description: status === "published" ? "Demo: shown on the internal careers preview only." : "You can publish it whenever you're ready." });
-      router.push(`/jobs/view?id=${created.id}`);
+      toast.success(status === "published" ? "Job published" : "Draft saved", { description: status === "published" ? "Live on your public careers page." : "You can publish it whenever you're ready." });
+      router.push(orgPath(`/jobs/view?id=${created.id}`));
     }
   };
 
-  const cancelHref = job ? `/jobs/view?id=${job.id}` : "/jobs";
+  const cancelHref = orgPath(job ? `/jobs/view?id=${job.id}` : "/jobs");
   const err = (k: keyof JobInput) => errors[k];
 
   return (
@@ -177,6 +178,7 @@ export function JobForm({ job }: { job?: Job }) {
                 <Field label="Employment type">
                   <Select value={f.employmentType} onValueChange={(v) => set("employmentType", v as JobInput["employmentType"])} options={EMPLOYMENT_TYPES.map((d) => ({ value: d, label: d }))} />
                 </Field>
+                <Field label="Contract type" hint="e.g. Permanent, Fixed-term 12 months"><Input value={f.contractType ?? ""} onChange={(e) => set("contractType", e.target.value)} /></Field>
                 <Field label="Openings" required error={err("openings")} htmlFor="openings">
                   <Input id="openings" type="number" min={1} max={50} value={f.openings || ""} onChange={(e) => set("openings", Number(e.target.value))} className="w-28" aria-invalid={!!err("openings") || undefined} />
                 </Field>
@@ -193,8 +195,17 @@ export function JobForm({ job }: { job?: Job }) {
                 <Field label="Requirements" hint="One per line." className="sm:col-span-2" htmlFor="req">
                   <Textarea id="req" value={f.requirements} onChange={(e) => set("requirements", e.target.value)} className="min-h-28" />
                 </Field>
-                <Field label="Key skills" hint="Used to highlight matching candidates." className="sm:col-span-2">
+                <Field label="Required experience" className="sm:col-span-2" htmlFor="exp">
+                  <Input id="exp" value={f.requiredExperience ?? ""} onChange={(e) => set("requiredExperience", e.target.value)} placeholder="e.g. 3+ years in a similar role" />
+                </Field>
+                <Field label="Required skills" className="sm:col-span-2">
                   <TagEditor tags={f.skills} onChange={(v) => set("skills", v)} suggestions={Array.from(new Set(db.jobs.flatMap((j) => j.skills)))} />
+                </Field>
+                <Field label="Preferred skills" className="sm:col-span-2">
+                  <TagEditor tags={f.preferredSkills ?? []} onChange={(v) => set("preferredSkills", v)} suggestions={Array.from(new Set(db.jobs.flatMap((j) => j.preferredSkills ?? [])))} />
+                </Field>
+                <Field label="Benefits" hint="One per line." className="sm:col-span-2" htmlFor="benefits">
+                  <Textarea id="benefits" value={f.benefits ?? ""} onChange={(e) => set("benefits", e.target.value)} className="min-h-20" />
                 </Field>
               </>
             )}
@@ -222,15 +233,16 @@ export function JobForm({ job }: { job?: Job }) {
                 <section className="space-y-2">
                   <h3 className="text-xs font-medium uppercase tracking-wider text-subtle-foreground">Channels</h3>
                   <label className="flex items-center gap-3 rounded-lg border border-border p-3">
-                    <span className="flex-1"><span className="block text-sm font-medium">Careers page</span><span className="block text-xs text-muted-foreground">{db.company.careersUrl.replace("https://", "")}/jobs — internal preview in this demo</span></span>
+                    <span className="flex-1"><span className="block text-sm font-medium">Careers page</span><span className="block text-xs text-muted-foreground">/careers/{db.org.slug} — public, applications go straight into this pipeline</span></span>
                     <Switch checked={f.channels.careersPage} onCheckedChange={(v) => set("channels", { ...f.channels, careersPage: v })} aria-label="Publish to careers page" />
                   </label>
                   <div className="flex items-center gap-3 rounded-lg border border-dashed border-border-strong p-3">
                     <LinkedInLogo className="size-5" />
                     <span className="flex-1"><span className="block text-sm font-medium">LinkedIn Jobs</span><span className="block text-xs text-muted-foreground">Requires the LinkedIn integration and official API approval.</span></span>
-                    <Button size="sm" variant="outline" asChild><Link href="/settings?section=integrations">Set up</Link></Button>
+                    <Button size="sm" variant="outline" asChild><Link href={orgPath("/settings?section=integrations")}>Set up</Link></Button>
                   </div>
                 </section>
+                <ScreeningQuestions value={f.screeningQuestions ?? []} onChange={(v) => set("screeningQuestions", v)} />
                 <section>
                   <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-subtle-foreground">Review</h3>
                   <dl className="divide-y divide-border rounded-lg border border-border text-sm">
@@ -247,7 +259,7 @@ export function JobForm({ job }: { job?: Job }) {
                     <div className="flex gap-4 px-3 py-2"><dt className="w-28 shrink-0 text-muted-foreground">Hiring team</dt><dd className="flex flex-wrap gap-3">{f.hiringManagerId && <Person id={f.hiringManagerId} />}{f.recruiterId && <Person id={f.recruiterId} />}</dd></div>
                   </dl>
                 </section>
-                <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted-foreground"><Info className="mt-px size-3.5 shrink-0" />Publishing in this demo marks the job as live inside {db.company.name}&apos;s workspace. Nothing is posted to external job boards.</p>
+                <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted-foreground"><Info className="mt-px size-3.5 shrink-0" />Publishing makes the job visible on {db.company.name}&apos;s public careers page with its own application link. Nothing is posted to external job boards.</p>
               </div>
             )}
           </div>
@@ -267,5 +279,31 @@ export function JobForm({ job }: { job?: Job }) {
       </form>
       <ConfirmDialog open={leave} onOpenChange={setLeave} title="Discard unsaved changes?" description="Your edits to this job will be lost." confirmLabel="Discard" destructive onConfirm={() => router.push(cancelHref)} />
     </div>
+  );
+}
+
+/** Screening questions are always optional for candidates — the minimal 3-field application never changes. */
+function ScreeningQuestions({ value, onChange }: { value: ScreeningQuestion[]; onChange: (v: ScreeningQuestion[]) => void }) {
+  const [label, setLabel] = React.useState("");
+  const [type, setType] = React.useState<"text" | "yesno">("text");
+  return (
+    <section className="space-y-2">
+      <h3 className="text-xs font-medium uppercase tracking-wider text-subtle-foreground">Screening questions</h3>
+      <p className="text-xs text-muted-foreground">Shown under “Additional information”. Candidates can always skip them and apply with just name, email and CV.</p>
+      {value.map((q, i) => (
+        <div key={q.id} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+          <span className="flex-1">{q.label}</span>
+          <span className="text-xs text-muted-foreground">{q.type === "yesno" ? "Yes / No" : "Text"} · optional</span>
+          <Button size="icon-xs" variant="ghost" aria-label={`Remove question ${i + 1}`} onClick={() => onChange(value.filter((x) => x.id !== q.id))}><X /></Button>
+        </div>
+      ))}
+      {value.length < 10 && (
+        <div className="flex gap-2">
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Are you able to work from Athens twice a week?" aria-label="New question" />
+          <Select value={type} onValueChange={(v) => setType(v as "text" | "yesno")} className="w-32" ariaLabel="Answer type" options={[{ value: "text", label: "Text" }, { value: "yesno", label: "Yes / No" }]} />
+          <Button variant="outline" disabled={label.trim().length < 3} onClick={() => { onChange([...value, { id: Math.random().toString(36).slice(2, 10), label: label.trim(), type }]); setLabel(""); }}>Add</Button>
+        </div>
+      )}
+    </section>
   );
 }

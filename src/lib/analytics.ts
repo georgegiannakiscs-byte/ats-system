@@ -46,14 +46,15 @@ export function bySource(db: Database, apps = db.applications) {
   }).sort((a, b) => b.applications - a.applications);
 }
 
-/** Historical time-to-hire (demo series) blended with real hires in the dataset. */
-export function timeToHireSeries(db: Database) {
-  const base = [41, 38, 44, 36, 34, 37, 31, 33, 29, 30, 27, 28];
+/** Average days from application to hire, per month of hire, from real hired applications. */
+export function timeToHireSeries(db: Database, apps = db.applications) {
   const now = new Date();
-  const real = db.applications.filter((a) => a.status === "hired").map((a) => Math.max(1, Math.round((new Date(a.stageEnteredAt).getTime() - new Date(a.appliedAt).getTime()) / 864e5)));
-  return base.map((d, i) => {
+  const hires = apps.filter((a) => a.status === "hired");
+  return Array.from({ length: 12 }, (_, i) => {
     const m = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
-    const isLast = i === base.length - 1;
-    return { month: format(m, "MMM"), days: isLast && real.length ? Math.round((d + real.reduce((s, n) => s + n, 0) / real.length) / 2) : d };
+    const next = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    const inMonth = hires.filter((a) => new Date(a.stageEnteredAt) >= m && new Date(a.stageEnteredAt) < next);
+    const days = inMonth.length ? Math.round(inMonth.reduce((s, a) => s + (new Date(a.stageEnteredAt).getTime() - new Date(a.appliedAt).getTime()) / 864e5, 0) / inMonth.length) : null;
+    return { month: format(m, "MMM"), days: days ?? 0, hires: inMonth.length };
   });
 }

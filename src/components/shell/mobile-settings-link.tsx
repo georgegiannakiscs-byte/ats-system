@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,7 +9,7 @@ export function NavLinkMobileSettings({ onNavigate }: { onNavigate: () => void }
   const pathname = usePathname();
   const Icon = SETTINGS_NAV.icon;
   return (
-    <Link href={SETTINGS_NAV.href} onClick={onNavigate} className={cn("flex h-8 items-center gap-2.5 rounded-md px-2 text-sm font-medium", isActive(pathname, "/settings") ? "bg-sidebar-active shadow-sm" : "text-sidebar-foreground hover:bg-accent")}>
+    <Link href={orgPath(SETTINGS_NAV.href)} onClick={onNavigate} className={cn("flex h-8 items-center gap-2.5 rounded-md px-2 text-sm font-medium", isActive(pathname, "/settings") ? "bg-sidebar-active shadow-sm" : "text-sidebar-foreground hover:bg-accent")}>
       <Icon className="size-4 text-subtle-foreground" />
       Settings
     </Link>

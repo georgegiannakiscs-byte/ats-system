@@ -1,8 +1,11 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { ShieldCheck, LayoutGrid } from "lucide-react";
+import { useMe, signOut } from "@/lib/session";
 import { Bell, BriefcaseBusiness, CalendarPlus, ChevronRight, ListChecks, LogOut, Menu, Monitor, Moon, Plus, Search, Settings, Sun, UserPlus, Keyboard, User, CheckCheck } from "lucide-react";
 import { cn, relativeTime } from "@/lib/utils";
 import { useDb } from "@/lib/api/store";
@@ -71,7 +74,7 @@ function QuickAdd() {
       </Tooltip>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Create</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => router.push("/jobs/new")} shortcut="J"><BriefcaseBusiness />New job</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push(orgPath("/jobs/new"))} shortcut="J"><BriefcaseBusiness />New job</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => ui.addCandidate()} shortcut="A"><UserPlus />Add candidate</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => ui.scheduleInterview()} shortcut="I"><CalendarPlus />Schedule interview</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => ui.openTask()} shortcut="T"><ListChecks />New task</DropdownMenuItem>
@@ -111,7 +114,7 @@ function Notifications() {
                 <button
                   onClick={() => {
                     api.notifications.markRead(n.id);
-                    router.push(n.href);
+                    router.push(orgPath(n.href));
                   }}
                   className="flex w-full gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent focus-visible:bg-accent"
                 >
@@ -126,7 +129,6 @@ function Notifications() {
             </li>
           ))}
         </ul>
-        <div className="border-t border-border px-3 py-2 text-[11px] text-subtle-foreground">Demo notifications · generated locally</div>
       </PopoverContent>
     </Popover>
   );
@@ -134,7 +136,9 @@ function Notifications() {
 
 function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
   const db = useDb();
-  const me = db.team.find((m) => m.id === db.currentUserId)!;
+  const me = db.team.find((m) => m.id === db.currentUserId) ?? { name: "You", hue: 200, title: "" };
+  const session = useMe();
+  const isAdmin = !!session?.user.isPlatformAdmin;
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   return (
@@ -147,12 +151,12 @@ function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
           <Avatar name={me.name} hue={me.hue} size="md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{me.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{me.title}</p>
+            <p className="truncate text-xs text-muted-foreground">{db.org.roleLabel} · {db.org.name}</p>
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/settings?section=team")}><User />Profile &amp; team</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => router.push("/settings")} shortcut="G S"><Settings />Settings</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push(orgPath("/settings?section=team"))}><User />Profile &amp; team</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push(orgPath("/settings"))} shortcut="G S"><Settings />Settings</DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>{theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}Theme</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-40">
@@ -165,7 +169,10 @@ function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
         </DropdownMenuSub>
         <DropdownMenuItem onSelect={onShowShortcuts} shortcut="?"><Keyboard />Keyboard shortcuts</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled><LogOut />Sign out<span className="ml-auto text-[11px]">No auth in demo</span></DropdownMenuItem>
+        {isAdmin && <DropdownMenuItem onSelect={() => router.push("/admin")}><ShieldCheck />Platform administration</DropdownMenuItem>}
+        <DropdownMenuItem onSelect={() => router.push("/app")}><LayoutGrid />All my companies</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => signOut()}><LogOut />Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

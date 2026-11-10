@@ -17,17 +17,23 @@ export function Label({ className, ...props }: React.ComponentProps<"label">) {
 }
 
 export function Field({ label, hint, error, htmlFor, required, children, className }: { label: string; hint?: string; error?: string; htmlFor?: string; required?: boolean; children: React.ReactNode; className?: string }) {
+  const autoId = React.useId();
+  // Associate the label with a single form control child automatically (accessibility).
+  const child = React.isValidElement<{ id?: string; "aria-describedby"?: string }>(children) ? children : null;
+  const id = htmlFor ?? child?.props.id ?? (child ? autoId : undefined);
+  const msgId = `${autoId}-msg`;
+  const control = child && !htmlFor && !child.props.id ? React.cloneElement(child, { id, "aria-describedby": error || hint ? msgId : undefined }) : children;
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Label htmlFor={htmlFor}>
+      <Label htmlFor={id}>
         {label}
         {required && <span className="ml-0.5 text-destructive" aria-hidden>*</span>}
       </Label>
-      {children}
+      {control}
       {error ? (
-        <p role="alert" className="text-xs text-destructive animate-fade-in">{error}</p>
+        <p id={msgId} role="alert" className="text-xs text-destructive animate-fade-in">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p id={msgId} className="text-xs text-muted-foreground">{hint}</p>
       ) : null}
     </div>
   );

@@ -38,18 +38,26 @@ export interface TeamMember {
   status: "active" | "invited";
 }
 
-export type JobStatus = "draft" | "published" | "on_hold" | "closed";
+export type JobStatus = "draft" | "published" | "on_hold" | "closed" | "archived";
 export type EmploymentType = "Full-time" | "Part-time" | "Contract" | "Internship";
 export type Workplace = "On-site" | "Hybrid" | "Remote";
 export type Seniority = "Junior" | "Mid-level" | "Senior" | "Lead" | "Principal";
 
+export interface ScreeningQuestion {
+  id: string;
+  label: string;
+  type: "text" | "yesno";
+}
+
 export interface Job {
   id: ID;
+  slug?: string;
   title: string;
   department: string;
   location: string;
   workplace: Workplace;
   employmentType: EmploymentType;
+  contractType?: string;
   seniority: Seniority;
   status: JobStatus;
   hiringManagerId: ID;
@@ -61,11 +69,15 @@ export interface Job {
   summary: string;
   responsibilities: string;
   requirements: string;
+  requiredExperience?: string;
+  benefits?: string;
   skills: string[];
+  preferredSkills?: string[];
+  screeningQuestions?: ScreeningQuestion[];
   createdAt: ISODate;
   publishedAt?: ISODate;
   targetHireDate?: ISODate;
-  /** Channels where the job is shown. External channels are demo flags only. */
+  /** Channels where the job is shown. External boards require their integration. */
   channels: { careersPage: boolean; linkedin: boolean; indeed: boolean };
 }
 
@@ -94,6 +106,7 @@ export interface Education {
 
 export interface Candidate {
   id: ID;
+  fullName?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -102,6 +115,8 @@ export interface Candidate {
   headline: string;
   currentCompany: string;
   linkedinUrl?: string;
+  portfolioUrl?: string;
+  githubUrl?: string;
   source: Source;
   tags: string[];
   skills: string[];
@@ -113,6 +128,21 @@ export interface Candidate {
   createdAt: ISODate;
   /** Whether the candidate is saved in the talent pool. */
   inTalentPool: boolean;
+  /** Optional application details (salary expectations, availability, …). */
+  extra?: Record<string, string>;
+  /** Which fields the candidate submitted vs. a recruiter entered. */
+  fieldSources?: Record<string, "candidate" | "recruiter">;
+}
+
+export interface CvDocument {
+  id: string;
+  candidateId: ID;
+  applicationId?: ID;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  scanStatus: "not_scanned" | "clean" | "infected" | "error";
+  createdAt: ISODate;
 }
 
 export type ApplicationStatus = "active" | "rejected" | "hired" | "withdrawn";
@@ -131,6 +161,9 @@ export interface Application {
   /** Sort order within a pipeline column. */
   order: number;
   rejectionReason?: string;
+  withdrawalReason?: string;
+  source?: string;
+  utm?: { source?: string; medium?: string; campaign?: string };
 }
 
 export interface Note {
@@ -264,10 +297,15 @@ export interface EmailTemplate {
 }
 
 export type IntegrationId = "linkedin" | "google_calendar" | "outlook" | "gmail" | "smtp";
-export type IntegrationState = "not_connected" | "demo_connected" | "pending_approval";
+export type IntegrationState = "not_configured" | "connected" | "error" | "pending_approval";
 
 export interface CompanyProfile {
   name: string;
+  contactEmail?: string;
+  phone?: string;
+  linkedin?: string;
+  twitter?: string;
+  instagram?: string;
   legalName: string;
   website: string;
   industry: string;
@@ -296,9 +334,44 @@ export interface AppNotification {
   read: boolean;
 }
 
+export interface OrgBranding {
+  primaryColor?: string;
+  accentColor?: string;
+  careersIntro?: string;
+  careersHeadline?: string;
+  benefits?: string[];
+  careersLanguage?: "en" | "el";
+  careersLayout?: "list" | "grid";
+}
+
+export interface WorkspaceOrg {
+  id: string;
+  slug: string;
+  name: string;
+  role: "admin" | "recruiter" | "hiring_manager" | "interviewer";
+  roleLabel: string;
+  permissions: string[];
+  branding: OrgBranding;
+  logoUrl: string | null;
+  logoDarkUrl: string | null;
+  onboarding: Record<string, boolean>;
+  features: Record<string, boolean>;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: ISODate;
+  expiresAt: ISODate;
+}
+
 export interface Database {
   version: number;
   currentUserId: ID;
+  org: WorkspaceOrg;
+  cvDocuments: CvDocument[];
+  invitations: PendingInvitation[];
   company: CompanyProfile;
   stages: StageConfig[];
   team: TeamMember[];

@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -60,7 +61,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
               {showPeople && (
                 <CommandGroup heading="Jobs">
                   {db.jobs.map((j) => (
-                    <CommandItem key={j.id} value={`${j.title} ${j.department} ${j.location} ${j.id}`} onSelect={() => run(() => router.push(`/jobs/view?id=${j.id}`))}>
+                    <CommandItem key={j.id} value={`${j.title} ${j.department} ${j.location} ${j.id}`} onSelect={() => run(() => router.push(orgPath(`/jobs/view?id=${j.id}`)))}>
                       <BriefcaseBusiness />
                       <span className="truncate">{j.title}</span>
                       <span className="truncate text-xs text-muted-foreground">{j.department} · {j.location}</span>
@@ -72,7 +73,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
               {showPeople && (
                 <CommandGroup heading="Team">
                   {db.team.map((m) => (
-                    <CommandItem key={m.id} value={`${m.name} ${m.title} ${m.role} ${m.id}`} onSelect={() => run(() => router.push("/settings?section=team"))}>
+                    <CommandItem key={m.id} value={`${m.name} ${m.title} ${m.role} ${m.id}`} onSelect={() => run(() => router.push(orgPath("/settings?section=team")))}>
                       <Avatar name={m.name} hue={m.hue} size="xs" />
                       <span className="truncate">{m.name}</span>
                       <span className="truncate text-xs text-muted-foreground">{m.title}</span>
@@ -82,7 +83,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
                 </CommandGroup>
               )}
               <CommandGroup heading="Quick actions">
-                <CommandItem onSelect={() => run(() => router.push("/jobs/new"))}><BriefcaseBusiness />Create job</CommandItem>
+                <CommandItem onSelect={() => run(() => router.push(orgPath("/jobs/new")))}><BriefcaseBusiness />Create job</CommandItem>
                 <CommandItem onSelect={() => run(() => ui.addCandidate())}><UserPlus />Add candidate</CommandItem>
                 <CommandItem onSelect={() => run(() => ui.scheduleInterview())}><CalendarPlus />Schedule interview</CommandItem>
                 <CommandItem onSelect={() => run(() => ui.openTask())}><ListChecks />Create task</CommandItem>
@@ -92,7 +93,7 @@ export function CommandMenu({ open, onOpenChange }: { open: boolean; onOpenChang
               </CommandGroup>
               <CommandGroup heading="Go to">
                 {[...NAV, SETTINGS_NAV].map((n) => (
-                  <CommandItem key={n.href} value={`go ${n.label}`} onSelect={() => run(() => router.push(n.href))}>
+                  <CommandItem key={n.href} value={`go ${n.label}`} onSelect={() => run(() => router.push(orgPath(n.href)))}>
                     <n.icon />
                     {n.label}
                     <span className="ml-auto flex gap-0.5">{n.shortcut.split(" ").map((k) => <Kbd key={k}>{k}</Kbd>)}</span>

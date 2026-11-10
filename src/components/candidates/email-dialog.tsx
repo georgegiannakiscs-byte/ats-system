@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import { Mail, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +30,9 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
   const fill = (s: string) =>
     s
       .replaceAll("{{first_name}}", c.firstName)
+      .replaceAll("{{candidate_name}}", c.firstName)
+      .replaceAll("{{company_name}}", db.company.name)
+      .replaceAll("{{interview_date}}", "[interview date]")
       .replaceAll("{{job_title}}", job?.title ?? "the role")
       .replaceAll("{{company}}", db.company.name)
       .replaceAll("{{recruiter_name}}", me.name)
@@ -38,7 +42,7 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
   const [subject, setSubject] = React.useState("");
   const [body, setBody] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
-  const connected = db.integrations.gmail === "demo_connected" || db.integrations.outlook === "demo_connected" || db.integrations.smtp === "demo_connected";
+  const connected = db.integrations.gmail === "connected" || db.integrations.outlook === "connected" || db.integrations.smtp === "connected";
 
   const applyTemplate = (id: string) => {
     setTemplateId(id);
@@ -55,7 +59,7 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
     setSubmitted(true);
     if (errors.subject || errors.body) return;
     await api.logEmailDraft(candidateId, subject);
-    toast("Draft saved to activity", { description: "Demo mode: no email was sent. Connect an email service to send for real." });
+    toast("Draft saved to the timeline", { description: "No email was sent — email delivery is not configured for this company yet." });
     onClose();
   };
 
@@ -66,8 +70,8 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
         <div className="flex gap-2 rounded-lg border border-dashed border-border-strong bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
           <span>
-            {connected ? "An email service shows a demo connection, but" : "No email service is connected, so"} messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft.{" "}
-            <Link href="/settings?section=integrations" onClick={onClose} className="text-brand underline-offset-2 hover:underline">Integrations</Link>
+            {connected ? "Sending from Déceler is not enabled yet, so" : "No email service is connected, so"} messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft on the timeline.{" "}
+            <Link href={orgPath("/settings?section=integrations")} onClick={onClose} className="text-brand underline-offset-2 hover:underline">Integrations</Link>
           </span>
         </div>
         <Field label="Template">

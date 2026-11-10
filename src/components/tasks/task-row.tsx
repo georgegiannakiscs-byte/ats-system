@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ export function TaskRow({ task, compact }: { task: Task; compact?: boolean }) {
             <button onClick={() => ui.openCandidate(cand.id)} className="inline-flex items-center gap-1 hover:text-foreground"><User className="size-3" />{fullName(cand)}</button>
           )}
           {job && !compact && (
-            <Link href={`/jobs/view?id=${job.id}`} className="inline-flex items-center gap-1 hover:text-foreground"><BriefcaseBusiness className="size-3" />{job.title}</Link>
+            <Link href={orgPath(`/jobs/view?id=${job.id}`)} className="inline-flex items-center gap-1 hover:text-foreground"><BriefcaseBusiness className="size-3" />{job.title}</Link>
           )}
         </div>
       </div>

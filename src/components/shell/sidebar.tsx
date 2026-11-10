@@ -1,19 +1,18 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { ChevronsUpDown, Check, Settings, UserPlus, RotateCcw, PanelLeft, Plus, Keyboard } from "lucide-react";
-import { toast } from "sonner";
+import { usePathname } from "next/navigation";
+import { PanelLeft, Keyboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDb } from "@/lib/api/store";
-import { api } from "@/lib/api";
 import { BrandLogo } from "./brand-mark";
+import { BRAND } from "@/config/brand";
 import { NAV, SETTINGS_NAV, isActive } from "./nav-items";
-import { Tooltip, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, ConfirmDialog } from "@/components/ui/overlays";
+import { Tooltip } from "@/components/ui/overlays";
 import { Kbd } from "@/components/ui/input";
 import { upcomingInterviews } from "@/lib/api/selectors";
 import { isToday } from "date-fns";
-import { DemoLabel } from "@/components/common/demo-label";
 
 export function useNavBadges() {
   const db = useDb();
@@ -24,63 +23,8 @@ export function useNavBadges() {
   }, [db]);
 }
 
-export function WorkspaceSwitcher({ collapsed }: { collapsed?: boolean }) {
-  const db = useDb();
-  const router = useRouter();
-  const [confirm, setConfirm] = React.useState(false);
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            "group flex h-9 w-full items-center gap-2 rounded-md border border-border bg-surface px-2 text-left shadow-xs outline-none transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:border-border-strong",
-            collapsed && "justify-center border-transparent bg-transparent px-0 shadow-none",
-          )}
-          aria-label="Workspace menu"
-        >
-          <span className="flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-primary text-[10px] font-semibold text-primary-foreground">{db.company.name.charAt(0)}</span>
-          {!collapsed && (
-            <>
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{db.company.name}</span>
-              <ChevronsUpDown className="size-3.5 text-subtle-foreground group-hover:text-muted-foreground" />
-            </>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => router.push("/")}>
-            <span className="flex size-5 items-center justify-center rounded bg-primary text-[10px] font-semibold text-primary-foreground">{db.company.name[0]}</span>
-            <span className="flex-1 truncate">{db.company.name}</span>
-            <Check className="!text-foreground" />
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <Plus />
-            <span className="flex-1">Create workspace</span>
-            <span className="text-[11px]">Needs backend</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => router.push("/settings")}><Settings />Workspace settings</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => router.push("/settings?section=team")}><UserPlus />Invite teammates</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setConfirm(true)}><RotateCcw />Reset demo data</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <ConfirmDialog
-        open={confirm}
-        onOpenChange={setConfirm}
-        title="Reset demo data?"
-        description="All changes you made in this browser — jobs, moves, notes, tasks — will be replaced with the original demo dataset."
-        confirmLabel="Reset data"
-        destructive
-        onConfirm={() => {
-          api.settings.resetDemo();
-          toast.success("Demo data restored");
-          router.push("/");
-        }}
-      />
-    </>
-  );
-}
+import { CompanySwitcher as WorkspaceSwitcher } from "./company-switcher";
+export { WorkspaceSwitcher };
 
 function NavLink({ href, label, icon: Icon, collapsed, shortcut, onNavigate }: { href: string; label: string; icon: React.ComponentType<{ className?: string }>; collapsed?: boolean; shortcut?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -88,7 +32,7 @@ function NavLink({ href, label, icon: Icon, collapsed, shortcut, onNavigate }: {
   const badge = useNavBadges()[href];
   const link = (
     <Link
-      href={href}
+      href={orgPath(href)}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
@@ -135,7 +79,7 @@ export function Sidebar({ collapsed, onToggle, onShowShortcuts }: { collapsed: b
       )}
     >
       <div className={cn("flex h-14 items-center px-4", collapsed && "justify-center px-2")}>
-        <Link href="/" aria-label="Overview" className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <Link href={orgPath("/")} aria-label="Overview" className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <BrandLogo height={collapsed ? 22 : 21} variant={collapsed ? "monogram" : "wordmark"} />
         </Link>
       </div>
@@ -149,7 +93,7 @@ export function Sidebar({ collapsed, onToggle, onShowShortcuts }: { collapsed: b
         <NavLink {...SETTINGS_NAV} collapsed={collapsed} />
         {!collapsed && (
           <div className="mt-1 flex items-center justify-between px-2 py-1">
-            <DemoLabel>Demo workspace</DemoLabel>
+            <span className="truncate text-[11px] text-subtle-foreground">{BRAND.name}</span>
             <div className="flex">
               <Tooltip content="Keyboard shortcuts" shortcut="?">
                 <button onClick={onShowShortcuts} aria-label="Keyboard shortcuts" className="flex size-7 items-center justify-center rounded-md text-subtle-foreground hover:bg-accent hover:text-foreground">

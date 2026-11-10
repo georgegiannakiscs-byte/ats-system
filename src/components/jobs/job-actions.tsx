@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,9 +15,9 @@ export function useJobStatusChange() {
   return (job: Job, status: JobStatus) => {
     const prev = job.status;
     api.jobs.setStatus(job.id, status);
-    const msg = { published: "published to your careers page", on_hold: "put on hold", closed: "closed", draft: "moved to drafts" }[status];
+    const msg = { published: "published to your careers page", on_hold: "paused", closed: "closed", draft: "moved to drafts", archived: "archived" }[status];
     toast.success(`${job.title} ${msg}`, {
-      description: status === "published" ? "Demo: visible on the internal careers page preview only. External job boards are not contacted." : undefined,
+      description: status === "published" ? "Live on your public careers page. External job boards are not contacted." : undefined,
       action: { label: "Undo", onClick: () => api.jobs.setStatus(job.id, prev) },
     });
   };
@@ -39,14 +40,15 @@ export function JobActionsMenu({ job, trigger = "icon", afterDelete }: { job: Jo
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-52" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuItem asChild><Link href={`/jobs/edit?id=${job.id}`}><Pencil />Edit job</Link></DropdownMenuItem>
-          <DropdownMenuItem onSelect={async () => { const j = await api.jobs.duplicate(job.id); toast.success("Job duplicated as draft", { action: { label: "Open", onClick: () => router.push(`/jobs/edit?id=${j.id}`) } }); }}><Copy />Duplicate</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => navigator.clipboard?.writeText(`${db.company.careersUrl}/jobs/${job.id}`).then(() => toast.success("Careers link copied", { description: "Demo URL — the careers site isn't live yet." }))}><Link2 />Copy careers link</DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href={orgPath(`/jobs/edit?id=${job.id}`)}><Pencil />Edit job</Link></DropdownMenuItem>
+          <DropdownMenuItem onSelect={async () => { const j = await api.jobs.duplicate(job.id); toast.success("Job duplicated as draft", { action: { label: "Open", onClick: () => router.push(orgPath(`/jobs/edit?id=${j.id}`)) } }); }}><Copy />Duplicate</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => navigator.clipboard?.writeText(`${window.location.origin}/careers/${db.org.slug}/${job.slug ?? ""}`).then(() => toast.success("Careers link copied", { description: "Public application link for this job." }))}><Link2 />Copy careers link</DropdownMenuItem>
           <DropdownMenuSeparator />
-          {job.status !== "published" && <DropdownMenuItem onSelect={() => setStatus(job, "published")}><Send />{job.status === "closed" ? "Reopen & publish" : "Publish"}</DropdownMenuItem>}
-          {job.status === "published" && <DropdownMenuItem onSelect={() => setStatus(job, "on_hold")}><Pause />Put on hold</DropdownMenuItem>}
-          {job.status === "closed" && <DropdownMenuItem onSelect={() => setStatus(job, "draft")}><RotateCcw />Move to drafts</DropdownMenuItem>}
-          {job.status !== "closed" && <DropdownMenuItem onSelect={() => setConfirm("close")}><Archive />Close job</DropdownMenuItem>}
+          {job.status !== "published" && <DropdownMenuItem onSelect={() => setStatus(job, "published")}><Send />{job.status === "closed" || job.status === "archived" ? "Reopen & publish" : "Publish"}</DropdownMenuItem>}
+          {job.status === "published" && <DropdownMenuItem onSelect={() => setStatus(job, "on_hold")}><Pause />Pause</DropdownMenuItem>}
+          {(job.status === "closed" || job.status === "draft") && <DropdownMenuItem onSelect={() => setStatus(job, "archived")}><Archive />Archive</DropdownMenuItem>}
+          {(job.status === "closed" || job.status === "archived") && <DropdownMenuItem onSelect={() => setStatus(job, "draft")}><RotateCcw />Reopen as draft</DropdownMenuItem>}
+          {job.status !== "closed" && job.status !== "archived" && <DropdownMenuItem onSelect={() => setConfirm("close")}><Archive />Close job</DropdownMenuItem>}
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onSelect={() => setConfirm("delete")}><Trash2 />Delete</DropdownMenuItem>
         </DropdownMenuContent>

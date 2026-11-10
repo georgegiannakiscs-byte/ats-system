@@ -1,3 +1,4 @@
+import { orgPath } from "@/lib/org-path";
 import { BriefcaseBusiness, CalendarDays, ChartColumn, LayoutGrid, Library, ListChecks, Settings, Users } from "lucide-react";
 
 export const NAV = [
@@ -13,5 +14,6 @@ export const NAV = [
 export const SETTINGS_NAV = { href: "/settings", label: "Settings", icon: Settings, shortcut: "G S" } as const;
 
 export function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+  const full = orgPath(href);
+  return pathname === full || pathname.startsWith(full + "/");
 }
