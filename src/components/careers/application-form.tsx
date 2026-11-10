@@ -1,9 +1,15 @@
 "use client";
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, ChevronDown, FileText, Upload, X, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ChevronDown, Eye, FileText, Loader2, Pencil, Sparkles, Timer, Upload, X, ShieldCheck } from "lucide-react";
 import { careersDict, fmt, type CareersLang } from "@/lib/i18n/careers";
+import { builderDict, quickCheckDict, fmtT } from "@/lib/i18n/cv-builder";
 import { cn } from "@/lib/utils";
+import type { CvTemplate } from "@/lib/cv/schema";
+import { CvBuilder, type GeneratedCv } from "@/components/cv-builder/cv-builder";
+
+export interface BuilderConfig { templates: CvTemplate[]; defaultTemplate: CvTemplate; aiSummary: boolean }
+type QuickCheckOffer = { token: string; questions: number; timed: boolean; secondsPerQuestion: number; allowLater: boolean };
 
 type Question = { id: string; label: string; type: "text" | "yesno" };
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,8 +19,18 @@ const base = "w-full rounded-md border border-input bg-surface px-3 text-[15px] 
  * Minimal public application. Required: full name, email, CV. Nothing else.
  * Optional details are collapsed and only validated when filled in.
  */
-export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName, logoUrl, maxMb, questions }: { lang: CareersLang; orgSlug: string; jobSlug: string; jobTitle: string; companyName: string; logoUrl: string | null; maxMb: number; questions: Question[] }) {
+export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName, logoUrl, maxMb, questions, builder, jobSkills = [] }: { lang: CareersLang; orgSlug: string; jobSlug: string; jobTitle: string; companyName: string; logoUrl: string | null; maxMb: number; questions: Question[]; builder?: BuilderConfig | null; jobSkills?: string[] }) {
   const t = careersDict[lang];
+  const b = builderDict[lang];
+  const qt = quickCheckDict[lang];
+  const [mode, setMode] = React.useState<"upload" | "create">("upload");
+  const [builtCv, setBuiltCv] = React.useState<GeneratedCv | null>(null);
+  const [builderOpen, setBuilderOpen] = React.useState(false);
+  const [prefill, setPrefill] = React.useState<Record<string, unknown> | null>(null);
+  const [extracting, setExtracting] = React.useState(false);
+  const [extractNote, setExtractNote] = React.useState<string>();
+  const [later, setLater] = React.useState(false);
+  const sourceRef = React.useRef<HTMLInputElement>(null);
   const sp = useSearchParams();
   const [fullName, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -24,7 +40,7 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [status, setStatus] = React.useState<"idle" | "sending" | "done">("idle");
   const [progress, setProgress] = React.useState(0);
-  const [result, setResult] = React.useState<{ reference: string; emailDelivery?: string } | null>(null);
+  const [result, setResult] = React.useState<{ reference: string; emailDelivery?: string; quickCheck?: QuickCheckOffer | null } | null>(null);
   const [formError, setFormError] = React.useState<string>();
   const submissionKey = React.useRef<string>("");
   const fileRef = React.useRef<HTMLInputElement>(null);
@@ -34,7 +50,8 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
     const e: Record<string, string> = {};
     if (fullName.trim().length < 2) e.fullName = t.errName;
     if (!emailRe.test(email.trim())) e.email = t.errEmail;
-    if (!file || !/\.(pdf|docx)$/i.test(file.name)) e.cv = t.errCv;
+    if (mode === "create") { if (!builtCv) e.cv = lang === "el" ? "Δημιουργήστε το βιογραφικό σας και πατήστε «Χρήση αυτού του βιογραφικού»" : "Create your CV and choose “Use this CV”"; }
+    else if (!file || !/\.(pdf|docx)$/i.test(file.name)) e.cv = t.errCv;
     else if (file.size > maxMb * 1024 * 1024) e.cv = fmt(t.errCvSize, { mb: maxMb });
     for (const k of ["linkedinUrl", "portfolioUrl", "githubUrl"]) if (opt[k] && !/^https?:\/\/\S+\.\S+/i.test(opt[k])) e[k] = lang === "el" ? "Συμπληρώστε πλήρες URL (https://…)" : "Enter a full URL starting with https://";
     if (opt.phone && !/^[+()\d\s.-]{6,}$/.test(opt.phone)) e.phone = lang === "el" ? "Μη έγκυρος αριθμός" : "Enter a valid phone number";
@@ -59,7 +76,8 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
     fd.append("submissionKey", submissionKey.current);
     fd.append("fullName", fullName.trim());
     fd.append("email", email.trim());
-    fd.append("cv", file!);
+    if (mode === "create" && builtCv) fd.append("generatedCvToken", builtCv.token);
+    else fd.append("cv", file!);
     fd.append("lang", lang);
     for (const [k, v] of Object.entries(opt)) if (v.trim()) fd.append(k, v.trim());
     for (const [k, p] of [["utmSource", "utm_source"], ["utmMedium", "utm_medium"], ["utmCampaign", "utm_campaign"]]) { const v = sp.get(p); if (v) fd.append(k, v.slice(0, 80)); }
@@ -72,16 +90,18 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
     xhr.open("POST", "/api/public/apply");
     xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(Math.round((e.loaded / e.total) * 100));
     xhr.onload = () => {
-      let data: { reference?: string; emailDelivery?: string; error?: string; details?: { path: string; message: string }[] } = {};
+      let data: { reference?: string; emailDelivery?: string; quickCheck?: QuickCheckOffer | null; error?: string; code?: string; details?: { path: string; message: string }[] } = {};
       try { data = JSON.parse(xhr.responseText); } catch {}
       if (xhr.status >= 200 && xhr.status < 300) {
-        setResult({ reference: data.reference ?? "", emailDelivery: data.emailDelivery });
+        setResult({ reference: data.reference ?? "", emailDelivery: data.emailDelivery, quickCheck: data.quickCheck });
+        try { localStorage.removeItem(`deceler-cv:${orgSlug}`); } catch {}
         setStatus("done");
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const fieldErrors: Record<string, string> = {};
         data.details?.forEach((d) => { if (d.path) fieldErrors[d.path === "fullName" ? "fullName" : d.path] = d.message; });
-        if (/cv/i.test(String(data.error)) || xhr.status === 415 || xhr.status === 413) fieldErrors.cv = data.error ?? t.errCv;
+        if (/cv/i.test(String(data.error)) || xhr.status === 415 || xhr.status === 413 || xhr.status === 410) fieldErrors.cv = data.error ?? t.errCv;
+        if (data.code === "cv_draft_expired" || data.code === "cv_draft_used") setBuiltCv(null);
         setErrors(fieldErrors);
         setFormError(Object.keys(fieldErrors).length ? undefined : data.error ?? "Something went wrong. Please try again.");
         setStatus("idle");
@@ -91,7 +111,8 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
     xhr.send(fd);
   };
 
-  if (status === "done" && result)
+  if (status === "done" && result) {
+    const qc = result.quickCheck;
     return (
       <div className="rounded-xl border border-border bg-surface p-6 text-center shadow-sm" role="status">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -101,8 +122,48 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
         <p className="mt-2 text-sm text-muted-foreground">{fmt(t.successBody, { job: jobTitle, company: companyName })}</p>
         {result.emailDelivery === "sent" && <p className="mt-2 text-sm text-muted-foreground">{fmt(t.successEmail, { email })}</p>}
         <p className="mt-4 text-xs text-muted-foreground">{t.reference}: <span className="tabular font-mono font-medium text-foreground">{result.reference}</span></p>
+        {qc && (
+          <div className="mt-6 rounded-lg border border-border bg-surface-2 p-4 text-left">
+            <p className="flex items-center gap-2 font-medium"><Timer className="size-4 text-signal" />{qt.offerTitle}</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">{fmtT(qt.offerBody, { company: companyName, n: qc.questions })}</p>
+            {!later ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a href={`/assess/${qc.token}`} className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90">{qt.start}</a>
+                <button type="button" onClick={() => setLater(true)} className="inline-flex h-10 items-center rounded-md border border-border px-3 text-sm hover:bg-accent">{qt.later}</button>
+              </div>
+            ) : qc.allowLater && result.emailDelivery === "sent" ? (
+              <p className="mt-3 text-sm">{qt.laterNote}</p>
+            ) : (
+              <p className="mt-3 break-all text-sm">{qt.laterNoEmail} <a className="font-medium underline" href={`/assess/${qc.token}`}>{typeof window !== "undefined" ? window.location.origin : ""}/assess/{qc.token}</a></p>
+            )}
+          </div>
+        )}
       </div>
     );
+  }
+
+  const extractFrom = async (f: File | null | undefined) => {
+    if (!f) return;
+    setExtracting(true);
+    setExtractNote(undefined);
+    try {
+      const fd = new FormData();
+      fd.append("orgSlug", orgSlug); fd.append("jobSlug", jobSlug); fd.append("cv", f);
+      const res = await fetch("/api/public/cv/extract", { method: "POST", body: fd });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error);
+      if (!j.prefill) { setExtractNote(j.note ?? b.extractNone); return; }
+      setPrefill(j.prefill);
+      setExtractNote(j.note);
+      setMode("create");
+      setBuilderOpen(true);
+    } catch (e) {
+      setExtractNote((e as Error).message || b.extractNone);
+    } finally {
+      setExtracting(false);
+      if (sourceRef.current) sourceRef.current.value = "";
+    }
+  };
 
   const field = (k: string, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label className="block">
@@ -137,6 +198,17 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
         <div>
           <span className="mb-1 block text-sm font-medium" id="cv-label">{t.cv} <span className="text-destructive" aria-hidden>*</span><span className="sr-only">({t.required})</span></span>
           <input ref={fileRef} id="f-cv" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="sr-only" aria-labelledby="cv-label" aria-invalid={!!errors.cv || undefined} onChange={(e) => (setFile(e.target.files?.[0] ?? null), setErrors((x) => ({ ...x, cv: "" })))} />
+          {builder && (
+            <div role="tablist" aria-label={t.cv} className="mb-2 grid grid-cols-2 rounded-md border border-border p-0.5 text-sm">
+              {(["upload", "create"] as const).map((m) => (
+                <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => (setMode(m), setErrors((x) => ({ ...x, cv: "" })))} className={cn("rounded px-2 py-1.5", mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+                  {m === "upload" ? b.uploadTab : b.createTab}
+                </button>
+              ))}
+            </div>
+          )}
+          {mode === "upload" ? (
+            <>
           {file ? (
             <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-3">
               <FileText className="size-5 shrink-0 text-muted-foreground" />
@@ -158,6 +230,38 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
               <span className="text-xs text-muted-foreground">{fmt(t.cvHint, { mb: maxMb })}</span>
             </button>
           )}
+              {builder && file && (
+                <button type="button" disabled={extracting} onClick={() => extractFrom(file)} className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  {extracting ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}{lang === "el" ? "Δημιουργία νέου βιογραφικού από αυτό το αρχείο" : "Create a new CV from this file"}
+                </button>
+              )}
+            </>
+          ) : builtCv ? (
+            <div className="rounded-lg border border-border bg-surface-2 p-3">
+              <div className="flex items-center gap-3">
+                <FileText className="size-5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{builtCv.fileName}</span><span className="text-xs text-muted-foreground">{b.attached} · {b.generatedCv} · {Math.max(1, Math.round(builtCv.sizeBytes / 1024))} KB</span></span>
+                <button type="button" aria-label={b.remove} onClick={() => setBuiltCv(null)} className="rounded p-1 text-muted-foreground hover:bg-accent"><X className="size-4" /></button>
+              </div>
+              <div className="mt-2 flex gap-3 pl-8 text-sm">
+                <a href={builtCv.previewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"><Eye className="size-3.5" />{b.preview}</a>
+                <button type="button" onClick={() => (setPrefill(null), setBuilderOpen(true))} className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"><Pencil className="size-3.5" />{b.edit}</button>
+              </div>
+            </div>
+          ) : (
+            <div className={cn("rounded-lg border border-dashed px-4 py-5 text-center", errors.cv ? "border-destructive" : "border-border-strong")}>
+              <p className="text-sm text-muted-foreground">{b.createIntro}</p>
+              <button type="button" onClick={() => (setPrefill(null), setBuilderOpen(true))} className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"><Sparkles className="size-4" />{b.openBuilder}</button>
+              <div className="mt-3">
+                <input ref={sourceRef} type="file" accept=".pdf,.docx" className="sr-only" aria-label={b.fromFile} onChange={(e) => extractFrom(e.target.files?.[0])} />
+                <button type="button" disabled={extracting} onClick={() => sourceRef.current?.click()} className="inline-flex items-center gap-1.5 text-sm underline-offset-2 hover:underline">
+                  {extracting ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />}{extracting ? b.extracting : b.fromFile}
+                </button>
+                <p className="mt-1 text-xs text-muted-foreground">{b.fromFileHint}</p>
+              </div>
+            </div>
+          )}
+          {extractNote && <p className="mt-2 text-xs text-muted-foreground" role="status">{extractNote}</p>}
           {errors.cv && <span role="alert" className="mt-1 block text-xs text-destructive">{errors.cv}</span>}
         </div>
       </div>
@@ -221,6 +325,21 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
       <button type="submit" disabled={status === "sending"} className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-primary text-[15px] font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-70">
         {status === "sending" ? (progress < 100 ? `${t.uploading} ${progress}%` : t.submitting) : t.submit}
       </button>
+      {builderOpen && builder && (
+        <CvBuilder
+          lang={lang} orgSlug={orgSlug} jobSlug={jobSlug} initialName={fullName} initialEmail={email} prefill={prefill}
+          templates={builder.templates} defaultTemplate={builder.defaultTemplate} aiSummary={builder.aiSummary} jobSkills={jobSkills}
+          onClose={() => setBuilderOpen(false)}
+          onUse={(cv, data) => {
+            setBuiltCv(cv);
+            setMode("create");
+            if (!fullName.trim()) setFullName(data.personal.fullName);
+            if (!email.trim()) setEmail(data.personal.email);
+            setErrors((x) => ({ ...x, cv: "", fullName: "", email: "" }));
+            setBuilderOpen(false);
+          }}
+        />
+      )}
       {status === "sending" && <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-[width]" style={{ width: `${progress}%` }} /></div>}
     </form>
   );

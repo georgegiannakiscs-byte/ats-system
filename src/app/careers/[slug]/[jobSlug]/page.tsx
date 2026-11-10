@@ -8,6 +8,20 @@ import { getCareersOrg, getPublishedJob, maxCvMb } from "@/server/careers/data";
 import { CareersFrame, langOf } from "@/components/careers/frame";
 import { ApplicationForm } from "@/components/careers/application-form";
 import { careersDict } from "@/lib/i18n/careers";
+import { sys } from "@/server/db";
+import { featureEnabled } from "@/server/org";
+import { allowedTemplates } from "@/server/public";
+import { aiUnavailableReason } from "@/server/ai/claude";
+import type { CvTemplate } from "@/lib/cv/schema";
+
+/** CV Builder options for this company (null when the feature is off). */
+async function builderConfig(orgId: string) {
+  if (!(await featureEnabled(orgId, "cv_builder"))) return null;
+  const [o] = await sys<{ cv_settings: { defaultTemplate?: CvTemplate } }>("select cv_settings from organizations where id = $1", [orgId]);
+  const templates = await allowedTemplates(o?.cv_settings ?? {});
+  const def = o?.cv_settings.defaultTemplate;
+  return { templates, defaultTemplate: def && templates.includes(def) ? def : templates[0], aiSummary: (await aiUnavailableReason(orgId, "cv_summary")) === null };
+}
 
 type Props = { params: Promise<{ slug: string; jobSlug: string }>; searchParams: Promise<{ lang?: string }> };
 
@@ -40,6 +54,7 @@ export default async function JobPage({ params, searchParams }: Props) {
   const lang = langOf(org, (await searchParams).lang);
   const t = careersDict[lang];
   const mb = await maxCvMb();
+  const builder = await builderConfig(org.id);
   const salary = job.salary_min || job.salary_max ? new Intl.NumberFormat(lang === "el" ? "el-GR" : "en-GB", { style: "currency", currency: job.currency, maximumFractionDigits: 0 }) : null;
 
   // Google JobPosting structured data (only for published jobs with the required fields).
@@ -85,7 +100,7 @@ export default async function JobPage({ params, searchParams }: Props) {
           <Section title={t.benefits} items={lines(job.benefits)} />
         </article>
         <aside id="apply" className="lg:sticky lg:top-6 lg:self-start">
-          <Suspense><ApplicationForm lang={lang} orgSlug={org.slug} jobSlug={job.slug} jobTitle={job.title} companyName={org.name} logoUrl={org.logoUrl} maxMb={mb} questions={job.screening_questions ?? []} /></Suspense>
+          <Suspense><ApplicationForm lang={lang} orgSlug={org.slug} jobSlug={job.slug} jobTitle={job.title} companyName={org.name} logoUrl={org.logoUrl} maxMb={mb} questions={job.screening_questions ?? []} builder={builder} jobSkills={[...(job.skills ?? []), ...(job.preferred_skills ?? [])]} /></Suspense>
         </aside>
       </div>
     </CareersFrame>
