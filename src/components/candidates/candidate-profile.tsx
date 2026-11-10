@@ -9,6 +9,7 @@ import { Avatar, AvatarStack } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Kbd, Textarea } from "@/components/ui/input";
 import { Select, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/controls";
+import { CandidateQuickCheck } from "@/components/assessments/quick-check-ui";
 import { ConfirmDialog, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip } from "@/components/ui/overlays";
 import { EvaluationBadge } from "@/components/common/badges";
 import { EmptyState } from "@/components/common/empty-state";
@@ -177,11 +178,14 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
 
 export function CandidateTabs({ candidate, app, variant = "page" }: { candidate: Candidate; app?: Application; variant?: "page" | "sheet" }) {
   const db = useDb();
-  const [tab, setTab] = React.useState("overview");
+  const initialTab = typeof window !== "undefined" && variant === "page" ? new URLSearchParams(window.location.search).get("tab") ?? "overview" : "overview";
+  const [tab, setTab] = React.useState(initialTab);
+  const showQc = db.org.features.quick_check !== false && !!app;
   const interviews = db.interviews.filter((i) => i.candidateId === candidate.id && i.status !== "cancelled");
   const cards = db.scorecards.filter((s) => s.candidateId === candidate.id);
   const notes = db.notes.filter((n) => n.candidateId === candidate.id);
-  React.useEffect(() => setTab("overview"), [candidate.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => setTab((t) => (t === initialTab ? t : "overview")), [candidate.id]);
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className={variant === "sheet" ? "sticky top-0 z-10 -mx-5 bg-surface px-4" : undefined}>
@@ -189,6 +193,7 @@ export function CandidateTabs({ candidate, app, variant = "page" }: { candidate:
         <TabsTrigger value="resume" count={db.cvDocuments.filter((d) => d.candidateId === candidate.id).length}>CV</TabsTrigger>
         <TabsTrigger value="interviews" count={interviews.length}>Interviews</TabsTrigger>
         <TabsTrigger value="evaluations" count={cards.length}>Evaluations</TabsTrigger>
+        {showQc && <TabsTrigger value="quick-check">Quick Check</TabsTrigger>}
         <TabsTrigger value="notes" count={notes.length}>Notes</TabsTrigger>
         <TabsTrigger value="activity">Activity</TabsTrigger>
       </TabsList>
@@ -197,6 +202,7 @@ export function CandidateTabs({ candidate, app, variant = "page" }: { candidate:
         <TabsContent value="resume"><CvTab candidate={candidate} /></TabsContent>
         <TabsContent value="interviews"><InterviewsTab candidate={candidate} app={app} /></TabsContent>
         <TabsContent value="evaluations"><EvaluationsTab candidate={candidate} app={app} /></TabsContent>
+        {showQc && app && <TabsContent value="quick-check"><CandidateQuickCheck applicationId={app.id} jobId={app.jobId} /></TabsContent>}
         <TabsContent value="notes"><NotesTab candidateId={candidate.id} /></TabsContent>
         <TabsContent value="activity"><ActivityFeed filter={{ candidateId: candidate.id }} /></TabsContent>
       </div>

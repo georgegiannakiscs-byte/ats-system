@@ -7,7 +7,7 @@
  *   3. the store re-syncs from the server afterwards (rollback on error).
  */
 import type {
-  Activity, ActivityKind, Application, Candidate, CompanyProfile, Database, EmailTemplate, ID, Interview, Job, JobStatus, Note,
+  Activity, ActivityKind, Application, AssessmentQuestion, JobAssessmentConfig, Candidate, CompanyProfile, Database, EmailTemplate, ID, Interview, Job, JobStatus, Note,
   NotificationPrefs, OrgBranding, Role, SavedView, Scorecard, StageConfig, StageId, Task, TalentList,
 } from "@/lib/types";
 import { apiFetch, currentOrgId, getState, loadWorkspace, send, setState } from "./store";
@@ -358,10 +358,74 @@ const notifications = {
   },
 };
 
+/* ───────────────────── Quick Check & CV Builder ───────────────────── */
+export type QuestionInput = Pick<AssessmentQuestion, "questionText" | "type" | "options" | "correctOptionId" | "explanation" | "competency" | "difficulty" | "recommendedTimeSeconds" | "language"> & { jobId?: ID | null };
+
+const assessments = {
+  async saveQuestion(id: ID | null, input: QuestionInput) {
+    const qid = id ?? uid("aq");
+    setState((db) => {
+      const existing = db.assessmentQuestions.find((q) => q.id === qid);
+      const q: AssessmentQuestion = existing
+        ? { ...existing, ...input, jobId: input.jobId ?? existing.jobId, version: existing.version + 1, status: "draft", approvedAt: undefined, approvedBy: undefined, updatedAt: now() }
+        : { ...input, jobId: input.jobId ?? undefined, id: qid, status: "draft", version: 1, source: "manual", createdAt: now(), updatedAt: now(), createdBy: db.currentUserId };
+      return { ...db, assessmentQuestions: existing ? db.assessmentQuestions.map((x) => (x.id === qid ? q : x)) : [q, ...db.assessmentQuestions] };
+    });
+    await send("assessments.question.save", { id: qid, input });
+    return qid;
+  },
+  async setStatus(id: ID, action: "approve" | "archive" | "restore") {
+    const status = action === "approve" ? "approved" : action === "archive" ? "archived" : "draft";
+    setState((db) => ({ ...db, assessmentQuestions: db.assessmentQuestions.map((q) => (q.id === id ? { ...q, status } : q)) }));
+    await send(`assessments.question.${action}`, { id });
+  },
+  async removeQuestion(id: ID) {
+    setState((db) => ({ ...db, assessmentQuestions: db.assessmentQuestions.filter((q) => q.id !== id) }));
+    await send("assessments.question.delete", { id });
+  },
+  async saveJobConfig(jobId: ID, config: JobAssessmentConfig) {
+    setState((db) => ({ ...db, jobAssessments: { ...db.jobAssessments, [jobId]: config } }));
+    await send("assessments.job.save", { jobId, ...config });
+  },
+  /** Drafts questions with Claude from the job's own data. Returns how many were saved/rejected. */
+  async generate(input: { jobId: ID; count: number; language: "en" | "el"; competencies: string; mix: "multiple_choice" | "mixed" }) {
+    const r = await apiFetch<{ ids: string[]; rejected: { question: string; reason: string }[]; model: string }>(`/api/orgs/${currentOrgId()}/assessments/generate`, { method: "POST", body: JSON.stringify(input) });
+    await loadWorkspace(currentOrgId()!);
+    return r;
+  },
+  async invite(applicationId: ID, sendEmail = true) {
+    const r = await apiFetch<{ url: string; emailDelivery: string }>(`/api/orgs/${currentOrgId()}/assessments/invite`, { method: "POST", body: JSON.stringify({ applicationId, sendEmail }) });
+    await loadWorkspace(currentOrgId()!);
+    return r;
+  },
+  async revoke(attemptId: string) {
+    await send("assessments.attempt.revoke", { attemptId });
+  },
+  async saveNotes(attemptId: string, notes: string) {
+    setState((db) => ({ ...db, assessmentAttempts: db.assessmentAttempts.map((a) => (a.id === attemptId ? { ...a, reviewerNotes: notes } : a)) }));
+    await send("assessments.attempt.notes", { attemptId, notes });
+  },
+  async observe(attemptId: string) {
+    await apiFetch(`/api/orgs/${currentOrgId()}/assessments/observe`, { method: "POST", body: JSON.stringify({ attemptId }) });
+    await loadWorkspace(currentOrgId()!);
+  },
+  exportUrl: (jobId?: ID) => `/api/orgs/${currentOrgId()}/assessments/export${jobId ? `?jobId=${jobId}` : ""}`,
+  async saveCvSettings(patch: Partial<Database["cvSettings"]>) {
+    setState((db) => ({ ...db, cvSettings: { ...db.cvSettings, ...patch } }));
+    const { platformTemplates: _p, ...rest } = patch;
+    await send("settings.cvBuilder", rest);
+  },
+  async saveAiSettings(patch: Partial<Database["aiSettings"]>) {
+    setState((db) => ({ ...db, aiSettings: { ...db.aiSettings, ...patch } }));
+    await send("settings.ai", patch);
+    await loadWorkspace(currentOrgId()!);
+  },
+};
+
 /** Logs a drafted email on the timeline. Sending requires a configured email provider. */
 async function logEmailDraft(candidateId: ID, subject: string) {
   await send("activity.log", { kind: "email_drafted", message: `drafted an email: “${subject}” (not sent — email delivery not configured)`, candidateId });
   return true;
 }
 
-export const api = { jobs, applications, candidates, notes, interviews, scorecards, tasks, talentLists, views, settings, team, notifications, logEmailDraft };
+export const api = { jobs, applications, candidates, notes, interviews, scorecards, tasks, talentLists, views, settings, team, notifications, assessments, logEmailDraft };

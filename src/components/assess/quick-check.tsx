@@ -24,43 +24,41 @@ export function QuickCheck({ token, initial }: { token: string; initial: View })
   const [notice, setNotice] = React.useState<string>();
   const [offline, setOffline] = React.useState(false);
   const [now, setNow] = React.useState(() => Date.now());
-  const deadline = React.useRef<number | null>(null);
+  // Local deadline = receipt time + remaining time from the server (immune to clock skew).
+  const [deadline, setDeadline] = React.useState<number | null>(() => (initial.current?.remainingMs != null ? Date.now() + initial.current.remainingMs : null));
   const url = `/api/public/assessments/${token}`;
 
-  // Local deadline = receipt time + remaining time from the server (immune to clock skew).
   const receive = React.useCallback((v: View, expired = false) => {
     setView(v);
     setNotice(expired || v.late ? t.timeUp : undefined);
-    deadline.current = v.current?.remainingMs != null ? Date.now() + v.current.remainingMs : null;
+    setDeadline(v.current?.remainingMs != null ? Date.now() + v.current.remainingMs : null);
     setChoice(null);
     setText("");
   }, [t.timeUp]);
-  React.useEffect(() => { deadline.current = initial.current?.remainingMs != null ? Date.now() + initial.current.remainingMs : null; }, [initial]);
 
-  const call = React.useCallback(async (body?: Record<string, unknown>, attempt = 0): Promise<View | null> => {
-    try {
-      const res = await fetch(url, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
-      const j = await res.json();
-      setOffline(false);
-      if (!res.ok) { setError(j.error); return null; }
-      return j as View;
-    } catch {
-      setOffline(true);
-      if (attempt < 6) {
+  const call = React.useCallback(async (body?: Record<string, unknown>): Promise<View | null> => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const res = await fetch(url, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
+        const j = await res.json();
+        setOffline(false);
+        if (!res.ok) { setError(j.error); return null; }
+        return j as View;
+      } catch {
+        setOffline(true);
+        if (attempt >= 6) return null;
         await new Promise((r) => setTimeout(r, Math.min(8000, 1000 * 2 ** attempt)));
-        return call(body, attempt + 1);
       }
-      return null;
     }
   }, [url]);
 
-  // Tick + ask the server when the displayed time runs out.
+  // Tick, and ask the server for the next state once the displayed time has run out.
   const expiring = React.useRef(false);
   React.useEffect(() => {
     if (view.status !== "started") return;
     const h = setInterval(async () => {
       setNow(Date.now());
-      if (deadline.current && Date.now() > deadline.current + 3500 && !expiring.current) {
+      if (deadline && Date.now() > deadline + 3500 && !expiring.current) {
         expiring.current = true;
         const v = await call();
         expiring.current = false;
@@ -68,7 +66,7 @@ export function QuickCheck({ token, initial }: { token: string; initial: View })
       }
     }, 250);
     return () => clearInterval(h);
-  }, [view.status, call, receive]);
+  }, [view.status, deadline, call, receive]);
 
   React.useEffect(() => {
     const on = () => setOffline(false);
@@ -144,7 +142,7 @@ export function QuickCheck({ token, initial }: { token: string; initial: View })
   }
 
   const q = view.current!;
-  const remaining = deadline.current ? Math.max(0, Math.ceil((deadline.current - now) / 1000)) : null;
+  const remaining = deadline ? Math.max(0, Math.ceil((deadline - now) / 1000)) : null;
   const total = view.accommodation === "extended" && view.secondsPerQuestion ? view.secondsPerQuestion * 2 : view.secondsPerQuestion;
   const canSubmit = q.type === "multiple_choice" ? Boolean(choice) : text.trim().length > 0;
   return (

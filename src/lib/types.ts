@@ -142,6 +142,7 @@ export interface CvDocument {
   mimeType: string;
   sizeBytes: number;
   scanStatus: "not_scanned" | "clean" | "infected" | "error";
+  source?: "upload" | "builder" | "recruiter";
   createdAt: ISODate;
 }
 
@@ -366,6 +367,95 @@ export interface PendingInvitation {
   expiresAt: ISODate;
 }
 
+/* ───────────── Quick Check & CV Builder ───────────── */
+export type QuestionStatus = "draft" | "approved" | "archived";
+export interface AssessmentQuestion {
+  id: ID;
+  questionText: string;
+  type: "multiple_choice" | "short_text";
+  options: { id: string; text: string }[];
+  correctOptionId: string | null;
+  explanation: string;
+  competency: string;
+  difficulty: "easy" | "medium" | "hard";
+  recommendedTimeSeconds: number;
+  language: "en" | "el";
+  status: QuestionStatus;
+  version: number;
+  source: "manual" | "ai";
+  aiModel?: string;
+  generationVersion?: string;
+  jobId?: ID;
+  createdBy?: ID;
+  approvedBy?: ID;
+  approvedAt?: ISODate;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+}
+export interface JobAssessmentConfig {
+  enabled: boolean;
+  questionIds: ID[];
+  timed: boolean;
+  secondsPerQuestion: number;
+  language: "en" | "el";
+  instructions: string;
+  allowLater: boolean;
+  allowExtendedTime: boolean;
+  allowUntimed: boolean;
+  notifyRecruiter: boolean;
+}
+export type AttemptStatus = "invited" | "started" | "completed" | "declined" | "expired";
+export interface AssessmentObservation {
+  model: string;
+  promptVersion: string;
+  addresses_scenario: "yes" | "partially" | "no" | "unclear";
+  relevant_concepts: string[];
+  areas_to_clarify: string[];
+  follow_up_questions: string[];
+  createdAt: ISODate;
+}
+export interface AssessmentResponse {
+  id: string;
+  position: number;
+  questionId: ID;
+  questionVersion: number;
+  questionText: string;
+  type: "multiple_choice" | "short_text";
+  options: { id: string; text: string }[];
+  correctOptionId: string | null;
+  explanation: string;
+  competency: string;
+  answerOptionId?: string;
+  answerText?: string;
+  timedOut: boolean;
+  isCorrect?: boolean;
+  answered: boolean;
+  observation?: AssessmentObservation;
+}
+export interface AssessmentAttempt {
+  id?: string;
+  applicationId: ID;
+  candidateId?: ID;
+  jobId?: ID;
+  status: AttemptStatus;
+  /** True when the viewer may only see the status (no answers). */
+  statusOnly?: boolean;
+  accommodation?: "none" | "extended" | "untimed";
+  setVersion?: string;
+  secondsPerQuestion?: number | null;
+  language?: "en" | "el";
+  reviewerNotes?: string;
+  aiStatus?: "not_requested" | "pending" | "done" | "failed" | "disabled";
+  invitedBy?: ID;
+  createdAt?: ISODate;
+  startedAt?: ISODate;
+  completedAt?: ISODate;
+  expiresAt?: ISODate;
+  responses?: AssessmentResponse[];
+  total?: number;
+}
+export type AiFeatureKey = "question_generation" | "response_observations" | "cv_summary" | "cv_extract";
+
 export interface Database {
   version: number;
   currentUserId: ID;
@@ -389,4 +479,12 @@ export interface Database {
   integrations: Record<IntegrationId, IntegrationState>;
   notificationPrefs: NotificationPrefs;
   notifications: AppNotification[];
+  assessmentQuestions: AssessmentQuestion[];
+  jobAssessments: Record<ID, JobAssessmentConfig>;
+  assessmentAttempts: AssessmentAttempt[];
+  cvBuilderProfiles: { id: string; candidateId: ID; applicationId?: ID; cvDocumentId?: string; template: string; createdAt: ISODate }[];
+  candidatePhotos: { id: string; candidateId: ID }[];
+  cvSettings: { templates: string[]; defaultTemplate: string; hidePhotos: boolean; platformTemplates: string[] };
+  aiSettings: Record<AiFeatureKey, boolean>;
+  ai: { configured: boolean; model: string | null; unavailable: Record<AiFeatureKey, string | null> };
 }

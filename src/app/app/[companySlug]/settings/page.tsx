@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Bell, Building2, Check, Copy, ExternalLink, Globe, Mail, Monitor, Moon, Palette, Plug, Plus, Shield, Sun, Trash2, UserPlus, Users, Workflow, Minus } from "lucide-react";
+import { Bell, Building2, Check, Copy, ExternalLink, FileText, Globe, Mail, Monitor, Moon, Palette, Plug, Plus, Shield, Sparkles, Sun, Trash2, UserPlus, Users, Workflow, Minus } from "lucide-react";
 import { useCan, useDb } from "@/lib/api/store";
 import { api } from "@/lib/api";
 import { usePageMeta } from "@/components/shell/page-meta";
@@ -15,6 +15,7 @@ import { Field, Input, Textarea } from "@/components/ui/input";
 import { Select, Switch } from "@/components/ui/controls";
 import { ConfirmDialog, Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/overlays";
 import { IntegrationsSettings } from "@/components/settings/integrations";
+import { AiSettings, CvBuilderSettings } from "@/components/settings/cv-ai";
 import { STAGE_TONE } from "@/lib/constants";
 import type { CompanyProfile, EmailTemplate, NotificationPrefs, Role, StageConfig } from "@/lib/types";
 import { cn, relativeTime, uid } from "@/lib/utils";
@@ -26,6 +27,8 @@ const SECTIONS = [
   { id: "roles", label: "Roles & permissions", icon: Shield },
   { id: "pipeline", label: "Pipeline", icon: Workflow },
   { id: "templates", label: "Email templates", icon: Mail },
+  { id: "cv-builder", label: "CV Builder", icon: FileText },
+  { id: "ai", label: "AI features", icon: Sparkles },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "integrations", label: "Integrations", icon: Plug },
@@ -74,6 +77,8 @@ function Settings() {
             pipeline: "Name your stages and set target times.",
             templates: "Reusable messages with personalisation variables.",
             notifications: "Choose what you hear about, and when.",
+            "cv-builder": "Templates and photo handling for candidates who build their CV on your job pages.",
+            ai: "Which Claude-powered helpers your company uses. People always make the decisions.",
             appearance: "Make the workspace feel like yours.",
             integrations: "Connect calendars, email and LinkedIn.",
           }[section]}</p>
@@ -84,6 +89,8 @@ function Settings() {
         {section === "roles" && <RolesSettings />}
         {section === "pipeline" && <PipelineSettings />}
         {section === "templates" && <TemplateSettings />}
+        {section === "cv-builder" && <CvBuilderSettings />}
+        {section === "ai" && <AiSettings />}
         {section === "notifications" && <NotificationSettings />}
         {section === "appearance" && <AppearanceSettings />}
         {section === "integrations" && <IntegrationsSettings />}
@@ -338,6 +345,8 @@ function RolesSettings() {
     { label: "Submit scorecards", roles: [true, true, true, true] },
     { label: "See salary information", roles: [true, true, true, false] },
     { label: "View analytics", roles: [true, true, "partial", false] },
+    { label: "Create, approve and assign Quick Check questions", roles: [true, true, false, false] },
+    { label: "View Quick Check responses", roles: [true, true, true, false] },
     { label: "Manage team, settings and integrations", roles: [true, false, false, false] },
   ];
   const cell = (v: boolean | "partial") => v === true ? <Check className="mx-auto size-4 text-success" aria-label="Allowed" /> : v === "partial" ? <span className="mx-auto block w-fit rounded bg-muted px-1.5 text-[11px] text-muted-foreground">Own jobs</span> : <Minus className="mx-auto size-4 text-subtle-foreground" aria-label="Not allowed" />;

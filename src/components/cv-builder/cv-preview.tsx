@@ -38,7 +38,7 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
   const center = template === "professional" && !photo;
   const isCircle = data.photoShape === "circle";
 
-  const H = ({ children }: { children: string }) =>
+  const h = (children: string) =>
     template === "professional" ? (
       <h3 style={{ fontSize: 15, fontWeight: 700, letterSpacing: 1.3, borderBottom: `0.7px solid ${t.rule}`, paddingBottom: 2, margin: "18px 0 8px" }}>{caps(children)}</h3>
     ) : template === "modern" ? (
@@ -46,7 +46,7 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
     ) : (
       <h3 style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, margin: "18px 0 6px" }}>{caps(children)}</h3>
     );
-  const Entry = ({ title, sub, dates }: { title: string; sub: string; dates: string }) => (
+  const entry = (title: string, sub: string, dates: string) => (
     <div style={{ marginTop: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <strong style={{ fontSize: 14 }}>{title || sub}</strong>
@@ -55,8 +55,8 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
       {title && sub && <div style={{ fontSize: 13.3, color: t.muted, fontStyle: template === "professional" ? "italic" : "normal" }}>{sub}</div>}
     </div>
   );
-  const Bullets = ({ items }: { items: string[] }) => <ul style={{ margin: "4px 0 0 10px", padding: 0, listStyle: "none" }}>{items.map((i, k) => <li key={k} style={{ fontSize: 13.3, lineHeight: 1.45 }}>•&nbsp;&nbsp;{i}</li>)}</ul>;
-  const Body = ({ children }: { children: React.ReactNode }) => <p style={{ fontSize: 13.3, lineHeight: 1.5, margin: "2px 0 0", whiteSpace: "pre-line" }}>{children}</p>;
+  const bullets = (items: string[]) => <ul style={{ margin: "4px 0 0 10px", padding: 0, listStyle: "none" }}>{items.map((i, k) => <li key={k} style={{ fontSize: 13.3, lineHeight: 1.45 }}>•&nbsp;&nbsp;{i}</li>)}</ul>;
+  const body = (children: React.ReactNode) => <p style={{ fontSize: 13.3, lineHeight: 1.5, margin: "2px 0 0", whiteSpace: "pre-line" }}>{children}</p>;
 
   return (
     <div ref={wrap} className="w-full" aria-label="CV preview">
@@ -78,43 +78,43 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
           </header>
           {template === "modern" ? <div style={{ width: 48, height: 3, background: t.rule, margin: "14px 0 6px" }} /> : <hr style={{ border: 0, borderTop: `${template === "professional" ? 1.3 : 0.8}px solid ${t.rule}`, margin: "12px 0 4px" }} />}
 
-          {data.summary.trim() && (<><H>{L.summary}</H><Body>{data.summary.trim()}</Body></>)}
+          {data.summary.trim() && (<>{h(L.summary)}{body(data.summary.trim())}</>)}
           {data.experience.length > 0 && (
             <>
-              <H>{L.experience}</H>
+              {h(L.experience)}
               {data.experience.map((e) => (
                 <div key={e.id} style={{ marginBottom: 10 }}>
-                  <Entry title={e.title} sub={e.company} dates={dateRange(e.start, e.end, e.current, lang)} />
-                  {e.description.trim() && <Body>{e.description.trim()}</Body>}
-                  {lines(e.responsibilities).length > 0 && <Bullets items={lines(e.responsibilities)} />}
-                  {lines(e.achievements).length > 0 && (<><div style={{ fontSize: 12.7, fontWeight: 700, color: t.muted, marginTop: 4 }}>{L.achievements}</div><Bullets items={lines(e.achievements)} /></>)}
+                  {entry(e.title, e.company, dateRange(e.start, e.end, e.current, lang))}
+                  {e.description.trim() && body(e.description.trim())}
+                  {lines(e.responsibilities).length > 0 && bullets(lines(e.responsibilities))}
+                  {lines(e.achievements).length > 0 && (<><div style={{ fontSize: 12.7, fontWeight: 700, color: t.muted, marginTop: 4 }}>{L.achievements}</div>{bullets(lines(e.achievements))}</>)}
                 </div>
               ))}
             </>
           )}
           {data.education.length > 0 && (
             <>
-              <H>{L.education}</H>
+              {h(L.education)}
               {data.education.map((e) => (
                 <div key={e.id} style={{ marginBottom: 8 }}>
-                  <Entry title={[e.degree, e.field].filter(Boolean).join(", ")} sub={e.institution} dates={dateRange(e.start, e.end, false, lang)} />
-                  {e.description.trim() && <Body>{e.description.trim()}</Body>}
+                  {entry([e.degree, e.field].filter(Boolean).join(", "), e.institution, dateRange(e.start, e.end, false, lang))}
+                  {e.description.trim() && body(e.description.trim())}
                 </div>
               ))}
             </>
           )}
-          {data.skills.length > 0 && (<><H>{L.skills}</H><Body>{data.skills.join("  ·  ")}</Body></>)}
-          {data.languages.length > 0 && (<><H>{L.languages}</H><Body>{data.languages.map((l) => (l.level ? `${l.language} — ${l.level}` : l.language)).join("  ·  ")}</Body></>)}
-          {data.certifications.length > 0 && (<><H>{L.certifications}</H>{data.certifications.map((c) => <div key={c.id}><Entry title={c.name} sub={c.issuer} dates={c.date} />{c.url && <Body>{c.url}</Body>}</div>)}</>)}
+          {data.skills.length > 0 && (<>{h(L.skills)}{body(data.skills.join("  ·  "))}</>)}
+          {data.languages.length > 0 && (<>{h(L.languages)}{body(data.languages.map((l) => (l.level ? `${l.language} — ${l.level}` : l.language)).join("  ·  "))}</>)}
+          {data.certifications.length > 0 && (<>{h(L.certifications)}{data.certifications.map((c) => <div key={c.id}>{entry(c.name, c.issuer, c.date)}{c.url && body(c.url)}</div>)}</>)}
           {data.projects.length > 0 && (
             <>
-              <H>{L.projects}</H>
+              {h(L.projects)}
               {data.projects.map((pr) => (
                 <div key={pr.id} style={{ marginBottom: 8 }}>
-                  <Entry title={pr.name} sub={pr.role} dates="" />
-                  {pr.description.trim() && <Body>{pr.description.trim()}</Body>}
+                  {entry(pr.name, pr.role, "")}
+                  {pr.description.trim() && body(pr.description.trim())}
                   {pr.technologies.trim() && <div style={{ fontSize: 12.7, color: t.muted }}>{L.technologies}: {pr.technologies}</div>}
-                  {pr.url && <Body>{pr.url}</Body>}
+                  {pr.url && body(pr.url)}
                 </div>
               ))}
             </>
@@ -123,7 +123,7 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
             const v = data.additional[k]?.trim();
             if (!v) return null;
             const ls = lines(v);
-            return <React.Fragment key={k}><H>{L[k]}</H>{ls.length > 1 ? <Bullets items={ls} /> : <Body>{v}</Body>}</React.Fragment>;
+            return <React.Fragment key={k}>{h(L[k])}{ls.length > 1 ? bullets(ls) : body(v)}</React.Fragment>;
           })}
         </div>
       </div>

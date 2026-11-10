@@ -79,11 +79,12 @@ export function CvTab({ candidate }: { candidate: Candidate }) {
         ))}
         <span className="ml-auto">{uploader}</span>
       </div>
+      <CandidatePhoto candidateId={candidate.id} />
       {selected && (
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="flex items-center gap-3 border-b border-border bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
             <span>{selected.mimeType === "application/pdf" ? "PDF" : "Word document"} · {kb(selected.sizeBytes)}</span>
-            {selected.scanStatus === "clean" ? <span className="inline-flex items-center gap-1 text-success"><ShieldCheck className="size-3.5" />Malware scan passed</span> : <span className="inline-flex items-center gap-1"><ShieldAlert className="size-3.5" />Not malware-scanned (scanner not configured)</span>}
+            {selected.source === "builder" ? <span className="inline-flex items-center gap-1"><FileText className="size-3.5" />Created by the candidate with the Déceler CV Builder</span> : selected.scanStatus === "clean" ? <span className="inline-flex items-center gap-1 text-success"><ShieldCheck className="size-3.5" />Malware scan passed</span> : <span className="inline-flex items-center gap-1"><ShieldAlert className="size-3.5" />Not malware-scanned (scanner not configured)</span>}
             {canView && <Button size="sm" variant="ghost" className="ml-auto" onClick={() => download(selected)}><Download />Download</Button>}
           </div>
           {!canView ? (
@@ -97,6 +98,26 @@ export function CvTab({ candidate }: { candidate: Candidate }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Optional photo from the CV Builder. Never used by AI; hidden when the company chooses so. */
+function CandidatePhoto({ candidateId }: { candidateId: string }) {
+  const db = useDb();
+  const photo = db.candidatePhotos.find((p) => p.candidateId === candidateId);
+  const [show, setShow] = React.useState(false);
+  if (!photo) return null;
+  if (db.cvSettings.hidePhotos) return <p className="text-xs text-muted-foreground">The candidate added a photo. Photos are hidden during screening in this company.</p>;
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      {show ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`/api/orgs/${db.org.id}/photos/${photo.id}`} alt="Candidate photo" className="size-16 rounded-md object-cover ring-1 ring-border" />
+      ) : (
+        <Button size="sm" variant="outline" onClick={() => setShow(true)}>Show photo</Button>
+      )}
+      <span>Optional photo provided by the candidate. It isn&apos;t used for AI or assessment.</span>
     </div>
   );
 }

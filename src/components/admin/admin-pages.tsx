@@ -337,6 +337,41 @@ export function AdminAudit() {
 }
 
 /* ───────────── Settings ───────────── */
+export function AdminAi() {
+  const { data } = useAdmin<{ configured: boolean; model: string; settings: { enabled: boolean; monthlyRequestLimitPerCompany: number; monthlyBudgetUsdPerCompany: number }; companies: { id: string; name: string; requests: number; errors: number; blocked: number; input_tokens: number; output_tokens: number; cost_usd: number }[]; failures: { created_at: string; company: string | null; feature: string; model: string; status: string; error: string | null }[]; byFeature: { feature: string; requests: number; cost_usd: number }[]; jobs: { pending: number; failed: number } }>("/api/admin/ai");
+  if (!data) return <Loading />;
+  const usd = (n: number) => `$${Number(n).toFixed(n < 1 ? 4 : 2)}`;
+  return (
+    <>
+      <AdminHeader title="AI usage" description="Anthropic Claude requests, failures and cost per company this month. Shows counts and errors only — never prompts, answers or candidate data." />
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Card className="p-4"><p className="text-xs text-muted-foreground">Provider</p><p className="mt-1 text-sm font-medium">{data.configured ? "Configured" : "No API key"}</p><p className="text-xs text-muted-foreground">{data.model}</p></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground">AI switch</p><p className="mt-1 text-sm font-medium">{data.settings.enabled ? "On" : "Off"}</p><p className="text-xs text-muted-foreground">Limits: {data.settings.monthlyRequestLimitPerCompany} req · {usd(data.settings.monthlyBudgetUsdPerCompany)} / company</p></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground">Requests this month</p><p className="tabular mt-1 text-2xl font-semibold">{data.companies.reduce((s, c) => s + c.requests, 0)}</p></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground">Background jobs (observations)</p><p className="mt-1 text-sm"><span className="tabular font-semibold">{data.jobs.pending}</span> pending · <span className="tabular font-semibold">{data.jobs.failed}</span> failed</p></Card>
+      </div>
+      <Card className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead className="border-b border-border bg-surface-2 text-left text-xs text-muted-foreground"><tr><th className="px-4 py-2 font-medium">Company</th><th className="px-4 py-2 font-medium">OK</th><th className="px-4 py-2 font-medium">Errors</th><th className="px-4 py-2 font-medium">Blocked</th><th className="px-4 py-2 font-medium">Tokens in / out</th><th className="px-4 py-2 font-medium">Cost</th></tr></thead>
+          <tbody className="divide-y divide-border">{data.companies.map((c) => <tr key={c.id}><td className="px-4 py-2">{c.name}</td><td className="tabular px-4 py-2">{c.requests}</td><td className="tabular px-4 py-2">{c.errors}</td><td className="tabular px-4 py-2">{c.blocked}</td><td className="tabular px-4 py-2">{c.input_tokens.toLocaleString()} / {c.output_tokens.toLocaleString()}</td><td className="tabular px-4 py-2">{usd(c.cost_usd)}</td></tr>)}</tbody>
+        </table>
+        {!data.companies.length && <p className="p-4 text-sm text-muted-foreground">No AI requests this month.</p>}
+      </Card>
+      <Card className="mt-4 p-4">
+        <p className="text-sm font-semibold">By feature</p>
+        <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-4">{data.byFeature.map((f) => <li key={f.feature} className="rounded-md bg-surface-2 p-2"><span className="block text-xs text-muted-foreground">{f.feature}</span><span className="tabular">{f.requests} · {usd(f.cost_usd)}</span></li>)}</ul>
+      </Card>
+      <Card className="mt-4 overflow-x-auto">
+        <p className="px-4 pt-4 text-sm font-semibold">Recent failures and blocked requests</p>
+        <table className="mt-2 w-full min-w-[640px] text-sm">
+          <tbody className="divide-y divide-border">{data.failures.map((f, i) => <tr key={i}><td className="px-4 py-2 text-muted-foreground">{relativeTime(f.created_at)}</td><td className="px-4 py-2">{f.company ?? "—"}</td><td className="px-4 py-2">{f.feature}</td><td className="px-4 py-2"><Badge tone={f.status === "error" ? "danger" : "muted"}>{f.status}</Badge></td><td className="max-w-md truncate px-4 py-2 text-xs text-muted-foreground" title={f.error ?? ""}>{f.error}</td></tr>)}</tbody>
+        </table>
+        {!data.failures.length && <p className="p-4 text-sm text-muted-foreground">No failures.</p>}
+      </Card>
+    </>
+  );
+}
+
 export function AdminSettings() {
   const { data, reload } = useAdmin<{ settings: Record<string, any> }>("/api/admin/settings");
   const [draft, setDraft] = React.useState<Record<string, any> | null>(null);
@@ -366,6 +401,19 @@ export function AdminSettings() {
           <Field label="Default data retention (months)"><Input type="number" value={draft.recruitment_defaults.retentionMonths} onChange={(e) => set("recruitment_defaults", "retentionMonths", Number(e.target.value))} /></Field>
           <Field label="Default careers language"><Select value={draft.recruitment_defaults.careersLanguage} onValueChange={(v) => set("recruitment_defaults", "careersLanguage", v)} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
         </SettingsSection>
+        {draft.ai && (
+          <SettingsSection title="AI (Anthropic Claude)" onSave={() => save("ai")}>
+            <Field label="AI features"><div className="flex h-8 items-center gap-2 text-sm"><Switch checked={draft.ai.enabled} onCheckedChange={(v) => set("ai", "enabled", v)} aria-label="AI enabled" />{draft.ai.enabled ? "On (where companies are entitled)" : "Off for every company"}</div></Field>
+            <Field label="Model" hint="Empty = ANTHROPIC_MODEL env or claude-opus-5-5"><Input value={draft.ai.model} placeholder="claude-opus-5-5" onChange={(e) => set("ai", "model", e.target.value)} /></Field>
+            <Field label="Monthly requests per company"><Input type="number" value={draft.ai.monthlyRequestLimitPerCompany} onChange={(e) => set("ai", "monthlyRequestLimitPerCompany", Number(e.target.value))} /></Field>
+            <Field label="Monthly budget per company (USD)"><Input type="number" value={draft.ai.monthlyBudgetUsdPerCompany} onChange={(e) => set("ai", "monthlyBudgetUsdPerCompany", Number(e.target.value))} /></Field>
+          </SettingsSection>
+        )}
+        {draft.cv_templates && (
+          <SettingsSection title="CV Builder templates" onSave={() => save("cv_templates")}>
+            <Field label="Templates companies can offer"><div className="flex h-8 items-center gap-4 text-sm">{["minimal", "modern", "professional"].map((t) => <label key={t} className="flex items-center gap-1.5 capitalize"><input type="checkbox" checked={draft.cv_templates.enabled.includes(t)} onChange={(e) => set("cv_templates", "enabled", e.target.checked ? [...draft.cv_templates.enabled, t] : draft.cv_templates.enabled.filter((x: string) => x !== t))} />{t}</label>)}</div></Field>
+          </SettingsSection>
+        )}
         <SettingsSection title="Maintenance" onSave={() => save("maintenance")}>
           <Field label="Maintenance banner"><div className="flex h-8 items-center"><Switch checked={draft.maintenance.enabled} onCheckedChange={(v) => set("maintenance", "enabled", v)} aria-label="Maintenance mode" /></div></Field>
           <Field label="Message"><Input value={draft.maintenance.message} onChange={(e) => set("maintenance", "message", e.target.value)} /></Field>

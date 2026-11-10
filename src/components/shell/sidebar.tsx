@@ -9,6 +9,7 @@ import { useDb } from "@/lib/api/store";
 import { BrandLogo } from "./brand-mark";
 import { BRAND } from "@/config/brand";
 import { NAV, SETTINGS_NAV, isActive } from "./nav-items";
+import { useDbOrNull } from "@/lib/api/store";
 import { Tooltip } from "@/components/ui/overlays";
 import { Kbd } from "@/components/ui/input";
 import { upcomingInterviews } from "@/lib/api/selectors";
@@ -61,9 +62,11 @@ function NavLink({ href, label, icon: Icon, collapsed, shortcut, onNavigate }: {
 }
 
 export function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+  const db = useDbOrNull();
+  const items = NAV.filter((i) => (!i.permission || db?.org.permissions.includes(i.permission)) && (!i.feature || db?.org.features[i.feature] !== false));
   return (
     <nav aria-label="Main" className="flex flex-col gap-0.5">
-      {NAV.map((item) => (
+      {items.map((item) => (
         <NavLink key={item.href} {...item} collapsed={collapsed} onNavigate={onNavigate} />
       ))}
     </nav>

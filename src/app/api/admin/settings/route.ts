@@ -10,6 +10,9 @@ const SCHEMAS = {
   storage: z.object({ maxCvMb: z.number().int().min(1).max(50), maxLogoMb: z.number().int().min(1).max(10), perCompanyQuotaMb: z.number().int().min(100).max(1_000_000) }),
   maintenance: z.object({ enabled: z.boolean(), message: z.string().max(300) }),
   recruitment_defaults: z.object({ retentionMonths: z.number().int().min(1).max(120), careersLanguage: z.enum(["en", "el"]) }),
+  // AI provider configuration. The API key itself is an environment variable, never stored here.
+  ai: z.object({ enabled: z.boolean(), model: z.string().trim().max(80).regex(/^[a-z0-9.\-]*$/, "Use a model id such as claude-opus-5-5"), monthlyRequestLimitPerCompany: z.number().int().min(0).max(1_000_000), monthlyBudgetUsdPerCompany: z.number().min(0).max(1_000_000) }),
+  cv_templates: z.object({ enabled: z.array(z.enum(["minimal", "modern", "professional"])).min(1) }),
 } as const;
 
 export const GET = handler(async () => {

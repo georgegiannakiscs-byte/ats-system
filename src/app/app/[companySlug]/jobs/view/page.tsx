@@ -8,6 +8,7 @@ import { useDb } from "@/lib/api/store";
 import { usePageMeta } from "@/components/shell/page-meta";
 import { useUI } from "@/components/shell/ui-context";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/controls";
+import { JobQuickCheckSettings } from "@/components/assessments/quick-check-ui";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarStack } from "@/components/ui/avatar";
@@ -31,7 +32,7 @@ export default function JobPage() {
   );
 }
 
-const TABS = ["pipeline", "candidates", "interviews", "details", "activity"] as const;
+const TABS = ["pipeline", "candidates", "interviews", "quick-check", "details", "activity"] as const;
 
 function JobView() {
   const db = useDb();
@@ -96,6 +97,7 @@ function JobView() {
             <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
             <TabsTrigger value="candidates" count={counts.total}>Candidates</TabsTrigger>
             <TabsTrigger value="interviews" count={interviews.filter((i) => i.status === "scheduled").length}>Interviews</TabsTrigger>
+            {db.org.features.quick_check !== false && <TabsTrigger value="quick-check">Quick Check{db.jobAssessments[job.id]?.enabled ? " · On" : ""}</TabsTrigger>}
             <TabsTrigger value="details">Job details</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
@@ -105,6 +107,7 @@ function JobView() {
       {tab === "pipeline" && <div className="flex flex-1 flex-col pt-1 animate-fade-in"><JobPipeline jobId={job.id} /></div>}
       {tab === "candidates" && <JobCandidates jobId={job.id} />}
       {tab === "interviews" && <JobInterviews jobId={job.id} />}
+      {tab === "quick-check" && <JobQuickCheckSettings jobId={job.id} />}
       {tab === "details" && <JobDetails jobId={job.id} />}
       {tab === "activity" && <div className="mx-auto w-full max-w-3xl p-6 animate-fade-in"><ActivityFeed filter={{ jobId: job.id }} showContext /></div>}
     </div>
