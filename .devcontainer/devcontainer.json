@@ -11,7 +11,8 @@
   },
   "hostRequirements": { "cpus": 2, "memory": "4gb" },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "bash .devcontainer/start.sh",
+  // The app itself is started by the container (docker-compose.yml → entrypoint.sh → serve.sh),
+  // not by the editor, so it runs without anyone opening a terminal.
   "customizations": {
     "codespaces": { "openFiles": [".devcontainer/README.md"] }
   }
