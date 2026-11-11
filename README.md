@@ -39,6 +39,7 @@ npm run test:quick-check   # CV Builder & Quick Check scenarios A–G (API + dat
                            # Anthropic stub on :4599 - run the server with ANTHROPIC_API_KEY=stub-key
                            # ANTHROPIC_BASE_URL=http://127.0.0.1:4599 to exercise the AI paths, or without
                            # a key to check the no-AI fallbacks.
+npm run test:talent        # /talent landing page + Admin → Talent leads (API + database)
 npm run test:e2e           # browser journey (requires Playwright + Chromium)
 npm run test:e2e:quick-check  # browser journey: build a CV → apply → Quick Check → recruiter review
 ```

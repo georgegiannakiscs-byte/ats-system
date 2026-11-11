@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
-import sharp from "sharp";
 import { z } from "zod";
 import { sys } from "@/server/db";
 import { HttpError, clientIp, handler, json } from "@/server/http";
 import { randomToken, rateLimit, sha256 } from "@/server/security";
-import { putObject, sniffImage } from "@/server/storage";
+import { putObject } from "@/server/storage";
+import { cvFileName, photoFromDataUrl } from "@/server/cv/build";
 import { renderCvPdf } from "@/server/cv/pdf";
 import { allowedTemplates, assertCvBuilder, publicJob } from "@/server/public";
 import { CV_TEMPLATES, CvDataSchema } from "@/lib/cv/schema";
@@ -29,17 +29,7 @@ export const POST = handler(async (req) => {
   await assertCvBuilder(job.org_id);
   if (!(await allowedTemplates(job.cv_settings)).includes(v.template)) throw new HttpError(400, "This template isn't available", "template_unavailable");
 
-  let photo: Buffer | null = null;
-  if (v.photo) {
-    const m = v.photo.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/);
-    if (!m) throw new HttpError(415, "Use a JPG, PNG or WebP photo", "photo_type");
-    const raw = Buffer.from(m[2], "base64");
-    const kind = sniffImage(raw);
-    if (!kind || kind.ext === "svg") throw new HttpError(415, "Use a JPG, PNG or WebP photo", "photo_type");
-    // Re-encode: strips metadata (incl. location), normalises orientation, caps size.
-    const ratio = v.data.photoShape === "circle" ? 1 : 1.25;
-    photo = await sharp(raw, { failOn: "error" }).rotate().resize({ width: 600, height: Math.round(600 * ratio), fit: "cover" }).jpeg({ quality: 88 }).toBuffer();
-  }
+  const photo = await photoFromDataUrl(v.photo, v.data.photoShape);
 
   const pdf = await renderCvPdf(v.data, v.template, v.lang, photo);
   const id = crypto.randomUUID();
@@ -55,6 +45,6 @@ export const POST = handler(async (req) => {
     "insert into cv_drafts (id, org_id, job_id, token_hash, template, data, storage_key, photo_key, size_bytes, sha256, expires_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, now() + interval '6 hours')",
     [id, job.org_id, job.id, sha256(token), v.template, JSON.stringify(v.data), key, photoKey, pdf.length, crypto.createHash("sha256").update(pdf).digest("hex")],
   );
-  const fileName = `${v.data.personal.fullName.replace(/[^\p{L}\p{N} ]/gu, "").trim().replace(/\s+/g, "_") || "CV"}_CV.pdf`;
+  const fileName = cvFileName(v.data.personal.fullName);
   return json({ token, fileName, sizeBytes: pdf.length, previewUrl: `/api/public/cv/draft/${token}` }, 201);
 });

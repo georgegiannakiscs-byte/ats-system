@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const jobs = await sys<{ org_slug: string; slug: string; published_at: Date | null }>(
     "select o.slug as org_slug, j.slug, j.published_at from jobs j join organizations o on o.id = j.org_id where o.status = 'active' and j.status = 'published'");
   return [
+    { url: `${env.appUrl}/talent`, changeFrequency: "monthly" as const, priority: 0.6 },
     ...orgs.map((o) => ({ url: `${env.appUrl}/careers/${o.slug}`, changeFrequency: "daily" as const, priority: 0.7 })),
     ...jobs.map((j) => ({ url: `${env.appUrl}/careers/${j.org_slug}/${j.slug}`, lastModified: j.published_at ?? undefined, changeFrequency: "weekly" as const, priority: 0.8 })),
   ];

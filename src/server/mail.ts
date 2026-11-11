@@ -7,7 +7,7 @@ import { env } from "./env";
  * They are only delivered when SMTP_URL and MAIL_FROM are configured - otherwise
  * the outbox row is marked "not_configured" and nothing is claimed as sent.
  */
-export async function sendMail(orgId: string, to: string, subject: string, body: string, kind: string, html?: string) {
+export async function sendMail(orgId: string | null, to: string, subject: string, body: string, kind: string, html?: string) {
   const [row] = await sys<{ id: string }>("insert into email_outbox (org_id, to_email, subject, body, kind, status) values ($1,$2,$3,$4,$5,$6) returning id", [
     orgId, to, subject, body, kind, env.smtpUrl && env.mailFrom ? "queued" : "not_configured",
   ]);
