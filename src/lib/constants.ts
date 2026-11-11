@@ -2,7 +2,7 @@ import type { Evaluation, JobStatus, Recommendation, ScoreCriterion, Source, Sta
 
 export const STAGE_ORDER: StageId[] = ["applied", "screening", "hr_interview", "hm_interview", "technical", "final_review", "offer", "hired"];
 
-/** Subtle per-stage dot colours — a calm progression toward the accent and finally green. */
+/** Subtle per-stage dot colours - a calm progression toward the accent and finally green. */
 export const STAGE_TONE: Record<StageId, string> = {
   applied: "#c9c4b8",
   screening: "#a9bdb2",

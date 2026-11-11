@@ -62,7 +62,7 @@ export function CandidateQuickCheck({ applicationId, jobId }: { applicationId: I
     try {
       const r = await api.assessments.invite(applicationId, sendEmail);
       setLink(r.url);
-      toast.success(sendEmail ? (r.emailDelivery === "sent" ? "Invitation emailed" : "Invitation link created") : "New link created", { description: sendEmail && r.emailDelivery !== "sent" ? "Email delivery isn't configured — copy the link and share it with the candidate." : undefined });
+      toast.success(sendEmail ? (r.emailDelivery === "sent" ? "Invitation emailed" : "Invitation link created") : "New link created", { description: sendEmail && r.emailDelivery !== "sent" ? "Email delivery isn't configured - copy the link and share it with the candidate." : undefined });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -115,7 +115,7 @@ function Responses({ attempt }: { attempt: AssessmentAttempt }) {
     <div className="space-y-3">
       <div className="rounded-lg bg-surface-2 p-3 text-xs leading-relaxed text-muted-foreground">
         {mc.length > 0 && <p><strong className="text-foreground">{matched} of {mc.length}</strong> multiple-choice answers match the approved answer key (checked automatically, without AI).</p>}
-        <p className="mt-1">Quick Check is limited evidence. Review it alongside the CV and interviews — it never moves or rejects a candidate on its own. Response speed is not shown or scored.</p>
+        <p className="mt-1">Quick Check is limited evidence. Review it alongside the CV and interviews - it never moves or rejects a candidate on its own. Response speed is not shown or scored.</p>
       </div>
       {attempt.responses!.map((r) => {
         const chosen = r.options.find((o) => o.id === r.answerOptionId);
@@ -145,12 +145,12 @@ function Responses({ attempt }: { attempt: AssessmentAttempt }) {
                     <Badge tone="muted">{r.timedOut ? <Clock /> : <Minus />}{r.timedOut ? "Unanswered (time ran out)" : "Skipped"}</Badge>
                   ) : r.type === "multiple_choice" ? (
                     r.isCorrect ? <Badge tone="success"><Check />Matches key</Badge> : <Badge tone="neutral"><X />Differs from key{chosen ? "" : ""}</Badge>
-                  ) : <Badge tone="outline">Written answer — for human review</Badge>}
+                  ) : <Badge tone="outline">Written answer - for human review</Badge>}
                   {r.explanation && <span className="text-muted-foreground">Reviewer note: {r.explanation}</span>}
                 </div>
                 {r.observation && (
                   <div className="mt-3 rounded-md border border-signal/30 bg-signal-soft/40 p-3 text-xs">
-                    <p className="flex items-center gap-1 font-medium"><Sparkles className="size-3.5 text-signal" />AI observations — descriptive only, not a score</p>
+                    <p className="flex items-center gap-1 font-medium"><Sparkles className="size-3.5 text-signal" />AI observations - descriptive only, not a score</p>
                     {r.observation.relevant_concepts.length > 0 && <p className="mt-1.5"><span className="text-muted-foreground">Concepts mentioned:</span> {r.observation.relevant_concepts.join(", ")}</p>}
                     {r.observation.areas_to_clarify.length > 0 && <p className="mt-1"><span className="text-muted-foreground">Could clarify:</span> {r.observation.areas_to_clarify.join("; ")}</p>}
                     {r.observation.follow_up_questions.length > 0 && <ul className="mt-1 list-disc pl-4">{r.observation.follow_up_questions.map((f) => <li key={f}>{f}</li>)}</ul>}
@@ -281,7 +281,7 @@ export function QuestionDialog({ open, onOpenChange, question }: { open: boolean
     setSaving(true);
     try {
       await api.assessments.saveQuestion(question?.id ?? null, { ...v, options: v.type === "multiple_choice" ? filled : [] });
-      toast.success(question ? "Saved as a new draft version — approve it again to use it" : "Draft saved");
+      toast.success(question ? "Saved as a new draft version - approve it again to use it" : "Draft saved");
       onOpenChange(false);
     } catch {} finally { setSaving(false); }
   };
@@ -301,7 +301,7 @@ export function QuestionDialog({ open, onOpenChange, question }: { open: boolean
           </div>
           {v.type === "multiple_choice" ? (
             <fieldset className="space-y-2">
-              <legend className="mb-1 text-sm font-medium">Options — select the answer key</legend>
+              <legend className="mb-1 text-sm font-medium">Options - select the answer key</legend>
               {v.options.map((o, i) => (
                 <div key={o.id} className="flex items-center gap-2">
                   <input type="radio" name="key" aria-label={`Option ${o.id} is the answer key`} checked={v.correctOptionId === o.id} onChange={() => set({ correctOptionId: o.id })} />

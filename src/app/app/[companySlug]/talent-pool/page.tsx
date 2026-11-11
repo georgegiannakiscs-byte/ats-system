@@ -150,7 +150,7 @@ export default function TalentPoolPage() {
       </section>
 
       <NewListDialog open={newList} onOpenChange={setNewList} onCreate={async (name, desc) => { const l = await api.talentLists.create(name, desc, sel); setListId(l.id); toast.success(`List “${name}” created`, { description: sel.length ? `${plural(sel.length, "person", "people")} added` : undefined }); }} />
-      <ConfirmDialog open={!!deleteList} onOpenChange={(o) => !o && setDeleteList(null)} title="Delete this list?" description="People stay in the talent pool — only the list is removed." confirmLabel="Delete list" destructive onConfirm={() => { api.talentLists.remove(deleteList!); if (listId === deleteList) setListId("all"); toast("List deleted"); }} />
+      <ConfirmDialog open={!!deleteList} onOpenChange={(o) => !o && setDeleteList(null)} title="Delete this list?" description="People stay in the talent pool - only the list is removed." confirmLabel="Delete list" destructive onConfirm={() => { api.talentLists.remove(deleteList!); if (listId === deleteList) setListId("all"); toast("List deleted"); }} />
     </div>
   );
 }
@@ -166,7 +166,7 @@ function NewListDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpen
         <form noValidate onSubmit={(e) => { e.preventDefault(); if (name.trim().length < 2) return setErr("Name the list"); onCreate(name.trim(), desc.trim() || undefined); onOpenChange(false); }}>
           <DialogHeader icon={<Layers />} title="New list" description="Group people for a future role or campaign." />
           <DialogBody className="space-y-4">
-            <Field label="Name" required error={err}><Input autoFocus value={name} onChange={(e) => (setName(e.target.value), setErr(undefined))} placeholder="e.g. Data — 2027 pipeline" aria-invalid={!!err || undefined} /></Field>
+            <Field label="Name" required error={err}><Input autoFocus value={name} onChange={(e) => (setName(e.target.value), setErr(undefined))} placeholder="e.g. Data - 2027 pipeline" aria-invalid={!!err || undefined} /></Field>
             <Field label="Description"><Textarea value={desc} onChange={(e) => setDesc(e.target.value)} className="min-h-16" /></Field>
           </DialogBody>
           <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit">Create list</Button></DialogFooter>

@@ -37,7 +37,7 @@ function validate(f: JobInput, step: number): Errors {
     if (!f.openings || f.openings < 1) e.openings = "At least one opening";
   }
   if (step === 1) {
-    if (f.summary.trim().length < 20) e.summary = "Write a short summary (20+ characters) — candidates read this first";
+    if (f.summary.trim().length < 20) e.summary = "Write a short summary (20+ characters) - candidates read this first";
   }
   if (step === 2) {
     if (f.salaryMin && f.salaryMax && f.salaryMin > f.salaryMax) e.salaryMax = "Maximum must be greater than minimum";
@@ -189,7 +189,7 @@ export function JobForm({ job }: { job?: Job }) {
                 <Field label="Summary" required error={err("summary")} hint="Two or three sentences. Shown at the top of the job post." className="sm:col-span-2" htmlFor="summary">
                   <Textarea id="summary" autoFocus value={f.summary} onChange={(e) => set("summary", e.target.value)} className="min-h-24" aria-invalid={!!err("summary") || undefined} />
                 </Field>
-                <Field label="Responsibilities" hint="One per line — rendered as a list." className="sm:col-span-2" htmlFor="resp">
+                <Field label="Responsibilities" hint="One per line - rendered as a list." className="sm:col-span-2" htmlFor="resp">
                   <Textarea id="resp" value={f.responsibilities} onChange={(e) => set("responsibilities", e.target.value)} className="min-h-28" placeholder={"Own complex product surfaces end to end\nMentor engineers"} />
                 </Field>
                 <Field label="Requirements" hint="One per line." className="sm:col-span-2" htmlFor="req">
@@ -233,7 +233,7 @@ export function JobForm({ job }: { job?: Job }) {
                 <section className="space-y-2">
                   <h3 className="text-xs font-medium uppercase tracking-wider text-subtle-foreground">Channels</h3>
                   <label className="flex items-center gap-3 rounded-lg border border-border p-3">
-                    <span className="flex-1"><span className="block text-sm font-medium">Careers page</span><span className="block text-xs text-muted-foreground">/careers/{db.org.slug} — public, applications go straight into this pipeline</span></span>
+                    <span className="flex-1"><span className="block text-sm font-medium">Careers page</span><span className="block text-xs text-muted-foreground">/careers/{db.org.slug} - public, applications go straight into this pipeline</span></span>
                     <Switch checked={f.channels.careersPage} onCheckedChange={(v) => set("channels", { ...f.channels, careersPage: v })} aria-label="Publish to careers page" />
                   </label>
                   <div className="flex items-center gap-3 rounded-lg border border-dashed border-border-strong p-3">
@@ -247,12 +247,12 @@ export function JobForm({ job }: { job?: Job }) {
                   <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-subtle-foreground">Review</h3>
                   <dl className="divide-y divide-border rounded-lg border border-border text-sm">
                     {[
-                      ["Title", f.title || "—"],
-                      ["Team", `${f.department || "—"} · ${f.seniority}`],
-                      ["Location", `${f.location || "—"} · ${f.workplace} · ${f.employmentType}`],
+                      ["Title", f.title || "-"],
+                      ["Team", `${f.department || "-"} · ${f.seniority}`],
+                      ["Location", `${f.location || "-"} · ${f.workplace} · ${f.employmentType}`],
                       ["Openings", String(f.openings)],
                       ["Salary", formatSalary(f.salaryMin, f.salaryMax, f.currency)],
-                      ["Skills", f.skills.join(", ") || "—"],
+                      ["Skills", f.skills.join(", ") || "-"],
                     ].map(([k, v]) => (
                       <div key={k} className="flex gap-4 px-3 py-2"><dt className="w-28 shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 flex-1">{v}</dd></div>
                     ))}
@@ -282,7 +282,7 @@ export function JobForm({ job }: { job?: Job }) {
   );
 }
 
-/** Screening questions are always optional for candidates — the minimal 3-field application never changes. */
+/** Screening questions are always optional for candidates - the minimal 3-field application never changes. */
 function ScreeningQuestions({ value, onChange }: { value: ScreeningQuestion[]; onChange: (v: ScreeningQuestion[]) => void }) {
   const [label, setLabel] = React.useState("");
   const [type, setType] = React.useState<"text" | "yesno">("text");

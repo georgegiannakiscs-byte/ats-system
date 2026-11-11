@@ -58,7 +58,7 @@ function JobView() {
     { label: "In interviews", value: inInterviews },
     { label: "Offers", value: counts.byStage.offer },
     { label: "Hired", value: `${counts.hired}/${job.openings}` },
-    { label: "Days open", value: job.publishedAt ? daysSince(job.publishedAt) : "—" },
+    { label: "Days open", value: job.publishedAt ? daysSince(job.publishedAt) : "-" },
   ];
 
   return (
@@ -196,7 +196,7 @@ function JobDetails({ jobId }: { jobId: string }) {
             ["Openings", String(job.openings)],
             ["Created", shortDate(job.createdAt)],
             ["Published", job.publishedAt ? shortDate(job.publishedAt) : "Not published"],
-            ["Target hire", job.targetHireDate ? shortDate(job.targetHireDate) : "—"],
+            ["Target hire", job.targetHireDate ? shortDate(job.targetHireDate) : "-"],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-3"><span className="text-muted-foreground">{k}</span><span className="text-right">{v}</span></div>
           ))}

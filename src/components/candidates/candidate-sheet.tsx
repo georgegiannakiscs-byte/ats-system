@@ -12,7 +12,7 @@ import type { ID } from "@/lib/types";
 import { fullName } from "@/lib/api/selectors";
 import { CandidateHeader, CandidateTabs, useCandidateApplication } from "./candidate-profile";
 
-/** Slide-over preview — review a candidate without leaving the list or pipeline. */
+/** Slide-over preview - review a candidate without leaving the list or pipeline. */
 export function CandidateSheet({ state, onClose, onNavigate }: { state: { id: ID; applicationId?: ID; list?: ID[] } | null; onClose: () => void; onNavigate: (id: ID) => void }) {
   return (
     <Dialog.Root open={!!state} onOpenChange={(o) => !o && onClose()}>

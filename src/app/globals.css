@@ -29,20 +29,20 @@
   --border-strong: #ddd8cc;
   --input: #e3dfd5;
 
-  /* Primary — forest green */
+  /* Primary - forest green */
   --primary: #193329;
   --primary-foreground: #faf8f3;
   --secondary: #f2efe8;
   --secondary-foreground: var(--foreground);
 
-  /* Interactive accent — same green family (links, checks, charts) */
+  /* Interactive accent - same green family (links, checks, charts) */
   --brand: #193329;
   --brand-foreground: #faf8f3;
   --brand-soft: #edf1ed;
   --brand-soft-foreground: #193329;
   --ring: rgb(25 51 41 / 0.28);
 
-  /* Signal — terracotta, small details & selected states only */
+  /* Signal - terracotta, small details & selected states only */
   --signal: #be7157;
   --signal-soft: #f6ebe5;
   --signal-foreground: #ffffff;
@@ -68,7 +68,7 @@
   --sidebar-foreground: #46524c;
   --sidebar-active: #ffffff;
 
-  /* Elevation — minimal */
+  /* Elevation - minimal */
   --shadow-xs: 0 1px 0 0 rgb(25 51 41 / 0.03);
   --shadow-sm: 0 1px 2px 0 rgb(25 51 41 / 0.05), 0 0 0 1px rgb(25 51 41 / 0.02);
   --shadow-md: 0 6px 16px -6px rgb(25 51 41 / 0.10), 0 2px 4px -2px rgb(25 51 41 / 0.05);
@@ -192,7 +192,7 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-drag: var(--shadow-drag);
 
-  /* Type scale — compact, product-grade */
+  /* Type scale - compact, product-grade */
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
   --text-xs: 0.75rem;

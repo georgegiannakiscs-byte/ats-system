@@ -7,7 +7,7 @@ import { Switch, Select } from "@/components/ui/controls";
 import { Badge } from "@/components/ui/badge";
 import type { AiFeatureKey } from "@/lib/types";
 
-const TEMPLATE_LABEL: Record<string, string> = { minimal: "Minimal — most ATS-friendly", modern: "Modern", professional: "Professional (serif)" };
+const TEMPLATE_LABEL: Record<string, string> = { minimal: "Minimal - most ATS-friendly", modern: "Modern", professional: "Professional (serif)" };
 const panel = "rounded-xl border border-border bg-surface shadow-xs";
 
 export function CvBuilderSettings() {

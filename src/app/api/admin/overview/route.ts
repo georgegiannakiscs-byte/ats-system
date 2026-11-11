@@ -36,6 +36,6 @@ export const GET = handler(async () => {
       aiProvider: process.env.AI_PROVIDER_API_KEY ? "configured" : "not_configured",
       objectStorage: "local_disk",
     },
-    ai: { requests: 0, note: "No AI provider configured — AI features are disabled." },
+    ai: { requests: 0, note: "No AI provider configured - AI features are disabled." },
   });
 });

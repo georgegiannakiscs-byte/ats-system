@@ -19,7 +19,7 @@ export async function cvText(buf: Buffer, mime: string): Promise<string> {
     .trim();
 }
 
-/** Deterministic extraction of contact details — no AI needed. */
+/** Deterministic extraction of contact details - no AI needed. */
 export function contactDetails(text: string) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? "";
   const phone = text.match(/(\+?\d[\d\s().-]{7,}\d)/)?.[0]?.trim() ?? "";

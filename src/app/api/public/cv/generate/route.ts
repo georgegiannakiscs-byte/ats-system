@@ -20,7 +20,7 @@ const Body = z.object({
 
 /**
  * Builds the candidate's CV as a PDF and stores it privately as a single-use draft.
- * The returned token attaches it to the application — the candidate never re-uploads it.
+ * The returned token attaches it to the application - the candidate never re-uploads it.
  */
 export const POST = handler(async (req) => {
   if (!rateLimit(`cvgen:${clientIp(req)}`, 60, 60 * 60_000).ok) throw new HttpError(429, "Too many CVs generated from this network. Please try again later.", "rate_limited");

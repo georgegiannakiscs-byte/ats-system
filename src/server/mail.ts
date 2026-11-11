@@ -4,7 +4,7 @@ import { env } from "./env";
 
 /**
  * Transactional email. Messages are always written to the outbox (audit trail).
- * They are only delivered when SMTP_URL and MAIL_FROM are configured — otherwise
+ * They are only delivered when SMTP_URL and MAIL_FROM are configured - otherwise
  * the outbox row is marked "not_configured" and nothing is claimed as sent.
  */
 export async function sendMail(orgId: string, to: string, subject: string, body: string, kind: string, html?: string) {

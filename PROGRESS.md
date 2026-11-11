@@ -1,17 +1,17 @@
-# Ulysse — development progress
+# Ulysse - development progress
 
 Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested** · **🔶 Partially implemented** · **🔑 Requires credentials** · **🤝 Requires third-party approval** · **⚖️ Requires compliance review** · **⬜ Not started**
 
 "Tested" means covered by `npm run test:acceptance` (Phase 1, 13 API/database tests), `npm run test:quick-check` (CV Builder & Quick Check, 8 API/database scenarios A–G) and/or the browser journeys `npm run test:e2e` and `npm run test:e2e:quick-check`, run against dev **and** the production build.
 
-## Phase 1 — Core platform & administration
+## Phase 1 - Core platform & administration
 
 | # | Feature | Status | Notes |
 |---|---|---|---|
 | 1 | Authentication (email + password, sessions) | ✅ | scrypt hashing, httpOnly SameSite cookies, hashed session tokens, rate-limited login/sign-up, same-origin check on mutations. |
 | 1a | Multi-factor authentication | ⬜ | Planned: TOTP + recovery codes. |
 | 1b | Password recovery | 🔶 | Platform admin issues one-time 1-hour recovery links (tested). Self-service "forgot password" email needs SMTP 🔑. |
-| 2 | Platform Super Admin panel (`/admin`) | ✅ | Overview metrics, companies, users, features, integration health, audit log, platform settings. Aggregates only — no candidate data (asserted in tests). |
+| 2 | Platform Super Admin panel (`/admin`) | ✅ | Overview metrics, companies, users, features, integration health, audit log, platform settings. Aggregates only - no candidate data (asserted in tests). |
 | 2a | Time-limited, audited support access to company data | ⬜ | Deliberately not built yet: super admins have **no** access to company data today. |
 | 3 | Company administration (per company) | ✅ | Profile, branding, careers page, team & roles, pipeline stages, templates, notifications, integrations status. |
 | 4 | Multi-company architecture | ✅ | One account → many companies; stable org IDs for authorisation, slugs only for routing. |
@@ -36,7 +36,7 @@ Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested*
 | 20 | Recruitment pipeline | ✅ | Kanban (drag & drop, keyboard) + table, bulk moves, stage history, recruiter assignment, rejection reasons, **withdrawal as a distinct outcome**, custom stage names & targets. |
 | 20a | Adding/removing pipeline stages per company | ⬜ | Eight core stages fixed (names editable). |
 
-## Phase 2 — Intelligent recruitment
+## Phase 2 - Intelligent recruitment
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -64,24 +64,24 @@ The application still requires **only full name, email and a CV**. A generated P
 | "Improve my summary" | ✅ | Claude suggests wording; candidate must choose "Use this". Suggestions containing numbers not in the candidate's input are discarded (tested). Real-API quality: 🔑 untested. |
 | Expired builder drafts cleanup | ⬜ | Drafts expire after 6 h and can't be used, but files are not yet deleted by a background job. |
 | Quick Check question bank | ✅ | Manual questions, drafts → approval, edit = new version back to draft, archive/restore, delete drafts only. Question text, type, options, key, explanation, competency, difficulty, recommended time, language, version, source, model, generation version stored. |
-| AI question generation (Anthropic) | ✅ stub / 🔑 real | Official `@anthropic-ai/sdk`, server-side only, structured output with JSON schema + server-side Zod re-validation + deterministic quality checks (malformed/ambiguous questions rejected). Uses job data only — verified the prompt contains no candidate data. Saved as drafts needing approval (tested). **Real Claude calls are untested here: no API key in this environment.** |
+| AI question generation (Anthropic) | ✅ stub / 🔑 real | Official `@anthropic-ai/sdk`, server-side only, structured output with JSON schema + server-side Zod re-validation + deterministic quality checks (malformed/ambiguous questions rejected). Uses job data only - verified the prompt contains no candidate data. Saved as drafts needing approval (tested). **Real Claude calls are untested here: no API key in this environment.** |
 | Job-level Quick Check settings | ✅ | Enable, 3–4 approved questions, timed (20–60 s) or untimed, language, instructions, complete-later email, extended/untimed accommodations, recruiter notification. |
 | Candidate Quick Check | ✅ | Offered after a successful application; also by email link ("later") and recruiter invite/re-invite (old link revoked) (tested). Branded intro with position, count, duration, instructions, timing, privacy and accommodations; one question at a time; progress bar; countdown. Completion message: "Thank you! Your responses have been submitted successfully." |
 | Server-side timing | ✅ | Deadline set when each question is served; reload doesn't reset it; late answers aren't recorded; timed-out questions recorded as unanswered (tested). |
 | Connectivity handling | 🟡 | Retries with back-off and an offline notice; the timer keeps running on the server. Not covered by automated tests. |
 | Accessibility accommodations | ✅ | Extended (2×) or untimed, chosen without justification; shown to reviewers as an accommodation, never penalised (tested). Keyboard-operable, labelled controls. No webcam, recording or proctoring. |
-| Deterministic answer checking | ✅ | Multiple choice compared with the approved key on the server — never by an LLM (tested). Response speed not shown or scored. |
+| Deterministic answer checking | ✅ | Multiple choice compared with the approved key on the server - never by an LLM (tested). Response speed not shown or scored. |
 | AI observations on written answers | 🟡 ⚖️ | Implemented (descriptive concepts / points to clarify / follow-up questions; no scores) but **off by default** behind the `ai_assessment_observations` flag pending legal, fairness and human-oversight review. Not covered by automated tests. |
 | Candidate-specific interview follow-up questions | 🔶 | Only as part of AI observations on written answers. CV-based follow-ups ⬜. |
 | Workspace: Assessments section | ✅ | Question bank, AI drafting dialog, jobs overview, responses list, CSV export (formula-injection safe, tested). |
 | Candidate profile "Quick Check" tab & pipeline status | ✅ | Not invited / Invited / Started / Pending human review / Completed (after reviewer notes) / Declined / Unavailable. Never advances or rejects (tested). Hiring managers can view, interviewers see status only. |
 | Company settings: CV Builder & AI | ✅ | Templates, default template, hide photos; per-feature AI switches with live availability reasons. |
-| Platform admin | ✅ / 🟡 | Per-company enable/disable of CV Builder, Quick Check and each AI feature (existing feature flags ✅). AI provider settings (on/off, model, monthly request and budget limits per company) and CV template availability ✅. AI usage page (requests, failures, tokens, cost per company, background observation jobs) 🟡 — aggregate only, no candidate data. |
+| Platform admin | ✅ / 🟡 | Per-company enable/disable of CV Builder, Quick Check and each AI feature (existing feature flags ✅). AI provider settings (on/off, model, monthly request and budget limits per company) and CV template availability ✅. AI usage page (requests, failures, tokens, cost per company, background observation jobs) 🟡 - aggregate only, no candidate data. |
 | Usage, limits, cost tracking | ✅ | Every call logged in `ai_usage` (model, tokens, estimated cost, latency, errors, blocked). Monthly per-company request and budget limits enforced. Rate limits on public endpoints. Retries (2) and 90 s timeout in the SDK client. |
 | Multi-company isolation | ✅ | All new tables have RLS + FORCE RLS; verified at API and database level (questions, attempts, responses, configs, builder profiles, photos, drafts, observations); `ai_usage` is not readable by tenants (tested). |
 | Everything works without AI | ✅ | Tested with no API key: AI actions return a clear message; builder, manual questions, Quick Check and checking unaffected. |
 
-## Phase 3 — Integrations & growth
+## Phase 3 - Integrations & growth
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -92,7 +92,7 @@ The application still requires **only full name, email and a CV**. A generated P
 | Analytics | 🔶 | Computed from live company data (funnel, sources, time to hire from real hires, stage health, job performance). CSV export of candidates ✅ in UI 🟡. Rejection-reason, recruiter-workload reports ⬜. |
 | Automations, candidate portal, other job boards | ⬜ | |
 
-## Phase 4 — Premium
+## Phase 4 - Premium
 
 AI Copilot, workflow builder, offer management, e-signatures, careers page builder, custom domains, migration tools (CSV/Workable import): **⬜ Not started.**
 

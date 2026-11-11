@@ -20,7 +20,7 @@ function StateBadge({ state }: { state: IntegrationState }) {
 }
 
 const LINKEDIN_CAPABILITIES = [
-  { label: "Share jobs on LinkedIn with a tracked application link", detail: "Available without API access — arrives in Phase 3 with the LinkedIn sharing tool.", gated: false },
+  { label: "Share jobs on LinkedIn with a tracked application link", detail: "Available without API access - arrives in Phase 3 with the LinkedIn sharing tool.", gated: false },
   { label: "Company Page connection (OAuth)", detail: "Requires a LinkedIn developer app with Community Management API access.", gated: true },
   { label: "Post jobs to LinkedIn and sync applicants", detail: "Requires LinkedIn Talent Solutions partner approval (Job Posting API).", gated: true },
   { label: "Recruiter System Connect", detail: "Requires RSC partner approval and a LinkedIn Recruiter contract.", gated: true },

@@ -1,7 +1,7 @@
 "use client";
 /**
  * Global overlay controller. Any screen can open the candidate preview,
- * scheduling, task, email, reject or scorecard flows with one call —
+ * scheduling, task, email, reject or scorecard flows with one call -
  * so recruiters never have to leave the page they are on.
  */
 import * as React from "react";

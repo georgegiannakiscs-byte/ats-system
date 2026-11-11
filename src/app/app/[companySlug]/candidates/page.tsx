@@ -286,7 +286,7 @@ function CandidatesDirectory() {
 
       <SaveViewDialog open={saveOpen} onOpenChange={setSaveOpen} onSave={async (name) => { const v = await api.views.save({ name, filters, columns, sort }); setViewId(v.id); toast.success(`View “${name}” saved`); }} />
       <TagDialog open={tagOpen} onOpenChange={setTagOpen} onSave={(tag) => { api.candidates.addTags(selectedRows.map((r) => r.candidate.id), [tag]); toast.success(`Tagged ${plural(selectedRows.length, "candidate")} “${tag}”`); }} />
-      <ConfirmDialog open={!!deleteView} onOpenChange={(o) => !o && setDeleteView(null)} title={`Delete view “${deleteView?.name}”?`} description="Candidates aren't affected — only this saved filter is removed." confirmLabel="Delete view" destructive onConfirm={() => { api.views.remove(deleteView!.id); if (viewId === deleteView!.id) applyView(db.savedViews[0]); toast("View deleted"); }} />
+      <ConfirmDialog open={!!deleteView} onOpenChange={(o) => !o && setDeleteView(null)} title={`Delete view “${deleteView?.name}”?`} description="Candidates aren't affected - only this saved filter is removed." confirmLabel="Delete view" destructive onConfirm={() => { api.views.remove(deleteView!.id); if (viewId === deleteView!.id) applyView(db.savedViews[0]); toast("View deleted"); }} />
       <ConfirmDialog
         open={bulkReject}
         onOpenChange={setBulkReject}
@@ -314,7 +314,7 @@ function SaveViewDialog({ open, onOpenChange, onSave }: { open: boolean; onOpenC
       <DialogContent size="sm">
         <form onSubmit={(e) => { e.preventDefault(); if (name.trim().length < 2) return setErr("Give the view a name"); onSave(name.trim()); onOpenChange(false); }} noValidate>
           <DialogHeader icon={<BookmarkPlus />} title="Save view" description="Saves the current filters, sort and columns." />
-          <DialogBody><Field label="Name" error={err}><Input autoFocus value={name} onChange={(e) => (setName(e.target.value), setErr(undefined))} placeholder="e.g. Design — final stages" aria-invalid={!!err || undefined} /></Field></DialogBody>
+          <DialogBody><Field label="Name" error={err}><Input autoFocus value={name} onChange={(e) => (setName(e.target.value), setErr(undefined))} placeholder="e.g. Design - final stages" aria-invalid={!!err || undefined} /></Field></DialogBody>
           <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit"><Check />Save view</Button></DialogFooter>
         </form>
       </DialogContent>

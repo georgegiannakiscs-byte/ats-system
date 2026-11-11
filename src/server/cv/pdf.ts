@@ -31,7 +31,7 @@ export async function renderCvPdf(data: CvData, template: CvTemplate, lang: CvLa
     margins: { top: 48, bottom: 52, left: 52, right: 52 },
     font: font(t.regular), // avoids loading the built-in Helvetica (no Greek glyphs)
     bufferPages: true,
-    info: { Title: `CV — ${data.personal.fullName}`, Author: data.personal.fullName, Creator: "Ulysse CV Builder", Producer: "Ulysse" },
+    info: { Title: `CV - ${data.personal.fullName}`, Author: data.personal.fullName, Creator: "Ulysse CV Builder", Producer: "Ulysse" },
     lang: lang === "el" ? "el-GR" : "en-GB",
     displayTitle: true,
   });
@@ -149,7 +149,7 @@ export async function renderCvPdf(data: CvData, template: CvTemplate, lang: CvLa
   }
   if (data.languages.length) {
     heading(L.languages);
-    body(data.languages.map((l) => (l.level ? `${l.language} — ${l.level}` : l.language)).join("  ·  "));
+    body(data.languages.map((l) => (l.level ? `${l.language} - ${l.level}` : l.language)).join("  ·  "));
   }
   if (data.certifications.length) {
     heading(L.certifications);

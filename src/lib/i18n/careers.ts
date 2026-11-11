@@ -10,7 +10,7 @@ export const careersDict = {
     errName: "Enter your full name", errEmail: "Enter a valid email address", errCv: "Attach your CV as a PDF or Word file", errCvSize: "Your CV must be smaller than {mb} MB",
     successTitle: "Application received", successBody: "Thank you for applying to {job} at {company}. The team will review your application and get back to you.", successEmail: "We've sent a confirmation to {email}.", reference: "Reference",
     privacyTitle: "How we use your data", privacyBody: "{company} processes the information you submit solely to evaluate your application for this and, if you agree to be contacted, future roles. Your CV is stored securely and is only visible to {company}'s hiring team. You can ask {company} at any time to access, correct or delete your data.",
-    poweredBy: "Recruitment powered by", minutes: "Takes about a minute — only name, email and CV are required.", posted: "Posted",
+    poweredBy: "Recruitment powered by", minutes: "Takes about a minute - only name, email and CV are required.", posted: "Posted",
   },
   el: {
     openPositions: "Ανοιχτές θέσεις", noJobs: "Δεν υπάρχουν ανοιχτές θέσεις αυτή τη στιγμή. Ελάτε ξανά σύντομα.", search: "Αναζήτηση θέσεων", allLocations: "Όλες οι τοποθεσίες", allTypes: "Όλοι οι τύποι", allDepartments: "Όλα τα τμήματα",
@@ -22,7 +22,7 @@ export const careersDict = {
     errName: "Συμπληρώστε το ονοματεπώνυμό σας", errEmail: "Συμπληρώστε ένα έγκυρο email", errCv: "Επισυνάψτε το βιογραφικό σας σε PDF ή Word", errCvSize: "Το βιογραφικό πρέπει να είναι μικρότερο από {mb} MB",
     successTitle: "Η αίτησή σας ελήφθη", successBody: "Ευχαριστούμε για την αίτησή σας για τη θέση {job} στην {company}. Η ομάδα θα την εξετάσει και θα επικοινωνήσει μαζί σας.", successEmail: "Στείλαμε επιβεβαίωση στο {email}.", reference: "Κωδικός",
     privacyTitle: "Πώς χρησιμοποιούμε τα δεδομένα σας", privacyBody: "Η {company} επεξεργάζεται τα στοιχεία που υποβάλλετε αποκλειστικά για την αξιολόγηση της αίτησής σας. Το βιογραφικό σας αποθηκεύεται με ασφάλεια και είναι ορατό μόνο στην ομάδα προσλήψεων της {company}. Μπορείτε οποιαδήποτε στιγμή να ζητήσετε πρόσβαση, διόρθωση ή διαγραφή των δεδομένων σας.",
-    poweredBy: "Προσλήψεις με το", minutes: "Διαρκεί περίπου ένα λεπτό — απαιτούνται μόνο όνομα, email και βιογραφικό.", posted: "Δημοσιεύθηκε",
+    poweredBy: "Προσλήψεις με το", minutes: "Διαρκεί περίπου ένα λεπτό - απαιτούνται μόνο όνομα, email και βιογραφικό.", posted: "Δημοσιεύθηκε",
   },
 } as const;
 

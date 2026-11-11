@@ -30,7 +30,7 @@ export const POST = handler(async (req) => {
   if (reason) return json({ prefill: { ...contact }, method: "contact_only", note: "We filled in your contact details. Add the rest in the builder." });
   try {
     const { data } = await structureCvText(job.org_id, text);
-    return json({ prefill: { ...data, email: data.email || contact.email, phone: data.phone || contact.phone, linkedinUrl: data.linkedinUrl || contact.linkedinUrl }, method: "ai", note: "Review every section — we copied what we found and left the rest empty." });
+    return json({ prefill: { ...data, email: data.email || contact.email, phone: data.phone || contact.phone, linkedinUrl: data.linkedinUrl || contact.linkedinUrl }, method: "ai", note: "Review every section - we copied what we found and left the rest empty." });
   } catch {
     return json({ prefill: { ...contact }, method: "contact_only", note: "We filled in your contact details. Add the rest in the builder." });
   }

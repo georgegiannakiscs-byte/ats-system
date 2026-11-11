@@ -3,7 +3,7 @@ import { handler, json } from "@/server/http";
 import { requirePlatformAdmin } from "@/server/auth";
 import { aiConfigured, aiModel } from "@/server/ai/claude";
 
-/** Platform AI monitoring: aggregate counts, cost and error messages only — no prompts, answers or candidate data. */
+/** Platform AI monitoring: aggregate counts, cost and error messages only - no prompts, answers or candidate data. */
 export const GET = handler(async () => {
   await requirePlatformAdmin();
   const [s] = await sys<{ value: { enabled: boolean; monthlyRequestLimitPerCompany: number; monthlyBudgetUsdPerCompany: number } }>("select value from platform_settings where key = 'ai'");

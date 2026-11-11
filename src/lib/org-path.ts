@@ -1,7 +1,7 @@
 /**
  * Builds company-scoped URLs: orgPath("/jobs") → "/app/acme/jobs".
  * The active company slug is set by the workspace shell before any child renders.
- * Slugs are for routing only — authorisation always uses the stable org ID.
+ * Slugs are for routing only - authorisation always uses the stable org ID.
  */
 let currentSlug = "";
 

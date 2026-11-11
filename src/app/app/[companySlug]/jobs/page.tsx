@@ -121,7 +121,7 @@ function Jobs() {
                     <td className="px-3 py-2.5"><PipelineStrip job={j} byStage={c.byStage} /></td>
                     <td className="px-3 py-2.5"><Person id={j.hiringManagerId} /></td>
                     <td className="px-3 py-2.5"><JobStatusBadge status={j.status} /></td>
-                    <td className="tabular px-3 py-2.5 text-xs text-muted-foreground">{j.publishedAt ? shortDate(j.publishedAt) : "—"}</td>
+                    <td className="tabular px-3 py-2.5 text-xs text-muted-foreground">{j.publishedAt ? shortDate(j.publishedAt) : "-"}</td>
                     <td className="pr-3" onClick={(e) => e.stopPropagation()}><JobActionsMenu job={j} /></td>
                   </tr>
                 );
@@ -163,7 +163,7 @@ function Jobs() {
   );
 }
 
-/** Segmented stage counts — width proportional, ordered, with a text summary for screen readers. */
+/** Segmented stage counts - width proportional, ordered, with a text summary for screen readers. */
 function PipelineStrip({ byStage, wide }: { job: Job; byStage: Record<string, number>; wide?: boolean }) {
   const db = useDb();
   const total = STAGE_ORDER.reduce((s, k) => s + byStage[k], 0);

@@ -109,7 +109,7 @@ function Tasks() {
       {view !== "completed" && (
         <form onSubmit={addQuick} className="mb-4 flex items-center gap-2 rounded-lg border border-dashed border-border-strong bg-surface px-3 transition-colors focus-within:border-solid focus-within:border-brand/50 focus-within:ring-[3px] focus-within:ring-ring/40">
           <Plus className="size-4 text-subtle-foreground" />
-          <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Quick add — type a task and press Enter" aria-label="Quick add task" className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-subtle-foreground" />
+          <input value={quick} onChange={(e) => setQuick(e.target.value)} placeholder="Quick add - type a task and press Enter" aria-label="Quick add task" className="h-10 flex-1 bg-transparent text-sm outline-none placeholder:text-subtle-foreground" />
           {quick && <span className="flex items-center gap-1 text-[11px] text-subtle-foreground"><Kbd><CornerDownLeft className="size-2.5" /></Kbd> due tomorrow</span>}
         </form>
       )}

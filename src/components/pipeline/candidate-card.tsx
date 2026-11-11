@@ -20,7 +20,7 @@ export interface CardData {
   nextInterview?: string;
 }
 
-/** Compact pipeline card. Pure presentation — drag behaviour is added by the board. */
+/** Compact pipeline card. Pure presentation - drag behaviour is added by the board. */
 export function CandidateCard({
   data, dragging, overlay, onOpen, onAdvance, onSchedule, onEmail, onReject, handleProps,
 }: {

@@ -3,7 +3,7 @@ import { env } from "@/server/env";
 import { handler, json } from "@/server/http";
 import { requirePlatformAdmin } from "@/server/auth";
 
-/** Integration health. Credentials and tokens are never returned — only whether they are configured. */
+/** Integration health. Credentials and tokens are never returned - only whether they are configured. */
 export const GET = handler(async () => {
   await requirePlatformAdmin();
   const rows = await sys(`select i.provider, i.status, i.last_sync_at, i.failed_attempts, i.last_error, o.name as company, o.id as org_id

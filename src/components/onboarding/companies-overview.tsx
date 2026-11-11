@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 type Company = { id: string; slug: string; name: string; status: string; role: string; logoUrl: string | null; primaryColor: string; stats: Record<string, number> | null };
 
-/** "All my companies" — counts per company, each computed under that company's own access rules. */
+/** "All my companies" - counts per company, each computed under that company's own access rules. */
 export function CompaniesOverview({ suspended }: { suspended?: string }) {
   const [data, setData] = React.useState<Company[] | null>(null);
   React.useEffect(() => {

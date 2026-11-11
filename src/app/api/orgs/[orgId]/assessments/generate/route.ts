@@ -16,7 +16,7 @@ const Body = z.object({
 
 /**
  * Drafts Quick Check questions with Claude from the job's own data (title, seniority,
- * responsibilities, requirements, skills) — never from candidate data. Results are saved
+ * responsibilities, requirements, skills) - never from candidate data. Results are saved
  * as DRAFTS; a recruiter must review and approve each one before any candidate sees it.
  */
 export const POST = handler(async (req, ctx: { params: Promise<{ orgId: string }> }) => {

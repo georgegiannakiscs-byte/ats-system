@@ -424,7 +424,7 @@ const assessments = {
 
 /** Logs a drafted email on the timeline. Sending requires a configured email provider. */
 async function logEmailDraft(candidateId: ID, subject: string) {
-  await send("activity.log", { kind: "email_drafted", message: `drafted an email: “${subject}” (not sent — email delivery not configured)`, candidateId });
+  await send("activity.log", { kind: "email_drafted", message: `drafted an email: “${subject}” (not sent - email delivery not configured)`, candidateId });
   return true;
 }
 

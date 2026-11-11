@@ -67,7 +67,7 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
     if (!valid || !app) return;
     await api.interviews.schedule({ candidateId: app.candidateId, jobId: app.jobId, applicationId: app.id, kind, start: start.toISOString(), durationMin: Number(duration), meetingType, location: location || undefined, interviewerIds: interviewers, notes: notes || undefined });
     const c = db.candidates.find((x) => x.id === app.candidateId)!;
-    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · No calendar invite was sent — calendar sync isn't connected.` });
+    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · No calendar invite was sent - calendar sync isn't connected.` });
     onClose();
   };
 
@@ -113,7 +113,7 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
             </span>
           </div>
         )}
-        <Field label={meetingType === "On-site" ? "Location" : meetingType === "Video" ? "Meeting link" : "Phone number"} hint={meetingType === "Video" ? "Paste a link, or leave empty — links are generated once a calendar is connected." : undefined} className="sm:col-span-2">
+        <Field label={meetingType === "On-site" ? "Location" : meetingType === "Video" ? "Meeting link" : "Phone number"} hint={meetingType === "Video" ? "Paste a link, or leave empty - links are generated once a calendar is connected." : undefined} className="sm:col-span-2">
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={meetingType === "On-site" ? `${job?.location ?? "Paris"} office, 3rd floor` : meetingType === "Video" ? "https://meet.example/…" : "+33 …"} />
         </Field>
         <Field label="Notes for interviewers" className="sm:col-span-2">
