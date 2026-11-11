@@ -81,7 +81,7 @@ export async function createAttempt(q: Q, input: { orgId: string; applicationId:
   const token = randomToken();
   const open = await q<{ id: string }>("select id from assessment_attempts where org_id = $1 and application_id = $2 and status in ('invited','started')", [input.orgId, input.applicationId]);
   if (open.length) {
-    // Re-issue the link (the old token stops working) — used for "send again".
+    // Re-issue the link (the old token stops working) - used for "send again".
     await q("update assessment_attempts set token_hash = $2, expires_at = greatest(expires_at, now() + make_interval(days => $3)) where id = $1", [open[0].id, sha256(token), INVITE_DAYS]);
     return { attemptId: open[0].id, token, config: ready.config, count: ready.questions.length };
   }
@@ -261,7 +261,7 @@ export async function answerAttempt(token: string, input: { position: number; op
     if (qn.type === "multiple_choice") {
       if (!input.optionId || !qn.options.some((o) => o.id === input.optionId)) throw new HttpError(400, "Choose one of the options", "invalid_option");
       optionId = input.optionId;
-      correct = optionId === qn.correctOptionId; // deterministic — never decided by AI
+      correct = optionId === qn.correctOptionId; // deterministic - never decided by AI
     } else {
       text = String(input.text ?? "").trim().slice(0, 2000);
       if (!text) throw new HttpError(400, "Write a short answer, or skip the question", "empty_answer");

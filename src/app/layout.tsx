@@ -10,7 +10,7 @@ const display = Gloock({ subsets: ["latin"], weight: "400", variable: "--font-di
 
 export const metadata: Metadata = {
   title: { default: BRAND.name, template: `%s · ${BRAND.name}` },
-  description: `${BRAND.name} — ${BRAND.tagline}`,
+  description: `${BRAND.name} - ${BRAND.tagline}`,
 };
 
 export const viewport: Viewport = {

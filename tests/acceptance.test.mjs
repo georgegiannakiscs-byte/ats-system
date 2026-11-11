@@ -1,5 +1,5 @@
 /**
- * Ulysse — Phase 1 acceptance tests (API + database level).
+ * Ulysse - Phase 1 acceptance tests (API + database level).
  * Run against a running server:  BASE_URL=http://localhost:3000 DATABASE_URL=… npm run test:acceptance
  */
 import { test } from "node:test";
@@ -66,7 +66,7 @@ const owner = client();
 const other = client();
 const S = {};
 
-test("A — multi-company management", async (t) => {
+test("A - multi-company management", async (t) => {
   await signup(owner, "Owner", `owner-${run}@test.example`);
   for (const [k, name, logo] of [["A", `Alpha ${run}`, "logo-a.png"], ["B", `Beta ${run}`, "logo-b.png"]]) {
     const r = await owner.post("/api/orgs", { name });
@@ -108,7 +108,7 @@ test("A — multi-company management", async (t) => {
   });
 });
 
-test("D — minimal application with only name, email and CV", async () => {
+test("D - minimal application with only name, email and CV", async () => {
   const r = await apply(S.slugA, S.jobSlugA, { fullName: "Eleni Georgiou", email: `eleni-${run}@example.com` });
   assert.equal(r.status, 201, JSON.stringify(r.data));
   assert.ok(r.data.reference);
@@ -136,7 +136,7 @@ test("D — minimal application with only name, email and CV", async () => {
   assert.equal(d2.status, 201, JSON.stringify(d2.data));
 });
 
-test("D — validation and abuse protection", async () => {
+test("D - validation and abuse protection", async () => {
   assert.equal((await apply(S.slugA, S.jobSlugA, { fullName: "No CV", email: `nocv-${run}@example.com` }, null)).status, 400);
   assert.equal((await apply(S.slugA, S.jobSlugA, { fullName: "Fake", email: `fake-${run}@example.com` }, "fake.pdf", "application/pdf")).status, 415, "content is sniffed, not trusted");
   assert.equal((await apply(S.slugA, S.jobSlugA, { email: `x-${run}@example.com` })).status, 400);
@@ -155,7 +155,7 @@ test("D — validation and abuse protection", async () => {
   assert.equal((await apply(S.slugA, slug, { fullName: "Early Bird", email: `early-${run}@example.com` })).status, 404);
 });
 
-test("E — optional information is saved and editable", async () => {
+test("E - optional information is saved and editable", async () => {
   const r = await apply(S.slugA, S.jobSlugA, { fullName: "Maria Ioannou", email: `maria-${run}@example.com`, phone: "+30 694 000 0000", linkedinUrl: "https://www.linkedin.com/in/maria", city: "Patras", yearsExperience: "5", salaryExpectations: "40k" });
   assert.equal(r.status, 201, JSON.stringify(r.data));
   let c = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.candidates.find((x) => x.email === `maria-${run}@example.com`);
@@ -174,7 +174,7 @@ test("E — optional information is saved and editable", async () => {
   assert.equal(c.extra.availability, "1 month");
 });
 
-test("I — LinkedIn tracked link records the source", async () => {
+test("I - LinkedIn tracked link records the source", async () => {
   const r = await apply(S.slugA, S.jobSlugA, { fullName: "Kostas Linked", email: `kostas-${run}@example.com`, utmSource: "linkedin", utmCampaign: "launch" });
   assert.equal(r.status, 201);
   const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
@@ -185,7 +185,7 @@ test("I — LinkedIn tracked link records the source", async () => {
   assert.equal(snap.integrations.linkedin, "not_configured", "LinkedIn is never shown as connected without a real connection");
 });
 
-test("H — recruitment pipeline to hired", async () => {
+test("H - recruitment pipeline to hired", async () => {
   assert.equal((await owner.cmd(S.A.id, "applications.move", { id: S.appA, stage: "hr_interview" })).status, 200);
   const iv = id("i");
   assert.equal((await owner.cmd(S.A.id, "records.upsert", { kind: "interview", id: iv, data: { candidateId: S.candA, jobId: S.jobA, applicationId: S.appA, kind: "HR interview", start: new Date(Date.now() - 3600e3).toISOString(), durationMin: 30, meetingType: "Video", interviewerIds: [], status: "scheduled" } })).status, 200);
@@ -213,7 +213,7 @@ test("H — recruitment pipeline to hired", async () => {
   assert.equal(w.status, "withdrawn");
 });
 
-test("J — company data isolation (API)", async () => {
+test("J - company data isolation (API)", async () => {
   await signup(other, "Other Company Owner", `other-${run}@test.example`);
   const r = await other.post("/api/orgs", { name: `Gamma ${run}` });
   S.C = r.data;
@@ -235,7 +235,7 @@ test("J — company data isolation (API)", async () => {
   assert.equal(snapC.jobs.length, 0);
 });
 
-test("J — company data isolation (database Row Level Security)", async () => {
+test("J - company data isolation (database Row Level Security)", async () => {
   const db = new pg.Client({ connectionString: DB });
   await db.connect();
   const [{ id: ownerId }] = (await db.query("select id from users where email = $1", [`owner-${run}@test.example`])).rows;
@@ -283,7 +283,7 @@ test("Permissions are per company and enforced server-side", async () => {
   assert.equal((await other.post(`/api/invitations/${token}`)).status, 404);
 });
 
-test("C — branding & logo replacement", async () => {
+test("C - branding & logo replacement", async () => {
   const html = await (await fetch(`${BASE}/careers/${S.slugA}`)).text();
   assert.ok(html.includes(`/api/public/logo/${S.A.id}/light`), "logo on careers page");
   const before = (await owner.get("/api/me")).data.companies.find((c) => c.id === S.A.id).logoUrl;
@@ -307,7 +307,7 @@ test("C — branding & logo replacement", async () => {
   assert.ok(!sitemap.includes("secret-draft-role"), "drafts are not in the sitemap");
 });
 
-test("B — platform super admin", async () => {
+test("B - platform super admin", async () => {
   // The first registered account on a fresh platform is bootstrapped as platform admin in development.
   // Promote the test owner explicitly so this test is independent of ordering.
   const db = new pg.Client({ connectionString: DB });

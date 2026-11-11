@@ -1,7 +1,7 @@
 "use client";
 /**
  * Chart primitives on top of Recharts. Colours come from validated tokens
- * (--chart-1..3) that are re-stepped for dark mode — never cycled.
+ * (--chart-1..3) that are re-stepped for dark mode - never cycled.
  */
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart } from "recharts";

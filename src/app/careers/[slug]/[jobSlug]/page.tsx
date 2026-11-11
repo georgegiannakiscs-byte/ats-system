@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: `${d.job.title} · ${d.org.name}` },
     description: (d.job.summary as string)?.slice(0, 160) || `${d.job.title} at ${d.org.name}`,
     alternates: { canonical: url },
-    openGraph: { title: `${d.job.title} — ${d.org.name}`, description: (d.job.summary as string)?.slice(0, 200), url, type: "website", images: d.org.logoUrl ? [`${env.appUrl}${d.org.logoUrl}`] : undefined },
+    openGraph: { title: `${d.job.title} - ${d.org.name}`, description: (d.job.summary as string)?.slice(0, 200), url, type: "website", images: d.org.logoUrl ? [`${env.appUrl}${d.org.logoUrl}`] : undefined },
   };
 }
 

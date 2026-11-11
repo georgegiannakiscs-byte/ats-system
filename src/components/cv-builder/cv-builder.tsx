@@ -333,7 +333,7 @@ export function CvBuilder({
                 <label className="block flex-1">
                   <span className="mb-1 block text-sm font-medium">{t.level}</span>
                   <select value={l.level} onChange={(e) => set("languages", data.languages.map((x) => (x.id === l.id ? { ...x, level: e.target.value } : x)))} className={cn(inputCls, "h-10")}>
-                    <option value="">—</option>
+                    <option value="">-</option>
                     {t.levels.map((lv) => <option key={lv} value={lv}>{lv}</option>)}
                   </select>
                 </label>

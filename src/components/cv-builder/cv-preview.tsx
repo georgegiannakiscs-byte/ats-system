@@ -104,7 +104,7 @@ export function CvPreview({ data, template, lang, photo }: { data: CvData; templ
             </>
           )}
           {data.skills.length > 0 && (<>{h(L.skills)}{body(data.skills.join("  ·  "))}</>)}
-          {data.languages.length > 0 && (<>{h(L.languages)}{body(data.languages.map((l) => (l.level ? `${l.language} — ${l.level}` : l.language)).join("  ·  "))}</>)}
+          {data.languages.length > 0 && (<>{h(L.languages)}{body(data.languages.map((l) => (l.level ? `${l.language} - ${l.level}` : l.language)).join("  ·  "))}</>)}
           {data.certifications.length > 0 && (<>{h(L.certifications)}{data.certifications.map((c) => <div key={c.id}>{entry(c.name, c.issuer, c.date)}{c.url && body(c.url)}</div>)}</>)}
           {data.projects.length > 0 && (
             <>

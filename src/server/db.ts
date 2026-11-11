@@ -19,7 +19,7 @@ export type Q = <T extends QueryResultRow = QueryResultRow>(text: string, params
 const wrap = (c: Pool | PoolClient): Q => async (text, params) => (await c.query(text, params as unknown[])).rows;
 
 /**
- * System context — runs as the schema owner. Use ONLY for: authentication,
+ * System context - runs as the schema owner. Use ONLY for: authentication,
  * public careers reads (published jobs), public application intake, membership
  * checks and platform-admin aggregates. Never for authenticated tenant reads.
  */
@@ -42,7 +42,7 @@ export async function sysTx<T>(fn: (q: Q) => Promise<T>): Promise<T> {
 }
 
 /**
- * Tenant context — switches to the restricted `deceler_app` role and pins the
+ * Tenant context - switches to the restricted `deceler_app` role and pins the
  * organisation and user for this transaction. Row Level Security then limits
  * every statement to rows of that organisation, for active members only.
  */

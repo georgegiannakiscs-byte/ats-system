@@ -45,7 +45,7 @@ export async function generateQuestions(orgId: string, job: { title: string; sen
     `Write ${opts.count} questions in ${opts.language === "el" ? "Greek" : "English"}. ${opts.mix === "mixed" ? "Make at most one of them short_text (a brief written answer); the rest multiple_choice." : "All multiple_choice."}`,
   ].filter(Boolean).join("\n\n");
   const { data, model } = await claudeStructured({ orgId, feature: "question_generation", schema: QuestionSet, system: QGEN_SYSTEM, prompt, maxTokens: 8000 });
-  // Deterministic validation — reject anything ambiguous or malformed rather than "fixing" it.
+  // Deterministic validation - reject anything ambiguous or malformed rather than "fixing" it.
   const valid: GeneratedQuestion[] = [];
   const rejected: { question: string; reason: string }[] = [];
   for (const q of data.questions) {

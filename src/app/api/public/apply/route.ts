@@ -28,7 +28,7 @@ const Fields = z.object({
   currentTitle: opt(160), currentCompany: opt(160), summary: opt(4000), yearsExperience: opt(10), education: opt(2000), skills: opt(1000),
   languages: opt(500), certifications: opt(1000), salaryExpectations: opt(200), availability: opt(200), noticePeriod: opt(200), coverLetter: opt(8000), notes: opt(4000),
   utmSource: opt(80), utmMedium: opt(80), utmCampaign: opt(120), lang: z.enum(["en", "el"]).optional(),
-  website: z.string().max(0, "Bot detected").optional(), // honeypot — must stay empty
+  website: z.string().max(0, "Bot detected").optional(), // honeypot - must stay empty
   generatedCvToken: z.string().regex(/^[A-Za-z0-9_-]{20,100}$/).optional(), // CV made with the CV Builder
 }).passthrough();
 
@@ -136,7 +136,7 @@ export const POST = handler(async (req) => {
       return { applicationId, quickCheck };
     });
     const lang = f.lang ?? "en";
-    const subject = lang === "el" ? `Λάβαμε την αίτησή σας — ${job.title}` : `We received your application — ${job.title}`;
+    const subject = lang === "el" ? `Λάβαμε την αίτησή σας - ${job.title}` : `We received your application - ${job.title}`;
     const body = lang === "el"
       ? `Γεια σας ${parts[0]},\n\nΕυχαριστούμε για την αίτησή σας για τη θέση ${job.title} στην ${job.org_name}. Θα επικοινωνήσουμε μαζί σας σύντομα.\n\n${job.org_name}`
       : `Hi ${parts[0]},\n\nThank you for applying for ${job.title} at ${job.org_name}. We'll be in touch soon.\n\n${job.org_name}`;

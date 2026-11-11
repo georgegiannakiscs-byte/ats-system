@@ -104,6 +104,6 @@ export async function claudeStructured<S extends z.ZodType>(opts: { orgId: strin
     const msg = e instanceof Anthropic.APIError ? `${e.status ?? ""} ${e.message}` : (e as Error).message;
     await record(opts.orgId, opts.feature, model, "error", null, Date.now() - started, msg);
     console.error(`[ai] ${opts.feature} failed:`, msg);
-    throw new HttpError(503, "The AI service couldn't complete this request. Nothing was changed — please try again later.", "ai_failed");
+    throw new HttpError(503, "The AI service couldn't complete this request. Nothing was changed - please try again later.", "ai_failed");
   }
 }

@@ -95,7 +95,7 @@ export default function OverviewPage() {
         <Link href={`/app/new?org=${db.org.id}`} className="flex flex-wrap items-center gap-4 rounded-xl border border-signal/30 bg-signal-soft/40 p-4 transition-colors hover:border-signal/50">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Finish setting up {db.org.name}</p>
-            <p className="text-xs text-muted-foreground">{ONBOARDING_STEPS.filter((k) => db.org.onboarding[k]).length} of {ONBOARDING_STEPS.length} steps done — logo, branding, careers page, team and your first job.</p>
+            <p className="text-xs text-muted-foreground">{ONBOARDING_STEPS.filter((k) => db.org.onboarding[k]).length} of {ONBOARDING_STEPS.length} steps done - logo, branding, careers page, team and your first job.</p>
           </div>
           <div className="h-1.5 w-32 overflow-hidden rounded-full bg-surface"><div className="h-full rounded-full bg-signal" style={{ width: `${(ONBOARDING_STEPS.filter((k) => db.org.onboarding[k]).length / ONBOARDING_STEPS.length) * 100}%` }} /></div>
           <ArrowRight className="size-4 text-muted-foreground" />
@@ -140,8 +140,8 @@ export default function OverviewPage() {
                           <span className="block truncate text-[11px] text-muted-foreground">{j.department} · {j.location}{j.status === "on_hold" && " · On hold"}</span>
                         </span>
                         <span className="tabular text-right">{c.active}</span>
-                        <span className={cn("tabular text-right", c.newThisWeek ? "text-brand" : "text-subtle-foreground")}>{c.newThisWeek ? `+${c.newThisWeek}` : "—"}</span>
-                        <span className="tabular text-right">{c.byStage.offer || <span className="text-subtle-foreground">—</span>}</span>
+                        <span className={cn("tabular text-right", c.newThisWeek ? "text-brand" : "text-subtle-foreground")}>{c.newThisWeek ? `+${c.newThisWeek}` : "-"}</span>
+                        <span className="tabular text-right">{c.byStage.offer || <span className="text-subtle-foreground">-</span>}</span>
                       </Link>
                     </li>
                   );

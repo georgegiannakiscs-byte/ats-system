@@ -44,7 +44,7 @@ const JobInput = z.object({
   benefits: Str(4000).optional(),
   skills: z.array(Str(60)).max(40).optional(),
   preferredSkills: z.array(Str(60)).max(40).optional(),
-  // Screening questions are always optional for candidates — "required" is not accepted.
+  // Screening questions are always optional for candidates - "required" is not accepted.
   screeningQuestions: z.array(z.object({ id: z.string().max(40), label: Str(300).min(2), type: z.enum(["text", "yesno"]) })).max(10).optional(),
   channels: z.object({ careersPage: z.boolean(), linkedin: z.boolean(), indeed: z.boolean() }).partial().optional(),
   targetHireDate: z.string().datetime().optional().nullable(),
@@ -248,7 +248,7 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         await q("insert into stage_history (org_id, application_id, from_stage, to_stage, from_status, to_status, changed_by) values ($1,$2,$3,$3,$4,$5,$6)", [orgId, id, app.stage, app.status, withdraw ? "withdrawn" : "rejected", a.user.id]);
         if (p.addToPool) await q("update candidates set in_talent_pool = true where id = $1", [app.candidate_id]);
         const [c] = await q<{ full_name: string }>("select full_name from candidates where id = $1", [app.candidate_id]);
-        await activity(q, a, "rejected", withdraw ? `recorded that ${c?.full_name} withdrew — ${reason}` : `rejected ${c?.full_name} — ${reason}`, { candidateId: app.candidate_id, jobId: app.job_id });
+        await activity(q, a, "rejected", withdraw ? `recorded that ${c?.full_name} withdrew - ${reason}` : `rejected ${c?.full_name} - ${reason}`, { candidateId: app.candidate_id, jobId: app.job_id });
         return;
       }
       case "applications.restore": {

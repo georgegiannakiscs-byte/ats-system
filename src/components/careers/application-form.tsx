@@ -313,7 +313,7 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
         )}
       </div>
 
-      {/* Honeypot for bots — hidden from people and assistive technology. */}
+      {/* Honeypot for bots - hidden from people and assistive technology. */}
       <input id="f-website" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute left-[-9999px] h-0 w-0 opacity-0" />
 
       <details className="mt-4 text-xs text-muted-foreground">

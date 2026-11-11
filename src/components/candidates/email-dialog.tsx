@@ -59,7 +59,7 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
     setSubmitted(true);
     if (errors.subject || errors.body) return;
     await api.logEmailDraft(candidateId, subject);
-    toast("Draft saved to the timeline", { description: "No email was sent — email delivery is not configured for this company yet." });
+    toast("Draft saved to the timeline", { description: "No email was sent - email delivery is not configured for this company yet." });
     onClose();
   };
 

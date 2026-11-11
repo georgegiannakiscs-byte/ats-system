@@ -45,7 +45,7 @@ function Assessments() {
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="max-w-2xl text-sm text-muted-foreground">Short, role-related Quick Checks that candidates can take after applying. Questions are written or AI-drafted, then approved by a person. Results are reviewed alongside the application — they never move or reject anyone automatically.</p>
+          <p className="max-w-2xl text-sm text-muted-foreground">Short, role-related Quick Checks that candidates can take after applying. Questions are written or AI-drafted, then approved by a person. Results are reviewed alongside the application - they never move or reject anyone automatically.</p>
         </div>
         {canManage && (
           <div className="flex gap-2">
@@ -101,7 +101,7 @@ function QuestionBank({ onEdit }: { onEdit: (q: AssessmentQuestion) => void }) {
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge tone={STATUS_TONE[x.status]}>{x.status === "draft" ? "Draft — needs approval" : x.status === "approved" ? "Approved" : "Archived"}</Badge>
+                    <Badge tone={STATUS_TONE[x.status]}>{x.status === "draft" ? "Draft - needs approval" : x.status === "approved" ? "Approved" : "Archived"}</Badge>
                     {x.source === "ai" && <Badge tone="outline" title={`${x.aiModel ?? ""} · ${x.generationVersion ?? ""}`}><Sparkles />AI-drafted</Badge>}
                     <span className="text-xs text-muted-foreground">{x.type === "multiple_choice" ? "Multiple choice" : "Short written"} · {x.language.toUpperCase()} · {x.difficulty} · v{x.version}{x.jobId ? ` · ${db.jobs.find((j) => j.id === x.jobId)?.title ?? "job"}` : ""}</span>
                   </div>
@@ -191,8 +191,8 @@ function ResponsesTab() {
                   <td className="px-4 py-2.5"><Link className="font-medium hover:underline" href={orgPath(`/candidates/view?id=${a.candidateId}&tab=quick-check`)}>{c?.fullName ?? `${c?.firstName ?? ""} ${c?.lastName ?? ""}`}</Link></td>
                   <td className="px-4 py-2.5 text-muted-foreground">{j?.title}</td>
                   <td className="px-4 py-2.5"><Badge tone="neutral">{QC_LABEL[qcStatus(db, a.applicationId, a.jobId!)]}</Badge></td>
-                  <td className="tabular px-4 py-2.5">{a.status === "completed" && mc.length ? `${mc.filter((r) => r.isCorrect).length}/${mc.length}` : "—"}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{a.accommodation === "none" ? "—" : a.accommodation === "extended" ? "Extended" : "Untimed"}</td>
+                  <td className="tabular px-4 py-2.5">{a.status === "completed" && mc.length ? `${mc.filter((r) => r.isCorrect).length}/${mc.length}` : "-"}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{a.accommodation === "none" ? "-" : a.accommodation === "extended" ? "Extended" : "Untimed"}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{relativeTime(a.completedAt ?? a.startedAt ?? a.createdAt!)}</td>
                 </tr>
               );
@@ -231,7 +231,7 @@ function GenerateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader icon={<Sparkles />} title="Draft questions with AI" description="Claude drafts questions from the job's title, seniority, responsibilities, requirements and skills only — never from candidate data. Every draft needs your approval." />
+        <DialogHeader icon={<Sparkles />} title="Draft questions with AI" description="Claude drafts questions from the job's title, seniority, responsibilities, requirements and skills only - never from candidate data. Every draft needs your approval." />
         <DialogBody className="space-y-4">
           {unavailable && <p className="rounded-md bg-warning-soft p-3 text-sm">{unavailable} You can still write questions manually.</p>}
           <Field label="Job" required><Select value={jobId} onValueChange={setJobId} placeholder="Choose a job" options={jobs.map((j) => ({ value: j.id, label: j.title }))} /></Field>

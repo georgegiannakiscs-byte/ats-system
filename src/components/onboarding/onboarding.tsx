@@ -241,7 +241,7 @@ function TeamStep({ onDone }: { onDone: () => void }) {
               <Button size="sm" variant="ghost" onClick={() => navigator.clipboard?.writeText(s.link).then(() => toast.success("Invitation link copied"))}><Copy />Copy link</Button>
             </li>
           ))}
-          <p className="text-xs text-muted-foreground">Email delivery is only active when the platform has an email provider configured — share these links directly otherwise.</p>
+          <p className="text-xs text-muted-foreground">Email delivery is only active when the platform has an email provider configured - share these links directly otherwise.</p>
         </ul>
       )}
       <Button onClick={onDone}>Continue<ChevronRight /></Button>

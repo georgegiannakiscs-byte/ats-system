@@ -35,7 +35,7 @@ function RejectForm({ applicationId, onClose }: { applicationId: ID; onClose: ()
     e.preventDefault();
     setSubmitted(true);
     if (!reason) return;
-    await api.applications.reject(app.id, details ? `${reason} — ${details}` : reason, pool);
+    await api.applications.reject(app.id, details ? `${reason} - ${details}` : reason, pool);
     toast(`${fullName(c)} was rejected`, {
       description: pool ? "Kept in the talent pool for future roles." : undefined,
       action: { label: "Undo", onClick: () => api.applications.restore(app.id) },
@@ -47,7 +47,7 @@ function RejectForm({ applicationId, onClose }: { applicationId: ID; onClose: ()
     <form onSubmit={submit} noValidate className="flex min-h-0 flex-1 flex-col">
       <DialogHeader icon={<UserX />} title={`Reject ${fullName(c)}?`} description={`From ${job.title}. The candidate leaves the active pipeline.`} />
       <DialogBody className="space-y-4">
-        <Field label="Reason" required error={submitted && !reason ? "Select a reason — it powers your analytics." : undefined}>
+        <Field label="Reason" required error={submitted && !reason ? "Select a reason - it powers your analytics." : undefined}>
           <Select value={reason} onValueChange={setReason} placeholder="Choose a reason" invalid={submitted && !reason} options={REJECTION_REASONS.map((r) => ({ value: r, label: r }))} />
         </Field>
         <Field label="Internal note" hint="Only visible to your team.">

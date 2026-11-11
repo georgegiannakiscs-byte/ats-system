@@ -3,7 +3,7 @@ import { cn, initials } from "@/lib/utils";
 
 const sizes = { xs: "size-5 text-[9px]", sm: "size-6 text-[10px]", md: "size-8 text-xs", lg: "size-10 text-sm", xl: "size-14 text-lg" };
 
-/** Subtle tinted initials avatar — consistent everywhere, adapts to dark mode. */
+/** Subtle tinted initials avatar - consistent everywhere, adapts to dark mode. */
 export function Avatar({ name, hue = 260, size = "sm", className, ring }: { name: string; hue?: number; size?: keyof typeof sizes; className?: string; ring?: boolean }) {
   return (
     <span

@@ -1,4 +1,4 @@
-# Ulysse — multi-company Applicant Tracking System
+# Ulysse - multi-company Applicant Tracking System
 
 Premium recruiting platform: one account manages many companies, each a fully isolated workspace with its own jobs, candidates, team, branding and public careers page. Candidates apply with just **name, email and CV**.
 
@@ -28,7 +28,7 @@ On GitHub: **Code → Codespaces → Create codespace** (on the branch you want 
 APP_SECRET=$(openssl rand -hex 32) docker compose up -d     # app + PostgreSQL + persistent storage
 ```
 
-or build the standalone server yourself: `npm run build && npm start` (needs `DATABASE_URL`, `APP_SECRET`, `APP_URL`, `STORAGE_DIR`). Any Node host with PostgreSQL works (Render, Railway, Fly.io, a VPS, Kubernetes…); Supabase/Neon/RDS can provide the database. Static hosting (e.g. GitHub Pages) is **not** possible — Ulysse has a server, a database and private file storage.
+or build the standalone server yourself: `npm run build && npm start` (needs `DATABASE_URL`, `APP_SECRET`, `APP_URL`, `STORAGE_DIR`). Any Node host with PostgreSQL works (Render, Railway, Fly.io, a VPS, Kubernetes…); Supabase/Neon/RDS can provide the database. Static hosting (e.g. GitHub Pages) is **not** possible - Ulysse has a server, a database and private file storage.
 
 ## Tests
 
@@ -36,14 +36,14 @@ or build the standalone server yourself: `npm run build && npm start` (needs `DA
 npm run test:acceptance    # API + database-level scenarios (multi-company, admin, branding, 3-field application,
                            # optional data, LinkedIn tracking, pipeline to hire, tenant isolation, permissions)
 npm run test:quick-check   # CV Builder & Quick Check scenarios A–G (API + database). Starts a local
-                           # Anthropic stub on :4599 — run the server with ANTHROPIC_API_KEY=stub-key
+                           # Anthropic stub on :4599 - run the server with ANTHROPIC_API_KEY=stub-key
                            # ANTHROPIC_BASE_URL=http://127.0.0.1:4599 to exercise the AI paths, or without
                            # a key to check the no-AI fallbacks.
 npm run test:e2e           # browser journey (requires Playwright + Chromium)
 npm run test:e2e:quick-check  # browser journey: build a CV → apply → Quick Check → recruiter review
 ```
 
-All run against a running server (`BASE_URL`, default `http://localhost:3000`). CI (`.github/workflows/ci.yml`) runs type-check, lint, migrations, production build and both API suites against PostgreSQL (AI via the local stub — no real Anthropic calls).
+All run against a running server (`BASE_URL`, default `http://localhost:3000`). CI (`.github/workflows/ci.yml`) runs type-check, lint, migrations, production build and both API suites against PostgreSQL (AI via the local stub - no real Anthropic calls).
 
 ## AI (Anthropic Claude)
 
@@ -70,7 +70,7 @@ src/app/assess/[token]   Candidate Quick Check (token link, no account)
 src/app/admin/           Platform Super Admin
 ```
 
-**Tenant isolation.** Every tenant table has `org_id`, RLS and `FORCE ROW LEVEL SECURITY`. Authenticated requests switch to the restricted role `deceler_app` and pin `app.org_id` / `app.user_id`; policies also require an active membership in an active company. A separate owner-only "system context" (explicit `app.bypass`) is used solely for public intake, platform aggregates and new-company defaults — the tenant role can never use it. Files are served only through short-lived HMAC-signed links that are re-authorised against membership on every request.
+**Tenant isolation.** Every tenant table has `org_id`, RLS and `FORCE ROW LEVEL SECURITY`. Authenticated requests switch to the restricted role `deceler_app` and pin `app.org_id` / `app.user_id`; policies also require an active membership in an active company. A separate owner-only "system context" (explicit `app.bypass`) is used solely for public intake, platform aggregates and new-company defaults - the tenant role can never use it. Files are served only through short-lived HMAC-signed links that are re-authorised against membership on every request.
 
 **Platform vs company administration.** Platform Super Admins manage companies, users, features and settings but have no access to company recruitment data. Company Admins manage only their own company.
 

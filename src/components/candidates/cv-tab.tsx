@@ -94,7 +94,7 @@ export function CvTab({ candidate }: { candidate: Candidate }) {
           ) : loading || !url ? (
             <Skeleton className="m-4 h-[480px]" />
           ) : (
-            <iframe src={url} title={`CV — ${selected.fileName}`} className="h-[70vh] min-h-[480px] w-full bg-white" />
+            <iframe src={url} title={`CV - ${selected.fileName}`} className="h-[70vh] min-h-[480px] w-full bg-white" />
           )}
         </div>
       )}

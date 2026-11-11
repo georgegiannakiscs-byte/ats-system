@@ -3,7 +3,7 @@ import { HttpError, handler } from "@/server/http";
 import { requireOrg } from "@/server/org";
 import { getObject } from "@/server/storage";
 
-/** A candidate's optional photo — only when the company hasn't chosen to hide photos during screening. */
+/** A candidate's optional photo - only when the company hasn't chosen to hide photos during screening. */
 export const GET = handler(async (_req, ctx: { params: Promise<{ orgId: string; photoId: string }> }) => {
   const { orgId, photoId } = await ctx.params;
   const access = await requireOrg(orgId, "candidates.view");

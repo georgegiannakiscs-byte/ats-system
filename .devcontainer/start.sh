@@ -23,5 +23,5 @@ pkill -f "standalone/server.js" 2>/dev/null || true
 (cd .next/standalone && exec setsid nohup node server.js) > /tmp/ulysse.log 2>&1 < /dev/null &
 
 for _ in $(seq 1 60); do curl -sf http://localhost:3000/login > /dev/null && break; sleep 1; done
-node scripts/seed-demo.mjs || echo "Demo seed failed — see the message above. The app still runs."
+node scripts/seed-demo.mjs || echo "Demo seed failed - see the message above. The app still runs."
 echo "Ulysse is running: $APP_URL  (sign in: demo@example.com / Ulysse-demo-2026). Server log: /tmp/ulysse.log"

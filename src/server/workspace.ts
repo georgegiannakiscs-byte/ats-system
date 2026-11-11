@@ -19,8 +19,8 @@ export const DEFAULT_STAGES = [
 
 export const DEFAULT_TEMPLATES = [
   { id: "tpl_ack", name: "Application received", category: "Application", subject: "Thank you for applying to {{job_title}}", body: "Hi {{candidate_name}},\n\nThank you for your interest in the {{job_title}} role at {{company_name}}. We're reviewing your application and will be in touch soon.\n\nKind regards,\n{{recruiter_name}}" },
-  { id: "tpl_invite", name: "Interview invitation", category: "Interview", subject: "Interview — {{job_title}} at {{company_name}}", body: "Hi {{candidate_name}},\n\nWe'd love to invite you to an interview on {{interview_date}}.\n\nBest,\n{{recruiter_name}}" },
-  { id: "tpl_reject", name: "Rejection — after review", category: "Rejection", subject: "Your application for {{job_title}}", body: "Hi {{candidate_name}},\n\nThank you for applying. After careful consideration we've decided to move forward with other candidates.\n\nKind regards,\n{{recruiter_name}}" },
+  { id: "tpl_invite", name: "Interview invitation", category: "Interview", subject: "Interview - {{job_title}} at {{company_name}}", body: "Hi {{candidate_name}},\n\nWe'd love to invite you to an interview on {{interview_date}}.\n\nBest,\n{{recruiter_name}}" },
+  { id: "tpl_reject", name: "Rejection - after review", category: "Rejection", subject: "Your application for {{job_title}}", body: "Hi {{candidate_name}},\n\nThank you for applying. After careful consideration we've decided to move forward with other candidates.\n\nKind regards,\n{{recruiter_name}}" },
 ];
 
 export const DEFAULT_NOTIFICATION_PREFS = { newApplication: true, stageChange: true, interviewReminder: true, scorecardDue: true, taskDue: true, weeklyDigest: false, mentions: true };
@@ -45,7 +45,7 @@ import { logoUrl } from "./branding";
 
 const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOString() : undefined);
 
-/** Builds the workspace payload consumed by the frontend store — one company only. */
+/** Builds the workspace payload consumed by the frontend store - one company only. */
 export async function buildSnapshot(access: OrgAccess) {
   const { org, user, role } = access;
   const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string }>(

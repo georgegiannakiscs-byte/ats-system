@@ -358,7 +358,7 @@ function RolesSettings() {
           <tbody className="divide-y divide-border">{perms.map((p) => <tr key={p.label}><td className="px-4 py-2.5">{p.label}</td>{p.roles.map((v, i) => <td key={i} className="px-3 py-2.5 text-center">{cell(v)}</td>)}</tr>)}</tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground">Default role presets. Custom roles and enforcement arrive with authentication — this matrix documents the intended model.</p>
+      <p className="text-xs text-muted-foreground">Default role presets. Custom roles and enforcement arrive with authentication - this matrix documents the intended model.</p>
     </div>
   );
 }

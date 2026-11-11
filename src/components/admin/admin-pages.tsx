@@ -38,7 +38,7 @@ export function AdminOverview() {
   ];
   return (
     <>
-      <AdminHeader title="Platform overview" description="Aggregated metrics only — no candidate-level data is shown here." />
+      <AdminHeader title="Platform overview" description="Aggregated metrics only - no candidate-level data is shown here." />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {tiles.map(([l, v, s]) => (
           <Card key={l as string} className="p-4"><p className="text-xs text-muted-foreground">{l}</p><p className="tabular mt-2 text-2xl font-semibold">{v}</p><p className="mt-1 text-xs text-muted-foreground">{s}</p></Card>
@@ -90,7 +90,7 @@ export function AdminCompanies() {
               <tr key={c.id} className="hover:bg-accent/50">
                 <td className="px-4 py-2.5"><Link href={`/admin/companies/${c.id}`} className="flex items-center gap-2.5 font-medium hover:underline"><CompanyLogo name={c.name} logoUrl={c.logoUrl} size={24} />{c.name}<span className="font-normal text-subtle-foreground">/{c.slug}</span></Link></td>
                 <td className="px-3">{c.status === "active" ? <Badge tone="success">Active</Badge> : <Badge tone="warning">Suspended</Badge>}</td>
-                <td className="max-w-48 truncate px-3 text-xs text-muted-foreground">{c.admins || "—"}</td>
+                <td className="max-w-48 truncate px-3 text-xs text-muted-foreground">{c.admins || "-"}</td>
                 <td className="tabular px-3 text-right">{c.members}</td><td className="tabular px-3 text-right">{c.jobs}</td><td className="tabular px-3 text-right">{c.applications}</td>
                 <td className="px-3 text-xs text-muted-foreground">{shortDate(c.createdAt)}</td>
               </tr>
@@ -128,10 +128,10 @@ function CreateCompanyDialog({ open, onOpenChange, onCreated }: { open: boolean;
               if (r.invite) setInvite(r.invite); else onOpenChange(false);
             } catch (err) { setError((err as ApiError).message); }
           }}>
-            <DialogHeader icon={<Building2 />} title="Create company" description="You won't be added as a member — company data stays private to its team." />
+            <DialogHeader icon={<Building2 />} title="Create company" description="You won't be added as a member - company data stays private to its team." />
             <DialogBody className="space-y-4">
               <Field label="Company name" required error={error}><Input autoFocus value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-              <Field label="Address (slug)" hint="Optional — generated from the name."><Input value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value })} placeholder="acme" /></Field>
+              <Field label="Address (slug)" hint="Optional - generated from the name."><Input value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value })} placeholder="acme" /></Field>
               <Field label="Administrator email" hint="Existing users are added directly; others receive an invitation."><Input type="email" value={f.adminEmail} onChange={(e) => setF({ ...f, adminEmail: e.target.value })} /></Field>
             </DialogBody>
             <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit">Create</Button></DialogFooter>
@@ -158,7 +158,7 @@ export function AdminCompany({ id }: { id: string }) {
         <CompanyLogo name={c.name} logoUrl={c.logoUrl} size={44} className="rounded-lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold">{c.name}</h1>
-          <p className="text-sm text-muted-foreground">/{c.slug} · created {shortDate(c.created_at)} · {c.status === "active" ? "Active" : `Suspended — ${c.suspended_reason}`}</p>
+          <p className="text-sm text-muted-foreground">/{c.slug} · created {shortDate(c.created_at)} · {c.status === "active" ? "Active" : `Suspended - ${c.suspended_reason}`}</p>
         </div>
         <Button variant="outline" onClick={() => setEdit({ name: c.name, slug: c.slug })}>Edit</Button>
         {c.status === "active" ? <Button variant="destructive-ghost" onClick={() => setSuspend(true)}>Suspend workspace</Button> : <Button onClick={() => patch({ status: "active" }, "Company reactivated")}>Reactivate</Button>}
@@ -275,7 +275,7 @@ export function AdminIntegrations() {
   const { data } = useAdmin<{ companies: any[]; platform: any[]; emailOutbox: Record<string, number> }>("/api/admin/integrations");
   return (
     <>
-      <AdminHeader title="Integration health" description="Configuration status only — credentials and tokens are never displayed." />
+      <AdminHeader title="Integration health" description="Configuration status only - credentials and tokens are never displayed." />
       <Card className="divide-y divide-border">
         {!data ? <div className="p-6"><Skeleton className="h-6" /></div> : data.platform.map((p) => (
           <div key={p.provider} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
@@ -293,7 +293,7 @@ export function AdminIntegrations() {
           <Card className="p-4">
             <p className="mb-2 text-sm font-semibold">Company connections</p>
             {data.companies.length === 0 ? <p className="text-sm text-muted-foreground">No company has connected an integration yet.</p> : (
-              <ul className="space-y-1 text-sm">{data.companies.map((c, i) => <li key={i} className="flex justify-between"><span>{c.company} · {c.provider}</span><span>{c.status}{c.last_error ? ` — ${c.last_error}` : ""}</span></li>)}</ul>
+              <ul className="space-y-1 text-sm">{data.companies.map((c, i) => <li key={i} className="flex justify-between"><span>{c.company} · {c.provider}</span><span>{c.status}{c.last_error ? ` - ${c.last_error}` : ""}</span></li>)}</ul>
             )}
           </Card>
         </div>
@@ -324,7 +324,7 @@ export function AdminAudit() {
                 <td className="whitespace-nowrap px-4 py-2 text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString("en-GB")}</td>
                 <td className="px-3 font-mono text-xs">{e.action}</td>
                 <td className="px-3 text-xs">{e.actor ?? "system"}</td>
-                <td className="px-3 text-xs">{e.company ?? "—"}</td>
+                <td className="px-3 text-xs">{e.company ?? "-"}</td>
                 <td className="max-w-72 truncate px-3 text-xs text-muted-foreground" title={JSON.stringify(e.metadata)}>{Object.keys(e.metadata ?? {}).length ? JSON.stringify(e.metadata) : ""}</td>
               </tr>
             ))}
@@ -343,7 +343,7 @@ export function AdminAi() {
   const usd = (n: number) => `$${Number(n).toFixed(n < 1 ? 4 : 2)}`;
   return (
     <>
-      <AdminHeader title="AI usage" description="Anthropic Claude requests, failures and cost per company this month. Shows counts and errors only — never prompts, answers or candidate data." />
+      <AdminHeader title="AI usage" description="Anthropic Claude requests, failures and cost per company this month. Shows counts and errors only - never prompts, answers or candidate data." />
       <div className="grid gap-3 sm:grid-cols-4">
         <Card className="p-4"><p className="text-xs text-muted-foreground">Provider</p><p className="mt-1 text-sm font-medium">{data.configured ? "Configured" : "No API key"}</p><p className="text-xs text-muted-foreground">{data.model}</p></Card>
         <Card className="p-4"><p className="text-xs text-muted-foreground">AI switch</p><p className="mt-1 text-sm font-medium">{data.settings.enabled ? "On" : "Off"}</p><p className="text-xs text-muted-foreground">Limits: {data.settings.monthlyRequestLimitPerCompany} req · {usd(data.settings.monthlyBudgetUsdPerCompany)} / company</p></Card>
@@ -364,7 +364,7 @@ export function AdminAi() {
       <Card className="mt-4 overflow-x-auto">
         <p className="px-4 pt-4 text-sm font-semibold">Recent failures and blocked requests</p>
         <table className="mt-2 w-full min-w-[640px] text-sm">
-          <tbody className="divide-y divide-border">{data.failures.map((f, i) => <tr key={i}><td className="px-4 py-2 text-muted-foreground">{relativeTime(f.created_at)}</td><td className="px-4 py-2">{f.company ?? "—"}</td><td className="px-4 py-2">{f.feature}</td><td className="px-4 py-2"><Badge tone={f.status === "error" ? "danger" : "muted"}>{f.status}</Badge></td><td className="max-w-md truncate px-4 py-2 text-xs text-muted-foreground" title={f.error ?? ""}>{f.error}</td></tr>)}</tbody>
+          <tbody className="divide-y divide-border">{data.failures.map((f, i) => <tr key={i}><td className="px-4 py-2 text-muted-foreground">{relativeTime(f.created_at)}</td><td className="px-4 py-2">{f.company ?? "-"}</td><td className="px-4 py-2">{f.feature}</td><td className="px-4 py-2"><Badge tone={f.status === "error" ? "danger" : "muted"}>{f.status}</Badge></td><td className="max-w-md truncate px-4 py-2 text-xs text-muted-foreground" title={f.error ?? ""}>{f.error}</td></tr>)}</tbody>
         </table>
         {!data.failures.length && <p className="p-4 text-sm text-muted-foreground">No failures.</p>}
       </Card>

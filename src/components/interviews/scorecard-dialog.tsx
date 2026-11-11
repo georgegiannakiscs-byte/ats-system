@@ -41,7 +41,7 @@ export function ScoreInput({ value, onChange, label }: { value: number; onChange
             type="button"
             role="radio"
             aria-checked={on}
-            aria-label={`${n} — ${SCORE_LABELS[n]}`}
+            aria-label={`${n} - ${SCORE_LABELS[n]}`}
             title={SCORE_LABELS[n]}
             onClick={() => onChange(on ? 0 : n)}
             onKeyDown={(e) => {
@@ -88,7 +88,7 @@ function ScorecardForm({ target, onClose }: { target: ScorecardTarget; onClose: 
     setSubmitted(true);
     if (errors.rec || errors.summary || errors.criteria) return;
     await api.scorecards.submit({ interviewId: interview?.id, candidateId, jobId, criteria, recommendation: rec!, summary });
-    toast.success("Scorecard submitted", { description: `Thanks — your feedback on ${fullName(candidate)} is now visible to the hiring team.` });
+    toast.success("Scorecard submitted", { description: `Thanks - your feedback on ${fullName(candidate)} is now visible to the hiring team.` });
     onClose();
   };
 
@@ -148,7 +148,7 @@ function ScorecardForm({ target, onClose }: { target: ScorecardTarget; onClose: 
           <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Strengths, concerns and evidence…" className="min-h-24" aria-invalid={(submitted && !!errors.summary) || undefined} />
         </Field>
       </DialogBody>
-      <DialogFooter hint={submitted && errors.criteria ? <span className="text-destructive">{errors.criteria}</span> : "Scorecards are independent — you won't see others' feedback until you submit."}>
+      <DialogFooter hint={submitted && errors.criteria ? <span className="text-destructive">{errors.criteria}</span> : "Scorecards are independent - you won't see others' feedback until you submit."}>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit">Submit scorecard</Button>
       </DialogFooter>

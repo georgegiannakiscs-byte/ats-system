@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
     { label: "Reached interview", value: `${apps.length ? Math.round((interviewsReached / apps.length) * 100) : 0}%`, sub: `${interviewsReached} candidates` },
     { label: "Interview → offer", value: `${interviewsReached ? Math.round((offersReached / interviewsReached) * 100) : 0}%`, sub: `${offersReached} offers` },
     { label: "Hires", value: hires, sub: hires ? "Offer stage → Hired" : "None in range" },
-    { label: "Time to hire", value: avgTth === null ? "—" : `${avgTth}d`, sub: avgTth === null ? "No hires in range yet" : `Average across ${allHires.length} hire${allHires.length === 1 ? "" : "s"}` },
+    { label: "Time to hire", value: avgTth === null ? "-" : `${avgTth}d`, sub: avgTth === null ? "No hires in range yet" : `Average across ${allHires.length} hire${allHires.length === 1 ? "" : "s"}` },
   ];
 
   const jobsInScope = db.jobs.filter((j) => (!depts.length || depts.includes(j.department)) && (!jobIds.length || jobIds.includes(j.id)) && j.status !== "draft");
@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
                         <span className="absolute inset-y-0 left-0 rounded-[5px] transition-[width] duration-500" style={{ width: `${Math.max(pct, 1.5)}%`, background: `color-mix(in oklch, var(--chart-1) ${100 - i * 9}%, var(--surface))` }} />
                       </span>
                       <span className="tabular text-right font-medium">{s.reached}</span>
-                      <span className="tabular text-right text-xs text-muted-foreground">{conv === null ? "—" : `${conv}%`}</span>
+                      <span className="tabular text-right text-xs text-muted-foreground">{conv === null ? "-" : `${conv}%`}</span>
                     </button>
                   </li>
                 );
@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
                     <Link href={orgPath(`/candidates?source=${encodeURIComponent(s.source)}`)} className="relative grid h-8 grid-cols-[1fr_48px_64px] items-center gap-2 rounded-md px-1 text-sm hover:bg-accent">
                       <span className="relative z-10 truncate pl-1">{s.source}</span>
                       <span className="tabular relative z-10 text-right font-medium">{s.applications}</span>
-                      <span className="tabular relative z-10 text-right text-xs text-muted-foreground">{s.applications ? `${s.rate}%` : "—"}</span>
+                      <span className="tabular relative z-10 text-right text-xs text-muted-foreground">{s.applications ? `${s.rate}%` : "-"}</span>
                       <span className="absolute inset-y-1 left-0 rounded-[5px] bg-[color-mix(in_oklch,var(--chart-1)_14%,transparent)]" style={{ width: `${(s.applications / max) * 70}%` }} aria-hidden />
                     </Link>
                   </li>
@@ -145,7 +145,7 @@ export default function AnalyticsPage() {
                     <tr key={s}>
                       <td className="py-2">{cfg.label}</td>
                       <td className="tabular py-2 text-right">{inStage.length}</td>
-                      <td className={cn("tabular py-2 text-right", over ? "font-medium text-warning" : "")}>{inStage.length ? `${avg}d` : "—"}</td>
+                      <td className={cn("tabular py-2 text-right", over ? "font-medium text-warning" : "")}>{inStage.length ? `${avg}d` : "-"}</td>
                       <td className="tabular py-2 text-right text-muted-foreground">{cfg.slaDays}d</td>
                     </tr>
                   );
@@ -175,8 +175,8 @@ export default function AnalyticsPage() {
                       <td className="tabular py-2 text-right">{intv}</td>
                       <td className="tabular py-2 text-right">{offers}</td>
                       <td className="tabular py-2 text-right">{hired}/{j.openings}</td>
-                      <td className="tabular py-2 text-right">{ja.length ? `${Math.round((intv / ja.length) * 100)}%` : "—"}</td>
-                      <td className="tabular py-2 text-right text-muted-foreground">{j.publishedAt ? daysSince(j.publishedAt) : "—"}</td>
+                      <td className="tabular py-2 text-right">{ja.length ? `${Math.round((intv / ja.length) * 100)}%` : "-"}</td>
+                      <td className="tabular py-2 text-right text-muted-foreground">{j.publishedAt ? daysSince(j.publishedAt) : "-"}</td>
                     </tr>
                   );
                 })}

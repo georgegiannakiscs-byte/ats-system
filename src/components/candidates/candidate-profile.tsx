@@ -54,7 +54,7 @@ export function CandidateHeader({ candidate, app, onSelectApp, variant = "page" 
             {candidate.currentCompany && <span className="text-muted-foreground"> at {candidate.currentCompany}</span>}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{candidate.location || "—"}</span>
+            <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{candidate.location || "-"}</span>
             <button onClick={() => copy(candidate.email, "Email")} className="group inline-flex items-center gap-1 rounded hover:text-foreground" title="Copy email">
               <Mail className="size-3.5" />{candidate.email}<Copy className="size-3 opacity-0 group-hover:opacity-100" />
             </button>

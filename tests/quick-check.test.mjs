@@ -1,5 +1,5 @@
 /**
- * Ulysse — CV Builder & Quick Check acceptance tests (API + database level), scenarios A–G.
+ * Ulysse - CV Builder & Quick Check acceptance tests (API + database level), scenarios A–G.
  *
  * Run against a server started with a local Anthropic stub (no real API calls, no key needed):
  *   ANTHROPIC_API_KEY=stub-key ANTHROPIC_BASE_URL=http://127.0.0.1:4599 npm run dev
@@ -100,7 +100,7 @@ const owner = client();
 const other = client();
 const S = {};
 
-test("setup — two companies, a published job each", async () => {
+test("setup - two companies, a published job each", async () => {
   assert.equal((await owner.post("/api/auth/signup", { name: "Owner", email: `qc-owner-${run}@test.example`, password: "correct-horse-battery-1" })).status, 201);
   assert.equal((await other.post("/api/auth/signup", { name: "Other", email: `qc-other-${run}@test.example`, password: "correct-horse-battery-1" })).status, 201);
   S.A = (await owner.post("/api/orgs", { name: `QC Alpha ${run}` })).data;
@@ -115,7 +115,7 @@ test("setup — two companies, a published job each", async () => {
   S.slugA = a.org.slug; S.jobSlugA = a.jobs[0].slug; S.slugB = b.org.slug; S.jobSlugB = b.jobs[0].slug;
 });
 
-test("A — apply with an existing CV (Quick Check not configured: application still complete)", async () => {
+test("A - apply with an existing CV (Quick Check not configured: application still complete)", async () => {
   const r = await apply(S.slugA, S.jobSlugA, { fullName: "Maria Upload", email: `upload-${run}@example.com` });
   assert.equal(r.status, 201, JSON.stringify(r.data));
   assert.equal(r.data.cvSource, "upload");
@@ -123,7 +123,7 @@ test("A — apply with an existing CV (Quick Check not configured: application s
   S.appUpload = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.applications.find((x) => x.candidateId)?.id;
 });
 
-test("B — CV Builder with photo: generate, preview, attach, submit", async () => {
+test("B - CV Builder with photo: generate, preview, attach, submit", async () => {
   const g = await pub.post("/api/public/cv/generate", { orgSlug: S.slugA, jobSlug: S.jobSlugA, template: "modern", lang: "en", data: cvData("Eleni Builder", `builder-${run}@example.com`), photo: photoDataUrl });
   assert.equal(g.status, 201, JSON.stringify(g.data));
   assert.match(g.data.fileName, /Eleni_Builder_CV\.pdf/);
@@ -161,7 +161,7 @@ test("B — CV Builder with photo: generate, preview, attach, submit", async () 
   assert.equal(again.status, 410);
 });
 
-test("C — CV Builder without photo (Greek, minimal template) and photo hiding", async () => {
+test("C - CV Builder without photo (Greek, minimal template) and photo hiding", async () => {
   const g = await pub.post("/api/public/cv/generate", { orgSlug: S.slugA, jobSlug: S.jobSlugA, template: "minimal", lang: "el", data: cvData("Γιώργος Παπαδόπουλος", `greek-${run}@example.com`, { summary: "Αναλυτής δεδομένων με εμπειρία στο μάρκετινγκ." }) });
   assert.equal(g.status, 201, JSON.stringify(g.data));
   const r = await apply(S.slugA, S.jobSlugA, { fullName: "Γιώργος Παπαδόπουλος", email: `greek-${run}@example.com`, generatedCvToken: g.data.token }, null);
@@ -186,7 +186,7 @@ test("C — CV Builder without photo (Greek, minimal template) and photo hiding"
 
 const Q = (text, competency) => ({ questionText: text, type: "multiple_choice", competency, options: [{ id: "A", text: "Wait and see" }, { id: "B", text: "Check the tracking setup first" }, { id: "C", text: "Publish the numbers" }, { id: "D", text: "Rebuild the dashboard" }], correctOptionId: "B", explanation: "Verify first.", recommendedTimeSeconds: 30, language: "en" });
 
-test("D — Quick Check: configure, apply, answer with server-side timing", async () => {
+test("D - Quick Check: configure, apply, answer with server-side timing", async () => {
   S.q = [id("aq"), id("aq"), id("aq"), id("aq")];
   for (const [i, qid] of S.q.entries()) assert.equal((await owner.cmd(S.A.id, "assessments.question.save", { id: qid, input: Q(`Scenario ${i + 1}: conversions dropped sharply overnight. What do you do first?`, "Data quality") })).status, 200);
   const cfg = { jobId: S.jobA, enabled: true, questionIds: S.q, timed: true, secondsPerQuestion: 30, language: "en", instructions: "Answer as you would at work.", allowLater: true, allowExtendedTime: true, allowUntimed: true, notifyRecruiter: true };
@@ -275,7 +275,7 @@ test("D — Quick Check: configure, apply, answer with server-side timing", asyn
   await db.end();
 });
 
-test("F — accessibility: extended time and untimed mode, without penalty", async () => {
+test("F - accessibility: extended time and untimed mode, without penalty", async () => {
   const ext = await apply(S.slugA, S.jobSlugA, { fullName: "Anna Extended", email: `ext-${run}@example.com` });
   let s = (await pub.post(`/api/public/assessments/${ext.data.quickCheck.token}`, { action: "start", accommodation: "extended" })).data;
   assert.equal(s.accommodation, "extended");
@@ -294,7 +294,7 @@ test("F — accessibility: extended time and untimed mode, without penalty", asy
   assert.match(refused.data.error, /Contact the company/);
 });
 
-test("E — Anthropic question generation (stub): drafts only, job data only, validated", async (t) => {
+test("E - Anthropic question generation (stub): drafts only, job data only, validated", async (t) => {
   const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
   if (!snap.ai.configured) {
     const r = await owner.post(`/api/orgs/${S.A.id}/assessments/generate`, { jobId: S.jobA, count: 4 });
@@ -306,7 +306,7 @@ test("E — Anthropic question generation (stub): drafts only, job data only, va
     const ex = await (await fetch(`${BASE}/api/public/cv/extract`, { method: "POST", body: fd })).json();
     assert.equal(ex.method, "contact_only");
     assert.equal(ex.prefill.email, `source-${run}@example.com`);
-    t.diagnostic("AI not configured on the server under test — verified graceful fallbacks only.");
+    t.diagnostic("AI not configured on the server under test - verified graceful fallbacks only.");
     return;
   }
   stubRequests.length = 0;
@@ -355,7 +355,7 @@ test("E — Anthropic question generation (stub): drafts only, job data only, va
   await db.end();
 });
 
-test("G — company isolation for CVs, questions, attempts and results", async () => {
+test("G - company isolation for CVs, questions, attempts and results", async () => {
   const b = (await other.get(`/api/orgs/${S.B.id}/snapshot`)).data;
   assert.equal(b.assessmentQuestions.length, 0);
   assert.equal(b.assessmentAttempts.length, 0);
