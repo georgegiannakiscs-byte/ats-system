@@ -22,4 +22,4 @@ ${failed
   ? `<p><strong>Setup didn't finish.</strong> Take a screenshot of this page and send it to your developer.</p><pre>${esc(tail)}</pre>`
   : `<p><strong>The app is starting…</strong> ${esc(step)}. The first start takes a few minutes. This page refreshes by itself and the app appears here when it's ready.</p>`}
 </main></body></html>`);
-}).listen(3000, "0.0.0.0");
+}).listen(3000, process.env.LISTEN_HOST || "0.0.0.0");
