@@ -1,9 +1,11 @@
 services:
   app:
     image: mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm
-    command: sleep infinity
+    # Runs Ulysse as the container's own process, so it is always up (see entrypoint.sh / serve.sh).
+    command: ["bash", "/opt/ulysse/entrypoint.sh"]
     volumes:
       - ../..:/workspaces:cached
+      - ./entrypoint.sh:/opt/ulysse/entrypoint.sh:ro
     environment:
       DATABASE_URL: postgres://deceler:deceler_dev@db:5432/deceler
     depends_on:
