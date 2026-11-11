@@ -34,6 +34,12 @@ export const env = {
   autoMigrate: (process.env.AUTO_MIGRATE ?? "true") === "true",
   /** Public application submissions allowed per IP per hour. */
   applyRateLimit: Number(process.env.RATE_LIMIT_APPLY_PER_HOUR ?? 20),
+  /**
+   * Additional exact origins (comma-separated, e.g. "https://a.example,http://localhost:3000")
+   * accepted by the same-origin check. Only for setups behind a tunnel that rewrites the Origin
+   * header (the Codespaces demo). Unset in normal deployments.
+   */
+  extraAllowedOrigins: (process.env.EXTRA_ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim().replace(/\/$/, "")).filter(Boolean),
 };
 
 export function assertEnv() {

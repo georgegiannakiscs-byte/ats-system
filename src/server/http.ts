@@ -24,9 +24,13 @@ export function assertSameOrigin(req: Request) {
   let ok = false;
   try {
     const u = new URL(origin);
-    ok = u.host === host || origin === env.appUrl;
+    ok = u.host === host || origin === env.appUrl || env.extraAllowedOrigins.includes(origin);
   } catch {}
-  if (!ok) throw new HttpError(403, "Cross-origin request blocked", "csrf");
+  if (!ok) {
+    // Logged (no cookies or body) so proxy/tunnel header issues can be diagnosed.
+    console.warn(`[csrf] blocked ${req.method} ${new URL(req.url).pathname} origin=${origin} host=${req.headers.get("host")} x-forwarded-host=${req.headers.get("x-forwarded-host")} app_url=${env.appUrl}`);
+    throw new HttpError(403, "Cross-origin request blocked", "csrf");
+  }
 }
 
 /** Wraps a route handler with uniform error handling. */

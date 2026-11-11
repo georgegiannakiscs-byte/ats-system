@@ -22,6 +22,9 @@ else
   LISTEN_HOST="0.0.0.0"
 fi
 export NODE_ENV=production PORT=3000 HOSTNAME="$LISTEN_HOST" LISTEN_HOST
+# The Codespaces port tunnel can rewrite the browser's Origin header to the local address.
+# Accept exactly those local origins here (demo only); other sites stay blocked.
+export EXTRA_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000,http://127.0.0.1:3000"
 export APP_SECRET="$(cat .data/codespace-secret)"
 export STORAGE_DIR="$PWD/.data/storage"
 export PLATFORM_ADMIN_EMAILS="demo@example.com"
