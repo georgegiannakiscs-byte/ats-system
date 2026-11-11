@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip } from "@/components/ui/overlays";
 import { EvaluationBadge, Tag } from "@/components/common/badges";
+import { QuickCheckChip } from "@/components/assessments/quick-check-ui";
 import type { Application, Candidate, StageConfig, TeamMember } from "@/lib/types";
 import { cn, daysSince, shortDate } from "@/lib/utils";
 import { fullName } from "@/lib/api/selectors";
@@ -61,6 +62,7 @@ export function CandidateCard({
         </div>
       )}
 
+      <QuickCheckChip applicationId={app.id} jobId={app.jobId} className="mt-2" />
       <div className="mt-2.5 flex items-center gap-2 text-[11px] text-muted-foreground">
         <EvaluationBadge value={app.evaluation} compact />
         <Tooltip content={`Applied ${shortDate(app.appliedAt)} · ${days}d in ${stage.label}${late ? ` (target ${stage.slaDays}d)` : ""}`}>

@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Maximize2, X } from "lucide-react";
@@ -61,7 +62,7 @@ function SheetBody({ state, onClose, onNavigate }: { state: { id: ID; applicatio
         <span className="ml-auto hidden items-center gap-1 text-[11px] text-subtle-foreground sm:flex"><Kbd>esc</Kbd> to close</span>
         <Tooltip content="Open full profile">
           <Button variant="ghost" size="icon-sm" asChild>
-            <Link href={`/candidates/view?id=${candidate.id}`} onClick={onClose} aria-label="Open full profile"><Maximize2 /></Link>
+            <Link href={orgPath(`/candidates/view?id=${candidate.id}`)} onClick={onClose} aria-label="Open full profile"><Maximize2 /></Link>
           </Button>
         </Tooltip>
         <Dialog.Close asChild><Button variant="ghost" size="icon-sm" aria-label="Close"><X /></Button></Dialog.Close>

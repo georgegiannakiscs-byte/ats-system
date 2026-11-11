@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import Link from "next/link";
 import { ArrowRightLeft, BriefcaseBusiness, CalendarPlus, CircleCheck, ClipboardCheck, Inbox, Mail, MessageSquare, PartyPopper, Pencil, Send, UserX, Library } from "lucide-react";
 import { useDb } from "@/lib/api/store";
@@ -61,7 +62,7 @@ function ActivityRow({ a, last, showContext, onCandidate, db }: { a: Activity; l
           {showContext && job && !a.message.includes(job.title) && (
             <>
               {" · "}
-              <Link href={`/jobs/view?id=${job.id}`} className="hover:text-foreground hover:underline">{job.title}</Link>
+              <Link href={orgPath(`/jobs/view?id=${job.id}`)} className="hover:text-foreground hover:underline">{job.title}</Link>
             </>
           )}
         </p>

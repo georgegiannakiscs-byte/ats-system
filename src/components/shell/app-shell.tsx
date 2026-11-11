@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import { BRAND } from "@/config/brand";
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ import { Topbar } from "./topbar";
 import { CommandMenu } from "./command-menu";
 import { NAV, SETTINGS_NAV } from "./nav-items";
 import { NavLinkMobileSettings } from "./mobile-settings-link";
+import { useMe } from "@/lib/session";
 import { BrandLogo } from "./brand-mark";
 
 const SIDEBAR_KEY = `${BRAND.slug}.ui.sidebar-collapsed`;
@@ -63,7 +65,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       if (Date.now() - gPressed < 900 && goto[k]) {
         e.preventDefault();
         gPressed = 0;
-        router.push(goto[k]);
+        router.push(orgPath(goto[k]));
         return;
       }
       if (k === "g") gPressed = Date.now();
@@ -107,6 +109,7 @@ function ShellInner({ children }: { children: React.ReactNode }) {
       </D.Root>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <MaintenanceBanner />
         <Topbar onOpenMobileNav={() => setMobileOpen(true)} onShowShortcuts={() => setShortcutsOpen(true)} />
         <main id="main" className="min-w-0 flex-1">{children}</main>
       </div>
@@ -130,7 +133,13 @@ function ShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Shows a calm skeleton until the local demo database is loaded in the browser. */
+function MaintenanceBanner() {
+  const me = useMe();
+  if (!me?.maintenance) return null;
+  return <div role="status" className="border-b border-warning/30 bg-warning-soft px-4 py-1.5 text-center text-xs">{me.maintenance.message}</div>;
+}
+
+/** Shows a calm skeleton until the company workspace is loaded. */
 function DataGate({ children }: { children: React.ReactNode }) {
   const db = useDbOrNull();
   if (!db) return <ShellSkeleton />;

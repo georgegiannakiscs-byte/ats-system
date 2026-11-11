@@ -1,7 +1,7 @@
 import type { Application, Candidate, Database, ID, Interview, Job, StageId, TeamMember } from "@/lib/types";
 import { STAGE_ORDER } from "@/lib/constants";
 
-export const fullName = (c: Pick<Candidate, "firstName" | "lastName">) => `${c.firstName} ${c.lastName}`;
+export const fullName = (c: Pick<Candidate, "firstName" | "lastName"> & { fullName?: string }) => c.fullName || `${c.firstName} ${c.lastName}`.trim();
 
 export function indexDb(db: Database) {
   const jobs = new Map<ID, Job>(db.jobs.map((j) => [j.id, j]));

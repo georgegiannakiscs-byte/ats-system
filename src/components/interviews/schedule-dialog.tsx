@@ -67,7 +67,7 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
     if (!valid || !app) return;
     await api.interviews.schedule({ candidateId: app.candidateId, jobId: app.jobId, applicationId: app.id, kind, start: start.toISOString(), durationMin: Number(duration), meetingType, location: location || undefined, interviewerIds: interviewers, notes: notes || undefined });
     const c = db.candidates.find((x) => x.id === app.candidateId)!;
-    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · Saved in ${"demo"} — no calendar invite was sent.` });
+    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · No calendar invite was sent — calendar sync isn't connected.` });
     onClose();
   };
 
@@ -120,7 +120,7 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Focus areas, materials to review…" className="min-h-16" />
         </Field>
       </DialogBody>
-      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Demo: saved locally, no invites are sent.</span>}>
+      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Saved to Ulysse. Calendar invites need a connected calendar.</span>}>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit">Schedule</Button>
       </DialogFooter>

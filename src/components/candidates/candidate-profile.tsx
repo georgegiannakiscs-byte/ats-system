@@ -1,4 +1,5 @@
 "use client";
+import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -8,11 +9,11 @@ import { Avatar, AvatarStack } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Kbd, Textarea } from "@/components/ui/input";
 import { Select, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/controls";
+import { CandidateQuickCheck } from "@/components/assessments/quick-check-ui";
 import { ConfirmDialog, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip } from "@/components/ui/overlays";
 import { EvaluationBadge } from "@/components/common/badges";
 import { EmptyState } from "@/components/common/empty-state";
 import { SectionTitle } from "@/components/common/card";
-import { DemoLabel } from "@/components/common/demo-label";
 import { LinkedInLogo } from "@/components/common/logos";
 import { useDb } from "@/lib/api/store";
 import { api } from "@/lib/api";
@@ -26,6 +27,8 @@ import { useUI } from "@/components/shell/ui-context";
 import { InlineEdit, TagEditor } from "./inline-edit";
 import { StageTracker } from "./stage-tracker";
 import { ActivityFeed } from "@/components/common/activity-feed";
+import { CvTab } from "./cv-tab";
+import { WITHDRAWAL_REASONS } from "@/lib/constants";
 
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -61,7 +64,7 @@ export function CandidateHeader({ candidate, app, onSelectApp, variant = "page" 
               </button>
             )}
             {candidate.linkedinUrl && (
-              <a href={candidate.linkedinUrl} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 rounded hover:text-foreground" title="Demo profile URL">
+              <a href={candidate.linkedinUrl} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 rounded hover:text-foreground" title="LinkedIn profile">
                 <LinkedInLogo className="size-3.5" />LinkedIn<ExternalLink className="size-3" />
               </a>
             )}
@@ -77,7 +80,7 @@ export function CandidateHeader({ candidate, app, onSelectApp, variant = "page" 
             {apps.length > 1 ? (
               <Select size="sm" className="h-7 w-auto min-w-48 border-transparent bg-transparent px-1.5 shadow-none hover:bg-accent" value={app.id} onValueChange={onSelectApp} ariaLabel="Application" options={apps.map((a) => ({ value: a.id, label: db.jobs.find((j) => j.id === a.jobId)?.title ?? "Job", hint: a.status !== "active" ? a.status : undefined }))} />
             ) : (
-              <Link href={`/jobs/view?id=${app.jobId}`} className="text-sm font-medium hover:underline">{db.jobs.find((j) => j.id === app.jobId)?.title}</Link>
+              <Link href={orgPath(`/jobs/view?id=${app.jobId}`)} className="text-sm font-medium hover:underline">{db.jobs.find((j) => j.id === app.jobId)?.title}</Link>
             )}
             <span className="text-xs text-muted-foreground">Applied {shortDate(app.appliedAt)} via {candidate.source}</span>
             <span className="ml-auto"><EvaluationBadge value={app.evaluation} /></span>
@@ -97,6 +100,8 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
   const ui = useUI();
   const db = useDb();
   const [confirmHire, setConfirmHire] = React.useState(false);
+  const [withdraw, setWithdraw] = React.useState(false);
+  const [reason, setReason] = React.useState(WITHDRAWAL_REASONS[0]);
   const active = app?.status === "active";
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -117,7 +122,13 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {app?.status === "rejected" && (
+      {app && (
+        <ConfirmDialog open={withdraw} onOpenChange={setWithdraw} title={`Record that ${candidate.firstName} withdrew?`} description="Withdrawal is tracked separately from rejection in your analytics." confirmLabel="Record withdrawal"
+          onConfirm={() => api.applications.withdraw(app.id, reason).then(() => toast(`${fullName(candidate)} marked as withdrawn`, { action: { label: "Undo", onClick: () => api.applications.restore(app.id) } }), () => {})}>
+          <Select value={reason} onValueChange={setReason} ariaLabel="Withdrawal reason" options={WITHDRAWAL_REASONS.map((r) => ({ value: r, label: r }))} />
+        </ConfirmDialog>
+      )}
+      {(app?.status === "rejected" || app?.status === "withdrawn") && (
         <Button variant="outline" size="sm" onClick={() => (api.applications.restore(app.id), toast.success("Candidate restored to the pipeline"))}><Undo2 />Restore</Button>
       )}
       <Button size="sm" onClick={() => ui.scheduleInterview({ candidateId: candidate.id, applicationId: app?.status === "active" ? app.id : undefined })} disabled={!active}>
@@ -138,11 +149,12 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
             <Library />{candidate.inTalentPool ? "Remove from talent pool" : "Save to talent pool"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild><Link href={`/candidates/view?id=${candidate.id}`}><ExternalLink />Open full profile</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild><Link href={orgPath(`/candidates/view?id=${candidate.id}`)}><ExternalLink />Open full profile</Link></DropdownMenuItem>
           {app && active && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setConfirmHire(true)}><PartyPopper />Mark as hired</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setWithdraw(true)}><Undo2 />Candidate withdrew</DropdownMenuItem>
               <DropdownMenuItem destructive onSelect={() => ui.reject(app.id)}><UserX />Reject candidate</DropdownMenuItem>
             </>
           )}
@@ -166,26 +178,31 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
 
 export function CandidateTabs({ candidate, app, variant = "page" }: { candidate: Candidate; app?: Application; variant?: "page" | "sheet" }) {
   const db = useDb();
-  const [tab, setTab] = React.useState("overview");
+  const initialTab = typeof window !== "undefined" && variant === "page" ? new URLSearchParams(window.location.search).get("tab") ?? "overview" : "overview";
+  const [tab, setTab] = React.useState(initialTab);
+  const showQc = db.org.features.quick_check !== false && !!app;
   const interviews = db.interviews.filter((i) => i.candidateId === candidate.id && i.status !== "cancelled");
   const cards = db.scorecards.filter((s) => s.candidateId === candidate.id);
   const notes = db.notes.filter((n) => n.candidateId === candidate.id);
-  React.useEffect(() => setTab("overview"), [candidate.id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => setTab((t) => (t === initialTab ? t : "overview")), [candidate.id]);
   return (
     <Tabs value={tab} onValueChange={setTab}>
       <TabsList className={variant === "sheet" ? "sticky top-0 z-10 -mx-5 bg-surface px-4" : undefined}>
         <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="resume">Resume</TabsTrigger>
+        <TabsTrigger value="resume" count={db.cvDocuments.filter((d) => d.candidateId === candidate.id).length}>CV</TabsTrigger>
         <TabsTrigger value="interviews" count={interviews.length}>Interviews</TabsTrigger>
         <TabsTrigger value="evaluations" count={cards.length}>Evaluations</TabsTrigger>
+        {showQc && <TabsTrigger value="quick-check">Quick Check</TabsTrigger>}
         <TabsTrigger value="notes" count={notes.length}>Notes</TabsTrigger>
         <TabsTrigger value="activity">Activity</TabsTrigger>
       </TabsList>
       <div className="pt-5">
         <TabsContent value="overview"><OverviewTab candidate={candidate} app={app} variant={variant} onTab={setTab} /></TabsContent>
-        <TabsContent value="resume"><ResumeTab candidate={candidate} /></TabsContent>
+        <TabsContent value="resume"><CvTab candidate={candidate} /></TabsContent>
         <TabsContent value="interviews"><InterviewsTab candidate={candidate} app={app} /></TabsContent>
         <TabsContent value="evaluations"><EvaluationsTab candidate={candidate} app={app} /></TabsContent>
+        {showQc && app && <TabsContent value="quick-check"><CandidateQuickCheck applicationId={app.id} jobId={app.jobId} /></TabsContent>}
         <TabsContent value="notes"><NotesTab candidateId={candidate.id} /></TabsContent>
         <TabsContent value="activity"><ActivityFeed filter={{ candidateId: candidate.id }} /></TabsContent>
       </div>
@@ -193,14 +210,17 @@ export function CandidateTabs({ candidate, app, variant = "page" }: { candidate:
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailRow({ label, children, source }: { label: string; children: React.ReactNode; source?: "candidate" | "recruiter" }) {
   return (
-    <div className="grid grid-cols-[96px_1fr] items-center gap-2 py-0.5">
+    <div className="grid grid-cols-[96px_1fr_14px] items-center gap-2 py-0.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="min-w-0">{children}</dd>
+      <span title={source === "candidate" ? "Provided by the candidate" : source === "recruiter" ? "Entered by your team" : undefined} className={cn("size-1.5 justify-self-center rounded-full", source === "candidate" ? "bg-brand/60" : source === "recruiter" ? "bg-signal/70" : "bg-transparent")} aria-label={source === "candidate" ? "Provided by the candidate" : source === "recruiter" ? "Entered by your team" : undefined} />
     </div>
   );
 }
+
+const EXTRA_FIELDS: [string, string][] = [["salaryExpectations", "Salary exp."], ["availability", "Availability"], ["noticePeriod", "Notice"], ["yearsExperience", "Experience"], ["country", "Country"]];
 
 function OverviewTab({ candidate, app, variant, onTab }: { candidate: Candidate; app?: Application; variant: "page" | "sheet"; onTab: (t: string) => void }) {
   const db = useDb();
@@ -215,11 +235,18 @@ function OverviewTab({ candidate, app, variant, onTab }: { candidate: Candidate;
       <section>
         <SectionTitle>Details</SectionTitle>
         <dl className="space-y-0.5">
-          <DetailRow label="Title"><InlineEdit label="title" value={candidate.headline} onSave={(v) => update({ headline: v })} /></DetailRow>
-          <DetailRow label="Company"><InlineEdit label="company" value={candidate.currentCompany} onSave={(v) => update({ currentCompany: v })} /></DetailRow>
-          <DetailRow label="Email"><InlineEdit label="email" type="email" value={candidate.email} validate={(v) => (emailRe.test(v) ? undefined : "Enter a valid email")} onSave={(v) => update({ email: v })} /></DetailRow>
-          <DetailRow label="Phone"><InlineEdit label="phone" type="tel" value={candidate.phone} onSave={(v) => update({ phone: v })} /></DetailRow>
-          <DetailRow label="Location"><InlineEdit label="location" value={candidate.location} onSave={(v) => update({ location: v })} /></DetailRow>
+          <DetailRow label="Title" source={candidate.fieldSources?.headline}><InlineEdit label="title" value={candidate.headline} onSave={(v) => update({ headline: v })} /></DetailRow>
+          <DetailRow label="Company" source={candidate.fieldSources?.currentCompany}><InlineEdit label="company" value={candidate.currentCompany} onSave={(v) => update({ currentCompany: v })} /></DetailRow>
+          <DetailRow label="Email" source={candidate.fieldSources?.email}><InlineEdit label="email" type="email" value={candidate.email} validate={(v) => (emailRe.test(v) ? undefined : "Enter a valid email")} onSave={(v) => update({ email: v })} /></DetailRow>
+          <DetailRow label="Phone" source={candidate.fieldSources?.phone}><InlineEdit label="phone" type="tel" value={candidate.phone} onSave={(v) => update({ phone: v })} /></DetailRow>
+          <DetailRow label="Location" source={candidate.fieldSources?.location}><InlineEdit label="location" value={candidate.location} onSave={(v) => update({ location: v })} /></DetailRow>
+          <DetailRow label="LinkedIn" source={candidate.fieldSources?.linkedinUrl}><InlineEdit label="LinkedIn URL" value={candidate.linkedinUrl ?? ""} validate={(v) => (!v || /^https?:\/\//.test(v) ? undefined : "Use a full URL")} onSave={(v) => update({ linkedinUrl: v })} /></DetailRow>
+          <DetailRow label="Portfolio" source={candidate.fieldSources?.portfolioUrl}><InlineEdit label="portfolio URL" value={candidate.portfolioUrl ?? ""} validate={(v) => (!v || /^https?:\/\//.test(v) ? undefined : "Use a full URL")} onSave={(v) => update({ portfolioUrl: v })} /></DetailRow>
+          {EXTRA_FIELDS.map(([k, label]) => (
+            <DetailRow key={k} label={label} source={candidate.fieldSources?.[k]}>
+              <InlineEdit label={label} value={candidate.extra?.[k] ?? ""} onSave={(v) => update({ extra: { ...(candidate.extra ?? {}), [k]: v } })} />
+            </DetailRow>
+          ))}
           <DetailRow label="Source"><span className="text-sm">{candidate.source}</span></DetailRow>
           {app && (
             <DetailRow label="Recruiter">
@@ -228,7 +255,18 @@ function OverviewTab({ candidate, app, variant, onTab }: { candidate: Candidate;
           )}
           <DetailRow label="Added">{<span className="text-sm">{shortDate(candidate.createdAt)}</span>}</DetailRow>
         </dl>
+        <p className="mt-2 flex items-center gap-3 text-[11px] text-subtle-foreground"><span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-brand/60" />Candidate</span><span className="inline-flex items-center gap-1"><span className="size-1.5 rounded-full bg-signal/70" />Your team</span></p>
       </section>
+      {(candidate.extra?.coverLetter || candidate.extra?.notes || candidate.extra?.education || candidate.extra?.certifications) && (
+        <section>
+          <SectionTitle>From the application</SectionTitle>
+          <dl className="space-y-2 text-sm">
+            {[["coverLetter", "Cover letter"], ["education", "Education"], ["certifications", "Certifications"], ["notes", "Additional notes"]].filter(([k]) => candidate.extra?.[k]).map(([k, label]) => (
+              <div key={k}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="whitespace-pre-wrap text-foreground/85">{candidate.extra![k]}</dd></div>
+            ))}
+          </dl>
+        </section>
+      )}
       <section>
         <SectionTitle>Tags</SectionTitle>
         <TagEditor tags={candidate.tags} suggestions={allTags} onChange={(tags) => api.candidates.update(candidate.id, { tags })} />
@@ -325,46 +363,6 @@ function OverviewTab({ candidate, app, variant, onTab }: { candidate: Candidate;
   );
 }
 
-function ResumeTab({ candidate }: { candidate: Candidate }) {
-  const [zoom, setZoom] = React.useState(1);
-  return (
-    <div>
-      <div className="mb-3 flex items-center gap-2">
-        <FileText className="size-4 text-muted-foreground" />
-        <span className="text-sm font-medium">{candidate.firstName}_{candidate.lastName}_CV.pdf</span>
-        <DemoLabel>Generated from profile</DemoLabel>
-        <div className="ml-auto flex items-center gap-0.5 rounded-md border border-border p-0.5">
-          <Button variant="ghost" size="icon-xs" onClick={() => setZoom((z) => Math.max(0.7, z - 0.1))} aria-label="Zoom out"><ZoomOut /></Button>
-          <span className="tabular w-10 text-center text-xs text-muted-foreground">{Math.round(zoom * 100)}%</span>
-          <Button variant="ghost" size="icon-xs" onClick={() => setZoom((z) => Math.min(1.4, z + 0.1))} aria-label="Zoom in"><ZoomIn /></Button>
-        </div>
-        <Tooltip content="Print resume"><Button variant="outline" size="icon-sm" aria-label="Print" onClick={() => window.print()}><Printer /></Button></Tooltip>
-      </div>
-      <div className="overflow-auto rounded-lg border border-border bg-surface-2 p-4 sm:p-8 scrollbar-thin">
-        <article className="mx-auto w-full max-w-[640px] origin-top rounded-sm bg-white p-8 text-[#24221f] shadow-md transition-transform sm:p-12" style={{ transform: `scale(${zoom})`, marginBottom: `${(zoom - 1) * 800}px` }}>
-          <h3 className="font-display text-3xl">{fullName(candidate)}</h3>
-          <p className="mt-1 text-sm text-[#6b6862]">{candidate.headline} · {candidate.location}</p>
-          <p className="mt-0.5 text-xs text-[#8a867f]">{candidate.email} · {candidate.phone}</p>
-          <hr className="my-5 border-[#e9e6e1]" />
-          <h4 className="text-[11px] font-semibold uppercase tracking-widest text-[#8a867f]">Profile</h4>
-          <p className="mt-2 text-sm leading-relaxed">{candidate.summary}</p>
-          <h4 className="mt-6 text-[11px] font-semibold uppercase tracking-widest text-[#8a867f]">Experience</h4>
-          {candidate.experience.map((e, i) => (
-            <div key={i} className="mt-3">
-              <div className="flex justify-between text-sm"><span className="font-semibold">{e.title}, {e.company}</span><span className="text-[#8a867f]">{e.start} – {e.end ?? "Present"}</span></div>
-              <p className="mt-1 text-sm leading-relaxed text-[#4a4741]">{e.description}</p>
-            </div>
-          ))}
-          <h4 className="mt-6 text-[11px] font-semibold uppercase tracking-widest text-[#8a867f]">Education</h4>
-          {candidate.education.map((e, i) => <p key={i} className="mt-2 text-sm"><span className="font-semibold">{e.school}</span> — {e.degree}, {e.year}</p>)}
-          <h4 className="mt-6 text-[11px] font-semibold uppercase tracking-widest text-[#8a867f]">Skills</h4>
-          <p className="mt-2 text-sm">{candidate.skills.join(" · ")}</p>
-        </article>
-      </div>
-    </div>
-  );
-}
-
 function InterviewsTab({ candidate, app }: { candidate: Candidate; app?: Application }) {
   const db = useDb();
   const ui = useUI();
@@ -397,7 +395,7 @@ function InterviewsTab({ candidate, app }: { candidate: Candidate; app?: Applica
           </div>
         );
       })}
-      <ConfirmDialog open={!!cancelId} onOpenChange={(o) => !o && setCancelId(null)} title="Cancel this interview?" description="Interviewers won't be notified in the demo — calendars are not connected." confirmLabel="Cancel interview" destructive onConfirm={() => (api.interviews.cancel(cancelId!), toast("Interview cancelled"))} />
+      <ConfirmDialog open={!!cancelId} onOpenChange={(o) => !o && setCancelId(null)} title="Cancel this interview?" description="Interviewers aren't notified automatically until a calendar is connected." confirmLabel="Cancel interview" destructive onConfirm={() => (api.interviews.cancel(cancelId!), toast("Interview cancelled"))} />
     </div>
   );
 }

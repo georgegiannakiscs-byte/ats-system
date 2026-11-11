@@ -1,0 +1,18 @@
+{
+  // GitHub Codespaces / VS Code Dev Containers: runs Ulysse with PostgreSQL and a demo account.
+  // Code → Codespaces → Create codespace. The app opens on port 3000 when it's ready.
+  "name": "Ulysse ATS",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Ulysse", "onAutoForward": "openBrowser" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "customizations": {
+    "codespaces": { "openFiles": [".devcontainer/README.md"] }
+  }
+}

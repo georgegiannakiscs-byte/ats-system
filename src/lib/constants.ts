@@ -27,6 +27,7 @@ export const JOB_STATUS: Record<JobStatus, { label: string; tone: "success" | "n
   draft: { label: "Draft", tone: "neutral" },
   on_hold: { label: "On hold", tone: "warning" },
   closed: { label: "Closed", tone: "muted" },
+  archived: { label: "Archived", tone: "muted" },
 };
 
 export const EVALUATION: Record<Evaluation, { label: string; tone: "success" | "warning" | "danger" | "neutral" | "muted" }> = {
@@ -70,6 +71,12 @@ export const CANDIDATE_COLUMNS: { id: CandidateColumn; label: string }[] = [
   { id: "evaluation", label: "Evaluation" },
   { id: "location", label: "Location" },
 ];
+
+export function emptyFilters(): import("@/lib/types").CandidateFilters {
+  return { search: "", stages: [], jobIds: [], sources: [], recruiterIds: [], evaluations: [], status: "active" };
+}
+
+export const WITHDRAWAL_REASONS = ["Accepted another offer", "No longer looking", "Compensation", "Location or relocation", "Personal reasons", "Other"];
 
 export const REJECTION_REASONS = [
   "Not enough relevant experience",

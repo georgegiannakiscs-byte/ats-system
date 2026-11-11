@@ -1,67 +1,79 @@
-# Déceler — Applicant Tracking System (frontend)
+# Ulysse — multi-company Applicant Tracking System
 
-A premium, frontend-only ATS prototype. Every screen is interactive and backed by a
-typed mock service layer that persists to `localStorage`, ready to be swapped for a
-real API.
+Premium recruiting platform: one account manages many companies, each a fully isolated workspace with its own jobs, candidates, team, branding and public careers page. Candidates apply with just **name, email and CV**.
 
-> **Demo data.** All people, companies and emails are fictional. No emails are sent,
-> no calendar invites are created, and no LinkedIn / Google / Microsoft APIs are called.
-> Simulated states are labelled in the UI ("Demo", "simulated", "not sent").
+See **[PROGRESS.md](PROGRESS.md)** for the honest status of every feature.
 
-## Run
+## Quick start (local)
+
+Requirements: Node 22+, PostgreSQL 14+.
 
 ```bash
+createuser --createrole -P deceler        # a NON-superuser owner (superusers bypass Row Level Security)
+createdb -O deceler deceler
+cp .env.example .env.local                # set DATABASE_URL (APP_SECRET is auto-generated in dev)
 npm install
-npm run dev        # http://localhost:3000
-npm run build && npm start
+npm run dev                               # migrations run automatically on start
 ```
 
-Reset the demo dataset any time from **Settings → Appearance → Reset demo data** (or the
-workspace menu in the sidebar).
+Open http://localhost:3000, create an account. In development the **first account becomes Platform Super Admin** (`/admin`). In production use `PLATFORM_ADMIN_EMAILS`.
 
-## Stack
+## Try it in GitHub Codespaces
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui-style
-components on Radix primitives · Lucide icons · dnd-kit · Recharts · cmdk · sonner ·
-next-themes · date-fns.
+On GitHub: **Code → Codespaces → Create codespace** (on the branch you want to see). The first start installs, migrates and builds (a few minutes), then opens the app on port 3000 with demo data. Sign in with `demo@example.com` / `Ulysse-demo-2026` (platform admin + admin of "Aegean Analytics"). Details: [.devcontainer/README.md](.devcontainer/README.md). Seed the same demo data elsewhere with `node scripts/seed-demo.mjs` while the server runs.
 
-## Rebranding
+## Production
 
-The product name lives in `src/config/brand.ts`; the logo is `src/assets/deceler-logo.png`
-(used unmodified, framed with CSS in `components/shell/brand-mark.tsx`). Page titles,
-and storage keys read from the config. Colours are design tokens in
-`src/app/globals.css`: forest green `--primary`/`--brand`, terracotta `--signal` for
-selected states and small details, cream `--background` (light and dark values are
-defined separately).
+```bash
+APP_SECRET=$(openssl rand -hex 32) docker compose up -d     # app + PostgreSQL + persistent storage
+```
+
+or build the standalone server yourself: `npm run build && npm start` (needs `DATABASE_URL`, `APP_SECRET`, `APP_URL`, `STORAGE_DIR`). Any Node host with PostgreSQL works (Render, Railway, Fly.io, a VPS, Kubernetes…); Supabase/Neon/RDS can provide the database. Static hosting (e.g. GitHub Pages) is **not** possible — Ulysse has a server, a database and private file storage.
+
+## Tests
+
+```bash
+npm run test:acceptance    # API + database-level scenarios (multi-company, admin, branding, 3-field application,
+                           # optional data, LinkedIn tracking, pipeline to hire, tenant isolation, permissions)
+npm run test:quick-check   # CV Builder & Quick Check scenarios A–G (API + database). Starts a local
+                           # Anthropic stub on :4599 — run the server with ANTHROPIC_API_KEY=stub-key
+                           # ANTHROPIC_BASE_URL=http://127.0.0.1:4599 to exercise the AI paths, or without
+                           # a key to check the no-AI fallbacks.
+npm run test:e2e           # browser journey (requires Playwright + Chromium)
+npm run test:e2e:quick-check  # browser journey: build a CV → apply → Quick Check → recruiter review
+```
+
+All run against a running server (`BASE_URL`, default `http://localhost:3000`). CI (`.github/workflows/ci.yml`) runs type-check, lint, migrations, production build and both API suites against PostgreSQL (AI via the local stub — no real Anthropic calls).
+
+## AI (Anthropic Claude)
+
+Set `ANTHROPIC_API_KEY` on the server (never in the browser). Optional: `ANTHROPIC_MODEL` (default: platform setting, else `claude-opus-5-5`) and `ANTHROPIC_EFFORT`. Platform admins can switch AI off, pick the model and set monthly per-company request/budget limits in **Admin → Platform settings**, and follow usage in **Admin → AI usage**. Each company can switch individual AI helpers off in **Settings → AI features**. AI drafts questions and helps candidates word their own summary; it never scores, ranks or rejects candidates, and multiple-choice answers are checked deterministically. Observations on written answers are off by default pending a compliance review.
 
 ## Architecture
 
 ```
-src/
-  config/brand.ts          Product name & tagline
-  app/(app)/               Routes: overview, jobs, candidates, talent-pool,
-                           interviews, tasks, analytics, settings
-  components/
-    ui/                    Primitives (button, inputs, dialogs, menus, tabs, …)
-    shell/                 Sidebar, top bar, ⌘K command menu, global overlay controller
-    pipeline/              Kanban board (dnd-kit), pipeline table, candidate card
-    candidates/            Profile, slide-over preview, inline editing, dialogs
-    interviews/ tasks/ jobs/ settings/ charts/ common/
-  lib/
-    types.ts               Domain model (mirrors future API payloads)
-    api/index.ts           ← The only write path. Async methods, one per use case.
-    api/store.ts           Mock persistence (external store + localStorage)
-    api/selectors.ts       Pure read helpers
-    mock/seed.ts           Deterministic demo dataset
-    analytics.ts           Funnel, source and time-series computations
+db/migrations/           SQL schema + Row Level Security policies (applied automatically)
+src/server/              Server-only code
+  db.ts                  sys() system context · tenantTx() RLS-restricted tenant context
+  auth.ts, security.ts   sessions, scrypt, signed tokens, rate limiting
+  org.ts, permissions.ts per-company authorisation (by org ID), roles, audit log
+  commands.ts            every workspace write, validated (zod) and permission-checked
+  workspace.ts           per-company workspace snapshot
+  storage.ts, cv.ts      private file storage, content sniffing, malware-scan hook
+  cv/pdf.ts, cv/text.ts  CV Builder PDF rendering (3 templates, Greek/Latin fonts), PDF/DOCX text extraction
+  assessments.ts         Quick Check: invitations, server-side timing, deterministic checking
+  ai/claude.ts, ai/tasks.ts  Anthropic SDK wrapper (limits, usage, structured outputs) and prompts
+src/app/api/             Route handlers (auth, orgs, files, public apply, admin)
+src/app/app/[company]/   Company workspace (dashboard, jobs, candidates, pipeline, …)
+src/app/careers/         Public careers pages & application form with CV Builder (EN/EL)
+src/app/assess/[token]   Candidate Quick Check (token link, no account)
+src/app/admin/           Platform Super Admin
 ```
 
-**Swapping in a backend:** re-implement the methods in `lib/api/index.ts` with HTTP
-calls (they already return Promises), and replace `useDb()` reads with your data
-fetching layer (e.g. TanStack Query). Components never touch `localStorage` directly.
+**Tenant isolation.** Every tenant table has `org_id`, RLS and `FORCE ROW LEVEL SECURITY`. Authenticated requests switch to the restricted role `deceler_app` and pin `app.org_id` / `app.user_id`; policies also require an active membership in an active company. A separate owner-only "system context" (explicit `app.bypass`) is used solely for public intake, platform aggregates and new-company defaults — the tenant role can never use it. Files are served only through short-lived HMAC-signed links that are re-authorised against membership on every request.
 
-## Keyboard
+**Platform vs company administration.** Platform Super Admins manage companies, users, features and settings but have no access to company recruitment data. Company Admins manage only their own company.
 
-`⌘K` search & commands · `C` create · `[` toggle sidebar · `G` then `O/J/C/P/I/T/A/S`
-to navigate · `J/K` next/previous candidate in the slide-over · `?` all shortcuts.
-Kanban cards can be moved with the keyboard: focus a card, `Space`, arrow keys, `Space`.
+## Rebranding
+
+Product name: `src/config/brand.ts`. Logo: `src/assets/ulysse-logo.webp`. Colours: tokens in `src/app/globals.css`.

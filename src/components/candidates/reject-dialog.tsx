@@ -60,7 +60,7 @@ function RejectForm({ applicationId, onClose }: { applicationId: ID; onClose: ()
             <span className="block text-xs text-muted-foreground">Re-engage them for future openings.</span>
           </span>
         </label>
-        <p className="text-xs text-muted-foreground">No rejection email is sent in the demo. Use “Send email” to draft one.</p>
+        <p className="text-xs text-muted-foreground">No email is sent automatically. Use “Send email” to draft a message.</p>
       </DialogBody>
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
