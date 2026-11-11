@@ -135,11 +135,13 @@ export function cvFromPrefill(base: CvData, p: Record<string, unknown> | null | 
 }
 
 export function CvBuilder({
-  lang, orgSlug, jobSlug, initialName, initialEmail, prefill, templates, defaultTemplate, aiSummary, jobSkills, onClose, onUse,
+  lang, orgSlug, jobSlug, initialName, initialEmail, prefill, templates, defaultTemplate, aiSummary, jobSkills, onClose, onUse, generateUrl = "/api/public/cv/generate",
 }: {
   lang: CvLang; orgSlug: string; jobSlug: string; initialName: string; initialEmail: string; prefill?: Record<string, unknown> | null;
   templates: CvTemplate[]; defaultTemplate: CvTemplate; aiSummary: boolean; jobSkills: string[];
   onClose: () => void; onUse: (cv: GeneratedCv, data: CvData) => void;
+  /** Where the PDF is generated (the /talent page uses its own endpoint). */
+  generateUrl?: string;
 }) {
   const t = builderDict[lang];
   const storeKey = `deceler-cv:${orgSlug}`;
@@ -209,7 +211,7 @@ export function CvBuilder({
     setGenerating(true);
     setGenError(undefined);
     try {
-      const res = await fetch("/api/public/cv/generate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgSlug, jobSlug, template, lang: cvLang, data, photo }) });
+      const res = await fetch(generateUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgSlug, jobSlug, template, lang: cvLang, data, photo }) });
       const j = await res.json();
       if (!res.ok) {
         const d = (j.details as { path: string; message: string }[] | undefined)?.[0];
@@ -452,6 +454,13 @@ export function CvBuilder({
               <span>{generated && !stale ? "PDF" : t.livePreview} · {t.templates[template]}</span>
               {step !== "finish" && <button type="button" onClick={() => (setStep("finish"), setMobilePreview(false))} className="font-medium text-foreground underline-offset-2 hover:underline">{t.generate}</button>}
             </div>
+            {/* On phones the preview hides the editor, so the generated PDF's actions are repeated here. */}
+            {generated && !stale && (
+              <div className="mb-3 flex flex-wrap gap-2 lg:hidden">
+                <button type="button" onClick={() => onUse(generated, data)} className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"><Check className="size-4" />{t.useThis}</button>
+                <a href={`${generated.previewUrl}?download=1`} className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm hover:bg-accent"><Download className="size-4" />{t.download}</a>
+              </div>
+            )}
             {preview}
           </div>
         </div>

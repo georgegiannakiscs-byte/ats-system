@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles } from "lucide-react";
+import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles, Inbox } from "lucide-react";
 import { BrandLogo } from "@/components/shell/brand-mark";
 import { signOut } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/admin", label: "Overview", icon: ChartColumn },
   { href: "/admin/companies", label: "Companies", icon: Building2 },
+  { href: "/admin/talent", label: "Talent leads", icon: Inbox },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/features", label: "Features", icon: Flag },
   { href: "/admin/integrations", label: "Integrations", icon: Plug },

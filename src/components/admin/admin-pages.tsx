@@ -39,6 +39,10 @@ export function AdminOverview() {
   return (
     <>
       <AdminHeader title="Platform overview" description="Aggregated metrics only - no candidate-level data is shown here." />
+      <Link href="/admin/talent" className="mb-3 flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-xs hover:border-border-strong">
+        <span><span className="block text-sm font-semibold">Talent leads</span><span className="text-xs text-muted-foreground">People who sent their CV through the /talent page (e.g. from LinkedIn)</span></span>
+        <span className="text-right"><span className="tabular block text-2xl font-semibold">{m.talent_leads_new ?? 0}</span><span className="text-xs text-muted-foreground">new · {m.talent_leads ?? 0} total</span></span>
+      </Link>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {tiles.map(([l, v, s]) => (
           <Card key={l as string} className="p-4"><p className="text-xs text-muted-foreground">{l}</p><p className="tabular mt-2 text-2xl font-semibold">{v}</p><p className="mt-1 text-xs text-muted-foreground">{s}</p></Card>
@@ -426,5 +430,107 @@ export function AdminSettings() {
 function SettingsSection({ title, onSave, children }: { title: string; onSave: () => void; children: React.ReactNode }) {
   return (
     <Card className="p-5"><p className="mb-4 text-sm font-semibold">{title}</p><div className="grid gap-4 sm:grid-cols-2">{children}</div><div className="mt-4 flex justify-end"><Button size="sm" onClick={onSave}>Save</Button></div></Card>
+  );
+}
+
+/* ───────────── Talent leads (public /talent form) ───────────── */
+const LEAD_STATUS: Record<string, { label: string; tone: "brand" | "neutral" | "success" | "muted" }> = {
+  new: { label: "New", tone: "brand" }, reviewed: { label: "Reviewed", tone: "neutral" }, contacted: { label: "Contacted", tone: "success" }, archived: { label: "Archived", tone: "muted" },
+};
+
+const TALENT_EXPORT_URL = "/api/admin/talent/export";
+
+export function AdminTalent() {
+  const [q, setQ] = React.useState("");
+  const [status, setStatus] = React.useState("all");
+  const { data, reload } = useAdmin<{ leads: any[]; counts: Record<string, number>; links: { en: string; el: string } }>(`/api/admin/talent?q=${encodeURIComponent(q)}${status === "all" ? "" : `&status=${status}`}`);
+  const [open, setOpen] = React.useState<any | null>(null);
+  const copy = (text: string) => navigator.clipboard?.writeText(text).then(() => toast.success("Copied"));
+  return (
+    <>
+      <AdminHeader title="Talent leads" description="People who sent their details and CV through the public /talent page. Visible to platform admins only." />
+      {data && (
+        <Card className="mb-4 p-4">
+          <p className="text-sm font-semibold">Links to share on LinkedIn</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Visitors from these links are recorded with source “LinkedIn”.</p>
+          {(["en", "el"] as const).map((l) => (
+            <div key={l} className="mt-2 flex items-center gap-2">
+              <span className="w-8 text-xs font-medium text-muted-foreground">{l === "en" ? "EN" : "ΕΛ"}</span>
+              <Input readOnly value={data.links[l]} onFocus={(e) => e.currentTarget.select()} aria-label={`Link (${l})`} className="font-mono text-xs" />
+              <Button size="sm" variant="outline" onClick={() => copy(data.links[l])}><Copy />Copy</Button>
+            </div>
+          ))}
+        </Card>
+      )}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <label className="relative block w-full sm:w-72"><Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-subtle-foreground" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, role, company" className="pl-8" aria-label="Search leads" /></label>
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Status">
+          {["all", "new", "reviewed", "contacted", "archived"].map((s) => (
+            <button key={s} role="tab" aria-selected={status === s} onClick={() => setStatus(s)} className={`rounded-md px-2.5 py-1 text-sm ${status === s ? "bg-surface font-medium shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"}`}>
+              {s === "all" ? "All" : LEAD_STATUS[s].label} <span className="tabular text-xs text-subtle-foreground">{data ? (s === "all" ? data.counts.total : data.counts[s]) : ""}</span>
+            </button>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" className="ml-auto" asChild><a href={TALENT_EXPORT_URL} download>Export CSV</a></Button>
+      </div>
+      <Card className="divide-y divide-border">
+        {!data ? <div className="p-6"><Skeleton className="h-6" /></div> : data.leads.length === 0 ? (
+          <p className="p-8 text-center text-sm text-muted-foreground">No leads yet. Share the link above on LinkedIn - submissions appear here.</p>
+        ) : data.leads.map((l) => (
+          <button key={l.id} onClick={() => setOpen(l)} className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-accent/50">
+            <div className="min-w-0 flex-1">
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">{l.fullName}<Badge tone={LEAD_STATUS[l.status].tone}>{LEAD_STATUS[l.status].label}</Badge>{l.source === "LinkedIn" && <Badge tone="outline">LinkedIn</Badge>}</p>
+              <p className="text-xs text-muted-foreground">{l.role}{l.currentCompany ? ` · ${l.currentCompany}` : ""} · {l.email}{l.phone ? ` · ${l.phone}` : ""}</p>
+            </div>
+            <span className="shrink-0 text-xs text-subtle-foreground">{relativeTime(l.createdAt)}</span>
+          </button>
+        ))}
+      </Card>
+      {open && <TalentLeadDialog lead={open} onClose={() => setOpen(null)} onChanged={() => reload()} />}
+    </>
+  );
+}
+
+function TalentLeadDialog({ lead, onClose, onChanged }: { lead: any; onClose: () => void; onChanged: () => void }) {
+  const [status, setStatus] = React.useState<string>(lead.status);
+  const [notes, setNotes] = React.useState<string>(lead.adminNotes);
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const save = (body: Record<string, unknown>, msg: string) => apiFetch(`/api/admin/talent/${lead.id}`, { method: "PATCH", body: JSON.stringify(body) }).then(() => (toast.success(msg), onChanged())).catch((e: ApiError) => toast.error(e.message));
+  const cvUrl = `/api/admin/talent/${lead.id}/cv`;
+  // Opening a "new" lead marks it as reviewed.
+  React.useEffect(() => { if (lead.status === "new") { setStatus("reviewed"); save({ status: "reviewed" }, "Marked as reviewed"); } }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent size="xl">
+        <DialogHeader title={lead.fullName} description={`${lead.role}${lead.currentCompany ? ` · ${lead.currentCompany}` : ""} · submitted ${shortDate(lead.createdAt)} · ${lead.language === "el" ? "Greek" : "English"} page`} />
+        <DialogBody className="grid gap-5 lg:grid-cols-[280px_1fr]">
+          <div className="space-y-4 text-sm">
+            <dl className="space-y-2">
+              <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="flex items-center gap-2"><a className="underline-offset-2 hover:underline" href={`mailto:${lead.email}`}>{lead.email}</a><button aria-label="Copy email" onClick={() => navigator.clipboard?.writeText(lead.email).then(() => toast.success("Copied"))} className="text-muted-foreground hover:text-foreground"><Copy className="size-3.5" /></button></dd></div>
+              {lead.phone && <div><dt className="text-xs text-muted-foreground">Phone</dt><dd><a href={`tel:${lead.phone}`}>{lead.phone}</a></dd></div>}
+              <div><dt className="text-xs text-muted-foreground">Source</dt><dd>{lead.source}{lead.utm.campaign ? ` · ${lead.utm.campaign}` : ""}{lead.utm.medium ? ` (${lead.utm.medium})` : ""}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Consent</dt><dd>Given {shortDate(lead.consentAt)}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">CV</dt><dd>{lead.cv.fileName} · {bytes(lead.cv.size)} · {lead.cv.source === "builder" ? "made with the CV Builder" : lead.cv.scanStatus === "clean" ? "malware scan passed" : "not malware-scanned"}</dd></div>
+            </dl>
+            <Field label="Status">
+              <Select value={status} onValueChange={(v) => (setStatus(v), save({ status: v }, `Status: ${LEAD_STATUS[v].label}`))} options={Object.entries(LEAD_STATUS).map(([value, s]) => ({ value, label: s.label }))} />
+            </Field>
+            <Field label="Notes (only platform admins see these)">
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" disabled={notes === lead.adminNotes} onClick={() => save({ adminNotes: notes }, "Notes saved")}>Save notes</Button>
+              <Button size="sm" variant="outline" asChild><a href={`${cvUrl}?download=1`}>Download CV</a></Button>
+              <Button size="sm" variant="destructive-ghost" onClick={() => setConfirmDelete(true)}>Delete</Button>
+            </div>
+          </div>
+          <div className="min-h-[420px] overflow-hidden rounded-lg border border-border bg-white">
+            {lead.cv.mime === "application/pdf" ? <iframe src={cvUrl} title={`CV - ${lead.fullName}`} className="h-[60vh] w-full" /> : <p className="p-8 text-center text-sm text-muted-foreground">Word documents can&apos;t be previewed in the browser. Use “Download CV”.</p>}
+          </div>
+        </DialogBody>
+      </DialogContent>
+      <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title={`Delete ${lead.fullName}?`} description="Their details and CV are permanently removed (e.g. for a deletion request). This can't be undone." confirmLabel="Delete" destructive
+        onConfirm={() => apiFetch(`/api/admin/talent/${lead.id}`, { method: "DELETE" }).then(() => (toast.success("Lead deleted"), onClose(), onChanged())).catch((e: ApiError) => toast.error(e.message))} />
+    </Dialog>
   );
 }

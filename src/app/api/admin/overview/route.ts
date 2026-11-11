@@ -8,6 +8,8 @@ export const GET = handler(async () => {
   await requirePlatformAdmin();
   const [c] = await sys<Record<string, string>>(`select
     (select count(*) from organizations) companies,
+    (select count(*) from talent_leads) talent_leads,
+    (select count(*) from talent_leads where status = 'new') talent_leads_new,
     (select count(*) from organizations where status = 'active') active_companies,
     (select count(*) from users) users,
     (select count(*) from users where last_login_at > now() - interval '30 days' and status = 'active') active_users,

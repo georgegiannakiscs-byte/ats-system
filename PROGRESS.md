@@ -2,7 +2,7 @@
 
 Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested** · **🔶 Partially implemented** · **🔑 Requires credentials** · **🤝 Requires third-party approval** · **⚖️ Requires compliance review** · **⬜ Not started**
 
-"Tested" means covered by `npm run test:acceptance` (Phase 1, 13 API/database tests), `npm run test:quick-check` (CV Builder & Quick Check, 8 API/database scenarios A–G) and/or the browser journeys `npm run test:e2e` and `npm run test:e2e:quick-check`, run against dev **and** the production build.
+"Tested" means covered by `npm run test:talent` (talent landing page, 7 scenarios) and `npm run test:acceptance` (Phase 1, 13 API/database tests), `npm run test:quick-check` (CV Builder & Quick Check, 8 API/database scenarios A–G) and/or the browser journeys `npm run test:e2e` and `npm run test:e2e:quick-check`, run against dev **and** the production build.
 
 ## Phase 1 - Core platform & administration
 
@@ -80,6 +80,17 @@ The application still requires **only full name, email and a CV**. A generated P
 | Usage, limits, cost tracking | ✅ | Every call logged in `ai_usage` (model, tokens, estimated cost, latency, errors, blocked). Monthly per-company request and budget limits enforced. Rate limits on public endpoints. Retries (2) and 90 s timeout in the SDK client. |
 | Multi-company isolation | ✅ | All new tables have RLS + FORCE RLS; verified at API and database level (questions, attempts, responses, configs, builder profiles, photos, drafts, observations); `ai_usage` is not readable by tenants (tested). |
 | Everything works without AI | ✅ | Tested with no API key: AI actions return a clear message; builder, manual questions, Quick Check and checking unaffected. |
+
+## Talent landing page (LinkedIn) → Admin "Talent leads"
+
+| Feature | Status | Notes |
+|---|---|---|
+| Public `/talent` page, English & Greek | ✅ | EN/ΕΛ switch, Open Graph tags for a good LinkedIn preview, mobile-first. Tracking parameters (`utm_*`) are kept and stored; `utm_source=linkedin` is recorded as source "LinkedIn". |
+| Form | ✅ | Required: full name, email, current or desired role, CV (upload PDF/DOCX **or** build one with the CV Builder), consent. Optional: current company, phone. Honeypot, rate limit, idempotent retries, file type checked by content. |
+| Confirmation email | 🔑 | Written to the outbox in the visitor's language; actually sent only once an email provider (SMTP) is configured. Platform admins (PLATFORM_ADMIN_EMAILS) also get a notification email. |
+| Admin → Talent leads (`/admin/talent`) | ✅ | List with search and status filter (new / reviewed / contacted / archived), detail with CV preview and download, notes, CSV export (formula-injection safe), delete (for erasure requests), copyable LinkedIn links (EN/ΕΛ), and a "new leads" count on the admin overview. Every view, download, change, export and deletion is audited. |
+| Privacy | ⚖️ | **Deliberate exception**: platform admins can see these leads because these people applied to the platform owner, not to a company. Company data stays invisible to platform admins. Stored only in the owner-only system context (tenants can't read the tables, tested). The 24-month retention promised on the page is **not yet enforced automatically**; delete manually or add a retention job. |
+| Real LinkedIn traffic | 🔑 | Needs the app to be permanently online (e.g. Render). The Codespaces demo stops when idle, so the link can't collect real submissions there. |
 
 ## Phase 3 - Integrations & growth
 
