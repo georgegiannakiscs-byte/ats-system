@@ -70,7 +70,7 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
         <div className="flex gap-2 rounded-lg border border-dashed border-border-strong bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
           <span>
-            {connected ? "Sending from Déceler is not enabled yet, so" : "No email service is connected, so"} messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft on the timeline.{" "}
+            {connected ? "Sending from Ulysse is not enabled yet, so" : "No email service is connected, so"} messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft on the timeline.{" "}
             <Link href={orgPath("/settings?section=integrations")} onClick={onClose} className="text-brand underline-offset-2 hover:underline">Integrations</Link>
           </span>
         </div>

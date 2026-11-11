@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Structured CV produced by the Déceler CV Builder. Only fullName and email are required;
+ * Structured CV produced by the Ulysse CV Builder. Only fullName and email are required;
  * every section is optional. Shared by the builder UI, the PDF renderer and server validation.
  * Deliberately contains no date of birth, address, nationality, marital status or similar fields.
  */

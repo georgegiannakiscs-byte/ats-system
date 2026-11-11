@@ -1,4 +1,4 @@
-# Déceler — production image (Next.js standalone server)
+# Ulysse — production image (Next.js standalone server)
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

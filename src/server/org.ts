@@ -27,7 +27,7 @@ export async function requireOrg(orgId: string, permission: Permission = "worksp
   const r = rows[0];
   // Same response for "doesn't exist" and "not a member" — avoids leaking which companies exist.
   if (!r) throw new HttpError(404, "Company not found", "not_found");
-  if (r.status !== "active") throw new HttpError(423, "This company workspace is suspended. Contact Déceler support.", "suspended");
+  if (r.status !== "active") throw new HttpError(423, "This company workspace is suspended. Contact Ulysse support.", "suspended");
   if (!can(r.role, permission)) throw new HttpError(403, "You don't have permission to do that in this company", "forbidden");
   return { user, org: { id: r.id, slug: r.slug, name: r.name, status: r.status }, role: r.role };
 }

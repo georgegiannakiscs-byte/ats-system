@@ -1,5 +1,5 @@
 /**
- * Déceler — Phase 1 acceptance tests (API + database level).
+ * Ulysse — Phase 1 acceptance tests (API + database level).
  * Run against a running server:  BASE_URL=http://localhost:3000 DATABASE_URL=… npm run test:acceptance
  */
 import { test } from "node:test";

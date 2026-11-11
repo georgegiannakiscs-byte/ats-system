@@ -16,7 +16,7 @@ type Company = { id: string; slug: string; name: string; status: string; role: s
 export function CompaniesOverview({ suspended }: { suspended?: string }) {
   const [data, setData] = React.useState<Company[] | null>(null);
   React.useEffect(() => {
-    document.title = "My companies · Déceler";
+    document.title = "My companies · Ulysse";
     apiFetch<{ companies: Company[] }>("/api/overview").then((d) => setData(d.companies)).catch(() => setData([]));
   }, []);
   const totals = data?.reduce((t, c) => ({ jobs: t.jobs + (c.stats?.active_jobs ?? 0), apps: t.apps + (c.stats?.new_applications ?? 0), attention: t.attention + (c.stats?.awaiting_review ?? 0) + (c.stats?.overdue_tasks ?? 0) }), { jobs: 0, apps: 0, attention: 0 });
@@ -24,7 +24,7 @@ export function CompaniesOverview({ suspended }: { suspended?: string }) {
     <div className="min-h-dvh">
       <PlainTopBar />
       <main className="mx-auto max-w-6xl p-4 sm:p-8">
-        {suspended && <p className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-sm">{suspended} is currently suspended. Contact Déceler support to restore access.</p>}
+        {suspended && <p className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-sm">{suspended} is currently suspended. Contact Ulysse support to restore access.</p>}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl tracking-tight">My companies</h1>

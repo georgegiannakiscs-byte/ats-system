@@ -84,7 +84,7 @@ export function CvTab({ candidate }: { candidate: Candidate }) {
         <div className="overflow-hidden rounded-lg border border-border">
           <div className="flex items-center gap-3 border-b border-border bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
             <span>{selected.mimeType === "application/pdf" ? "PDF" : "Word document"} · {kb(selected.sizeBytes)}</span>
-            {selected.source === "builder" ? <span className="inline-flex items-center gap-1"><FileText className="size-3.5" />Created by the candidate with the Déceler CV Builder</span> : selected.scanStatus === "clean" ? <span className="inline-flex items-center gap-1 text-success"><ShieldCheck className="size-3.5" />Malware scan passed</span> : <span className="inline-flex items-center gap-1"><ShieldAlert className="size-3.5" />Not malware-scanned (scanner not configured)</span>}
+            {selected.source === "builder" ? <span className="inline-flex items-center gap-1"><FileText className="size-3.5" />Created by the candidate with the Ulysse CV Builder</span> : selected.scanStatus === "clean" ? <span className="inline-flex items-center gap-1 text-success"><ShieldCheck className="size-3.5" />Malware scan passed</span> : <span className="inline-flex items-center gap-1"><ShieldAlert className="size-3.5" />Not malware-scanned (scanner not configured)</span>}
             {canView && <Button size="sm" variant="ghost" className="ml-auto" onClick={() => download(selected)}><Download />Download</Button>}
           </div>
           {!canView ? (

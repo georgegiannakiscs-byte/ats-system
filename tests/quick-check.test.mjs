@@ -1,5 +1,5 @@
 /**
- * Déceler — CV Builder & Quick Check acceptance tests (API + database level), scenarios A–G.
+ * Ulysse — CV Builder & Quick Check acceptance tests (API + database level), scenarios A–G.
  *
  * Run against a server started with a local Anthropic stub (no real API calls, no key needed):
  *   ANTHROPIC_API_KEY=stub-key ANTHROPIC_BASE_URL=http://127.0.0.1:4599 npm run dev

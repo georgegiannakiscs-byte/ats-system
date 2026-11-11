@@ -19,7 +19,7 @@ export const POST = handler(async (req, ctx: Ctx) => {
   await sys("update invitations set revoked_at = now() where org_id = $1 and lower(email) = $2 and accepted_at is null and revoked_at is null", [access.org.id, v.email]);
   await sys("insert into invitations (org_id, email, role, token_hash, invited_by, expires_at) values ($1,$2,$3,$4,$5, now() + interval '7 days')", [access.org.id, v.email, ROLE_FROM_LABEL[v.role], sha256(token), access.user.id]);
   const link = `${env.appUrl}/invite/${token}`;
-  const delivery = await sendMail(access.org.id, v.email, `You're invited to join ${access.org.name} on Déceler`, `${access.user.name} invited you to join ${access.org.name} as ${v.role}.\n\nAccept the invitation: ${link}\n\nThis link expires in 7 days.`, "invitation");
+  const delivery = await sendMail(access.org.id, v.email, `You're invited to join ${access.org.name} on Ulysse`, `${access.user.name} invited you to join ${access.org.name} as ${v.role}.\n\nAccept the invitation: ${link}\n\nThis link expires in 7 days.`, "invitation");
   await audit({ scope: "org", action: "member.invited", actorId: access.user.id, orgId: access.org.id, metadata: { email: v.email, role: v.role, delivery } });
   return json({ link, delivery }, 201);
 });

@@ -64,7 +64,7 @@ export function AiSettings() {
       <div className={`${panel} px-5 py-4 text-sm`}>
         <p className="font-medium">Anthropic Claude {db.ai.configured ? <Badge tone="success" className="ml-1">API key configured</Badge> : <Badge tone="muted" className="ml-1">Not configured</Badge>}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {db.ai.configured ? `Model: ${db.ai.model}. Requests run on Déceler's servers; your API key is never sent to browsers.` : "The platform has no Anthropic API key configured. Everything still works without AI: manual questions, approved question sets and automatic answer-key checks."}
+          {db.ai.configured ? `Model: ${db.ai.model}. Requests run on Ulysse's servers; your API key is never sent to browsers.` : "The platform has no Anthropic API key configured. Everything still works without AI: manual questions, approved question sets and automatic answer-key checks."}
           {" "}Candidate photos are never sent to AI. AI never decides who moves forward.
         </p>
       </div>

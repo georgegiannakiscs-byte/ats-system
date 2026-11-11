@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ───────────────────────────────────────────────────────────
-   Déceler design tokens
+   Ulysse design tokens
    Warm cream canvas · white surfaces · forest-green ink ·
    terracotta used sparingly for selected states and small details.
    ─────────────────────────────────────────────────────────── */

@@ -22,7 +22,7 @@ const GeneratedQuestion = z.object({
 const QuestionSet = z.object({ questions: z.array(GeneratedQuestion) });
 export type GeneratedQuestion = z.infer<typeof GeneratedQuestion>;
 
-const QGEN_SYSTEM = `You write short, practical screening questions for Déceler Quick Check, a 2-minute role-related check that recruiters review alongside a candidate's application.
+const QGEN_SYSTEM = `You write short, practical screening questions for Ulysse Quick Check, a 2-minute role-related check that recruiters review alongside a candidate's application.
 
 Write questions that:
 - describe a realistic workplace situation the role actually meets, and ask what to do or check first;

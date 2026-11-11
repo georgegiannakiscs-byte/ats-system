@@ -1,4 +1,4 @@
-# Déceler — development progress
+# Ulysse — development progress
 
 Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested** · **🔶 Partially implemented** · **🔑 Requires credentials** · **🤝 Requires third-party approval** · **⚖️ Requires compliance review** · **⬜ Not started**
 

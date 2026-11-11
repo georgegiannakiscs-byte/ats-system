@@ -29,7 +29,7 @@ export function CareersFrame({ org, lang, path, children, hideLanguage }: { org:
       <footer className="border-t border-border py-6">
         <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 px-4 text-xs text-muted-foreground">
           {t.poweredBy}
-          <Link href="/" aria-label="Déceler" className="inline-flex"><BrandMark height={13} /></Link>
+          <Link href="/" aria-label="Ulysse" className="inline-flex"><BrandMark height={13} /></Link>
         </div>
       </footer>
     </div>

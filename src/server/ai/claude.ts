@@ -45,7 +45,7 @@ export async function aiModel() {
 
 /** Why AI can't be used right now (null = available). Shown to users verbatim. */
 export async function aiUnavailableReason(orgId: string, feature: AiFeature): Promise<string | null> {
-  if (!aiConfigured()) return "AI is not configured on this Déceler installation (ANTHROPIC_API_KEY missing).";
+  if (!aiConfigured()) return "AI is not configured on this Ulysse installation (ANTHROPIC_API_KEY missing).";
   const s = await aiSettings();
   if (!s.enabled) return "AI features are switched off by the platform administrator.";
   if (!(await featureEnabled(orgId, FEATURE_FLAG[feature]))) return "This AI feature is not enabled for your company.";

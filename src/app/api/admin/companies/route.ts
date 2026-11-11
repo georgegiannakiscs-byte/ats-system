@@ -46,7 +46,7 @@ export const POST = handler(async (req) => {
       const token = randomToken();
       await sys("insert into invitations (org_id, email, role, token_hash, invited_by, expires_at) values ($1,$2,'admin',$3,$4, now() + interval '7 days')", [org.id, v.adminEmail, sha256(token), admin.id]);
       const link = `${env.appUrl}/invite/${token}`;
-      invite = { link, delivery: await sendMail(org.id, v.adminEmail, `You've been invited to administer ${v.name} on Déceler`, `Accept the invitation: ${link}`, "invitation") };
+      invite = { link, delivery: await sendMail(org.id, v.adminEmail, `You've been invited to administer ${v.name} on Ulysse`, `Accept the invitation: ${link}`, "invitation") };
     }
   }
   await audit({ scope: "platform", action: "company.created_by_platform_admin", actorId: admin.id, orgId: org.id, targetType: "organization", targetId: org.id, metadata: { name: v.name, slug, adminEmail: v.adminEmail || null }, ip: clientIp(req) });

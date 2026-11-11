@@ -31,7 +31,7 @@ export async function renderCvPdf(data: CvData, template: CvTemplate, lang: CvLa
     margins: { top: 48, bottom: 52, left: 52, right: 52 },
     font: font(t.regular), // avoids loading the built-in Helvetica (no Greek glyphs)
     bufferPages: true,
-    info: { Title: `CV — ${data.personal.fullName}`, Author: data.personal.fullName, Creator: "Déceler CV Builder", Producer: "Déceler" },
+    info: { Title: `CV — ${data.personal.fullName}`, Author: data.personal.fullName, Creator: "Ulysse CV Builder", Producer: "Ulysse" },
     lang: lang === "el" ? "el-GR" : "en-GB",
     displayTitle: true,
   });

@@ -1,4 +1,4 @@
-# Déceler — multi-company Applicant Tracking System
+# Ulysse — multi-company Applicant Tracking System
 
 Premium recruiting platform: one account manages many companies, each a fully isolated workspace with its own jobs, candidates, team, branding and public careers page. Candidates apply with just **name, email and CV**.
 
@@ -28,7 +28,7 @@ On GitHub: **Code → Codespaces → Create codespace** (on the branch you want 
 APP_SECRET=$(openssl rand -hex 32) docker compose up -d     # app + PostgreSQL + persistent storage
 ```
 
-or build the standalone server yourself: `npm run build && npm start` (needs `DATABASE_URL`, `APP_SECRET`, `APP_URL`, `STORAGE_DIR`). Any Node host with PostgreSQL works (Render, Railway, Fly.io, a VPS, Kubernetes…); Supabase/Neon/RDS can provide the database. Static hosting (e.g. GitHub Pages) is **not** possible — Déceler has a server, a database and private file storage.
+or build the standalone server yourself: `npm run build && npm start` (needs `DATABASE_URL`, `APP_SECRET`, `APP_URL`, `STORAGE_DIR`). Any Node host with PostgreSQL works (Render, Railway, Fly.io, a VPS, Kubernetes…); Supabase/Neon/RDS can provide the database. Static hosting (e.g. GitHub Pages) is **not** possible — Ulysse has a server, a database and private file storage.
 
 ## Tests
 

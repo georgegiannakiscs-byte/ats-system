@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/server/auth";
 import { AdminShell } from "@/components/admin/admin-shell";
 
-export const metadata = { title: { default: "Platform administration", template: "%s · Déceler Admin" } };
+export const metadata = { title: { default: "Platform administration", template: "%s · Ulysse Admin" } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();

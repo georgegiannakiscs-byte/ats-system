@@ -4,8 +4,8 @@
  * components/shell/brand-mark.tsx.
  */
 export const BRAND = {
-  name: "Déceler",
+  name: "Ulysse",
   /** ASCII-safe variant used for storage keys and identifiers. */
-  slug: "deceler",
+  slug: "ulysse",
   tagline: "Recruiting, with discernment.",
 } as const;

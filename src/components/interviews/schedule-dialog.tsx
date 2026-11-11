@@ -120,7 +120,7 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Focus areas, materials to review…" className="min-h-16" />
         </Field>
       </DialogBody>
-      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Saved to Déceler. Calendar invites need a connected calendar.</span>}>
+      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Saved to Ulysse. Calendar invites need a connected calendar.</span>}>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit">Schedule</Button>
       </DialogFooter>

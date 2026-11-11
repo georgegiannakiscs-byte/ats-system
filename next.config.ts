@@ -10,7 +10,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Server mode: Déceler has a database-backed API, authentication and private file storage.
+  // Server mode: Ulysse has a database-backed API, authentication and private file storage.
   output: "standalone",
   serverExternalPackages: ["pg", "sharp", "nodemailer", "pdfkit", "unpdf", "@anthropic-ai/sdk"],
   devIndicators: false,
