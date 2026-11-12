@@ -22,6 +22,20 @@ Open http://localhost:3000, create an account. In development the **first accoun
 
 On GitHub: **Code → Codespaces → Create codespace** (on the branch you want to see). The first start installs, migrates and builds (a few minutes), then opens the app on port 3000 with demo data. Sign in with `demo@example.com` / `Ulysse-demo-2026` (platform admin + admin of "Aegean Analytics"). Details: [.devcontainer/README.md](.devcontainer/README.md). Seed the same demo data elsewhere with `node scripts/seed-demo.mjs` while the server runs.
 
+## Free test deployment (Render + Neon)
+
+1. Create a free PostgreSQL database on [Neon](https://neon.tech) (region: Frankfurt) and copy its connection string.
+2. On [Render](https://render.com): **New → Blueprint**, pick this repository. Render reads `render.yaml` and asks for:
+   - `DATABASE_URL`: the Neon connection string.
+   - `PLATFORM_ADMIN_EMAILS`: your email.
+3. Open the `https://….onrender.com` address and sign up with that email. You are now platform admin.
+
+Free limits:
+- The service sleeps after 15 minutes without visits, and the next visit takes about a minute.
+- Neon free has 0.5 GB of storage.
+
+Files are stored in the database (`STORAGE_DRIVER=db`), because free Render services have no disk. Every merge to `main` redeploys automatically.
+
 ## Production
 
 ```bash

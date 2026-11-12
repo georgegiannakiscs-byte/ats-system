@@ -130,12 +130,16 @@ test("admin sees the leads; other users and companies don't", async () => {
   assert.equal((await admin.get(`/api/admin/talent/${built.id}/cv`)).status, 404);
 });
 
-test("database: company (tenant) role can't read talent leads", async () => {
+test("database: company (tenant) role can't read talent leads or stored files", async () => {
   const db = new pg.Client({ connectionString: DB });
   await db.connect();
   await db.query("begin");
   await db.query("set local role deceler_app");
   await assert.rejects(db.query("select count(*) from talent_leads"), /permission denied/);
+  await db.query("rollback");
+  await db.query("begin");
+  await db.query("set local role deceler_app");
+  await assert.rejects(db.query("select count(*) from stored_objects"), /permission denied/);
   await db.query("rollback");
   await db.end();
 });
