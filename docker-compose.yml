@@ -1,5 +1,7 @@
 # Local or single-server deployment: app + PostgreSQL + persistent file storage.
 #   APP_SECRET=$(openssl rand -hex 32) docker compose up -d
+# On your own computer the easiest way is the one-click launcher (Start-Ulysse-Windows.bat or
+# Start-Ulysse-Mac.command), which writes a local .env, starts everything and adds demo data.
 services:
   db:
     image: postgres:16
@@ -23,6 +25,25 @@ services:
       SMTP_URL: ${SMTP_URL:-}
       MAIL_FROM: ${MAIL_FROM:-}
     volumes: [files:/data]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      retries: 60
+  # Optional demo data (company "Aegean Analytics", jobs, applications), for trying it out locally:
+  #   docker compose --profile demo run --rm seed
+  # Never run it against a public deployment: it creates demo@example.com with a known password.
+  seed:
+    profiles: [demo]
+    image: node:22-bookworm-slim
+    depends_on: { app: { condition: service_healthy } }
+    working_dir: /repo
+    environment:
+      SEED_BASE_URL: http://app:3000
+    volumes:
+      - ./scripts:/repo/scripts:ro
+      - ./tests/fixtures:/repo/tests/fixtures:ro
+    command: ["node", "scripts/seed-demo.mjs"]
+    restart: "no"
 volumes:
   pgdata:
   files:

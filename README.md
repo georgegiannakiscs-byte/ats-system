@@ -4,7 +4,15 @@ Premium recruiting platform: one account manages many companies, each a fully is
 
 See **[PROGRESS.md](PROGRESS.md)** for the honest status of every feature.
 
-## Quick start (local)
+## Run it on your own computer (one click, no terminal)
+
+1. Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+2. On GitHub: **Code → Download ZIP**, then unzip it.
+3. Double-click **`Start-Ulysse-Windows.bat`** (Windows) or **`Start-Ulysse-Mac.command`** (macOS; the first time, right-click → **Open**, because it was downloaded from the internet).
+
+The first start builds the app, which takes a few minutes. When it's ready, the browser opens http://localhost:3000. Sign in with `demo@example.com` / `Ulysse-demo-2026`, which is a platform admin and admin of the demo company "Aegean Analytics". The launcher writes a local `.env` with a random `APP_SECRET`, runs `docker compose up -d --build` and adds demo data with `docker compose --profile demo run --rm seed`. Data stays in Docker volumes between runs. To stop: Docker Desktop → Containers → `ats-system` → Stop. This is for trying it out on your own machine only: don't seed demo data on a public server.
+
+## Quick start (local, for development)
 
 Requirements: Node 22+, PostgreSQL 14+.
 

@@ -1,0 +1,4 @@
+# Keep exact line endings: Windows batch files need CRLF, shell scripts need LF.
+*.bat -text
+*.command text eol=lf
+*.sh text eol=lf
