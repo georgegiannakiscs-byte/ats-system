@@ -1,0 +1,24 @@
+# Free test deployment on Render (Blueprint). The database is a free Neon PostgreSQL:
+# paste its connection string as DATABASE_URL when Render asks. Files (CVs, photos, logos) are
+# stored in the database (STORAGE_DRIVER=db) because free Render services have no disk.
+# The free service sleeps after 15 minutes without visits; the next visit takes about a minute.
+services:
+  - type: web
+    name: ulysse
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PLATFORM_ADMIN_EMAILS
+        sync: false
+      - key: APP_SECRET
+        generateValue: true
+      - key: STORAGE_DRIVER
+        value: db
+      - key: AUTO_MIGRATE
+        value: "true"

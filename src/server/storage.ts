@@ -3,24 +3,47 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import net from "node:net";
 import { env } from "./env";
+import { sys } from "./db";
 
 /**
- * Private object storage. The local driver writes outside the public web root;
- * files are only served through authorised route handlers with signed URLs.
+ * Private object storage. Files are only served through authorised route handlers with signed URLs.
+ * - "fs" (default): files on disk under STORAGE_DIR, outside the public web root.
+ * - "db": files in the stored_objects table (system context only). For hosts without a
+ *   persistent disk, such as a free Render web service with a Neon database.
  * Swap for S3 / Supabase Storage by implementing the same three functions.
  */
-function resolve(key: string) {
+function checkKey(key: string) {
   if (!/^[a-z0-9/_.-]+$/i.test(key) || key.includes("..")) throw new Error("Invalid storage key");
-  return path.join(env.storageDir, key);
+  return key;
 }
+const resolve = (key: string) => path.join(env.storageDir, checkKey(key));
 
 export async function putObject(key: string, data: Buffer) {
+  if (env.storageDriver === "db") {
+    await sys("insert into stored_objects (key, data, size_bytes) values ($1, $2, $3) on conflict (key) do update set data = excluded.data, size_bytes = excluded.size_bytes, created_at = now()", [checkKey(key), data, data.length]);
+    return;
+  }
   const p = resolve(key);
   await fs.mkdir(path.dirname(p), { recursive: true });
   await fs.writeFile(p, data, { mode: 0o600 });
 }
-export const getObject = (key: string) => fs.readFile(resolve(key));
-export const deleteObject = (key: string) => fs.rm(resolve(key), { force: true });
+
+export async function getObject(key: string): Promise<Buffer> {
+  if (env.storageDriver === "db") {
+    const [row] = await sys<{ data: Buffer }>("select data from stored_objects where key = $1", [checkKey(key)]);
+    if (!row) throw Object.assign(new Error(`Object not found: ${key}`), { code: "ENOENT" });
+    return row.data;
+  }
+  return fs.readFile(resolve(key));
+}
+
+export async function deleteObject(key: string) {
+  if (env.storageDriver === "db") {
+    await sys("delete from stored_objects where key = $1", [checkKey(key)]);
+    return;
+  }
+  await fs.rm(resolve(key), { force: true });
+}
 
 /** Malware scan via ClamAV (clamd INSTREAM) when CLAMAV_HOST is configured. */
 export async function scanBuffer(data: Buffer): Promise<"clean" | "infected" | "not_scanned" | "error"> {

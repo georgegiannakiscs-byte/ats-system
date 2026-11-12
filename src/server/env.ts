@@ -23,7 +23,10 @@ export const env = {
   isProd,
   databaseUrl: process.env.DATABASE_URL ?? (isProd ? "" : "postgres://deceler:deceler_dev@localhost:5432/deceler"),
   appSecret: process.env.APP_SECRET ?? (isProd ? "" : devSecret()),
-  appUrl: (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  // RENDER_EXTERNAL_URL is set automatically on Render, so the free test deployment needs no APP_URL.
+  appUrl: (process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000").replace(/\/$/, ""),
+  /** "fs" (files under STORAGE_DIR, default) or "db" (files in PostgreSQL, for hosts without a disk). */
+  storageDriver: process.env.STORAGE_DRIVER === "db" ? ("db" as const) : ("fs" as const),
   storageDir: process.env.STORAGE_DIR ?? path.join(process.cwd(), ".data", "storage"),
   platformAdminEmails: (process.env.PLATFORM_ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
   bootstrapFirstAdmin: (process.env.BOOTSTRAP_FIRST_USER_AS_ADMIN ?? (isProd ? "false" : "true")) === "true",
