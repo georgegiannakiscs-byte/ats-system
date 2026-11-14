@@ -19,6 +19,8 @@ import { AiSettings, CvBuilderSettings } from "@/components/settings/cv-ai";
 import { STAGE_TONE } from "@/lib/constants";
 import type { CompanyProfile, EmailTemplate, NotificationPrefs, Role, StageConfig } from "@/lib/types";
 import { cn, relativeTime, uid } from "@/lib/utils";
+import { CAREERS_FONTS, DEFAULT_ACCENT, DEFAULT_PRIMARY, contrastWarnings, isHex, luminance, onColor, resolveCareersTheme, type CareersFontKey, type CornerStyle, type HeroStyle } from "@/lib/careers-theme";
+import { CareersPreview } from "@/components/settings/careers-preview";
 
 const SECTIONS = [
   { id: "company", label: "Company profile", icon: Building2 },
@@ -202,44 +204,94 @@ function LogoSlot({ variant }: { variant: "light" | "dark" }) {
   );
 }
 
+function ColourField({ label, hint, value, onChange, optional, emptyLabel, customDefault = "#ffffff" }: { label: string; hint?: string; value: string; onChange: (v: string) => void; optional?: boolean; emptyLabel?: string; customDefault?: string }) {
+  const custom = value !== "";
+  return (
+    <Field label={label} hint={hint}>
+      <div className="flex flex-wrap items-center gap-2">
+        {optional && (
+          <Select size="sm" className="w-32" ariaLabel={`${label}: default or custom`} value={custom ? "custom" : "default"} onValueChange={(v) => onChange(v === "custom" ? customDefault : "")} options={[{ value: "default", label: emptyLabel ?? "Default" }, { value: "custom", label: "Custom" }]} />
+        )}
+        {custom && <>
+          <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="h-8 w-10 cursor-pointer rounded border border-input bg-surface" aria-label={label} />
+          <Input value={value} onChange={(e) => onChange(e.target.value)} className="w-28" aria-label={`${label} (hex)`} />
+        </>}
+      </div>
+    </Field>
+  );
+}
+
 function BrandingSettings() {
   const db = useDb();
   const canEdit = useCan("branding.manage");
+  const enabled = db.org.features.custom_branding !== false;
   const b = db.org.branding;
-  const [f, setF] = React.useState({ primaryColor: b.primaryColor ?? "#193329", accentColor: b.accentColor ?? "#BE7157", careersHeadline: b.careersHeadline ?? "", careersIntro: b.careersIntro ?? "", benefits: (b.benefits ?? []).join("\n"), careersLanguage: b.careersLanguage ?? "en", careersLayout: b.careersLayout ?? "list" });
+  const [f, setF] = React.useState({
+    primaryColor: b.primaryColor ?? DEFAULT_PRIMARY, accentColor: b.accentColor ?? DEFAULT_ACCENT, backgroundColor: b.backgroundColor ?? "", textColor: b.textColor ?? "",
+    headingFont: b.headingFont ?? "default", bodyFont: b.bodyFont ?? "default", cornerStyle: b.cornerStyle ?? "rounded", heroStyle: b.heroStyle ?? "plain",
+    careersHeadline: b.careersHeadline ?? "", careersIntro: b.careersIntro ?? "", benefits: (b.benefits ?? []).join("\n"), careersLanguage: b.careersLanguage ?? "en", careersLayout: b.careersLayout ?? "list",
+  });
   const [initial, setInitial] = React.useState(() => JSON.stringify(f));
   const dirty = JSON.stringify(f) !== initial;
-  const hex = /^#[0-9a-fA-F]{6}$/;
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const careersUrl = typeof window !== "undefined" ? `${window.location.origin}/careers/${db.org.slug}` : `/careers/${db.org.slug}`;
+  const theme = resolveCareersTheme(f);
+  const warnings = contrastWarnings(theme);
+  const benefitList = f.benefits.split("\n").map((x) => x.trim()).filter(Boolean);
   const save = async () => {
-    if (!hex.test(f.primaryColor) || !hex.test(f.accentColor)) return toast.error("Colours must be hex values like #193329");
-    await api.settings.updateBranding({ ...f, careersLanguage: f.careersLanguage as "en" | "el", careersLayout: f.careersLayout as "list" | "grid", benefits: f.benefits.split("\n").map((x) => x.trim()).filter(Boolean) });
+    const badHex = [f.primaryColor, f.accentColor, f.backgroundColor, f.textColor].some((c) => c !== "" && !isHex(c)) || !f.primaryColor || !f.accentColor;
+    if (badHex) return toast.error("Colours must be hex values like #193329");
+    await api.settings.updateBranding({ ...f, benefits: benefitList });
     setInitial(JSON.stringify(f));
     window.dispatchEvent(new Event("deceler:companies-changed"));
     toast.success("Branding saved", { description: "Your careers page is updated." });
   };
+  const fontOptions = CAREERS_FONTS.map((x) => ({ value: x.key, label: x.kind === "default" ? x.label : `${x.label} · ${x.kind === "serif" ? "serif" : "sans"}` }));
   return (
     <div className="space-y-4">
       <ReadOnlyNotice permission="branding.manage" />
+      {!enabled && <p className="rounded-xl border border-border bg-surface-2 p-4 text-sm text-muted-foreground">Custom branding isn&apos;t enabled for this company by the platform administrator. Your careers page uses the Ulysse look; your logo and texts still appear.</p>}
       <div className="grid gap-3 md:grid-cols-2">
         <LogoSlot variant="light" />
         <LogoSlot variant="dark" />
       </div>
-      <Panel className="grid gap-4 sm:grid-cols-2" footer={canEdit && <Button disabled={!dirty} onClick={save}>Save branding</Button>}>
-        <fieldset disabled={!canEdit} className="contents">
-          <Field label="Main colour" hint="Buttons and highlights on your careers page.">
-            <div className="flex gap-2"><input type="color" value={f.primaryColor} onChange={(e) => setF({ ...f, primaryColor: e.target.value })} className="h-8 w-10 cursor-pointer rounded border border-input bg-surface" aria-label="Main colour" /><Input value={f.primaryColor} onChange={(e) => setF({ ...f, primaryColor: e.target.value })} /></div>
-          </Field>
-          <Field label="Accent colour">
-            <div className="flex gap-2"><input type="color" value={f.accentColor} onChange={(e) => setF({ ...f, accentColor: e.target.value })} className="h-8 w-10 cursor-pointer rounded border border-input bg-surface" aria-label="Accent colour" /><Input value={f.accentColor} onChange={(e) => setF({ ...f, accentColor: e.target.value })} /></div>
-          </Field>
-          <Field label="Careers page headline" className="sm:col-span-2"><Input value={f.careersHeadline} onChange={(e) => setF({ ...f, careersHeadline: e.target.value })} placeholder={`Join ${db.org.name}`} /></Field>
-          <Field label="Introduction" className="sm:col-span-2"><Textarea value={f.careersIntro} onChange={(e) => setF({ ...f, careersIntro: e.target.value })} className="min-h-20" placeholder="A few words about working with you." /></Field>
-          <Field label="Benefits" hint="One per line." className="sm:col-span-2"><Textarea value={f.benefits} onChange={(e) => setF({ ...f, benefits: e.target.value })} className="min-h-20" placeholder={"Hybrid working\nLearning budget"} /></Field>
-          <Field label="Careers page language"><Select value={f.careersLanguage} onValueChange={(v) => setF({ ...f, careersLanguage: v as "en" | "el" })} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά (Greek)" }]} /></Field>
-          <Field label="Job list layout"><Select value={f.careersLayout} onValueChange={(v) => setF({ ...f, careersLayout: v as "list" | "grid" })} options={[{ value: "list", label: "List" }, { value: "grid", label: "Cards" }]} /></Field>
-        </fieldset>
-      </Panel>
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_340px]">
+        <Panel className="space-y-6" footer={canEdit && <Button disabled={!dirty} onClick={save}>Save branding</Button>}>
+          <fieldset disabled={!canEdit || !enabled} className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-3 text-sm font-semibold">Colours</legend>
+            <ColourField label="Main colour" hint="Buttons, links and the header band." value={f.primaryColor} onChange={(v) => set("primaryColor", v)} />
+            <ColourField label="Accent colour" hint="Small details: the line above the headline, benefit dots." value={f.accentColor} onChange={(v) => set("accentColor", v)} />
+            <ColourField label="Page background" hint="Default follows the visitor's light or dark mode." value={f.backgroundColor} onChange={(v) => set("backgroundColor", v)} optional />
+            {f.backgroundColor !== "" && <ColourField label="Text colour" hint="Automatic picks dark or white text for your background." value={f.textColor} onChange={(v) => set("textColor", v)} optional emptyLabel="Automatic" customDefault={onColor(f.backgroundColor)} />}
+            {warnings.length > 0 && (
+              <ul className="space-y-1 rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs sm:col-span-2" aria-live="polite">
+                {warnings.map((w) => <li key={w.field}>{w.message}</li>)}
+              </ul>
+            )}
+          </fieldset>
+          <div className="border-t border-border" />
+          <fieldset disabled={!canEdit || !enabled} className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-3 text-sm font-semibold">Fonts &amp; style</legend>
+            <Field label="Headings font" hint="All fonts include Greek."><Select value={f.headingFont} onValueChange={(v) => set("headingFont", v as CareersFontKey)} options={fontOptions} /></Field>
+            <Field label="Text font"><Select value={f.bodyFont} onValueChange={(v) => set("bodyFont", v as CareersFontKey)} options={fontOptions} /></Field>
+            <Field label="Corners"><Select value={f.cornerStyle} onValueChange={(v) => set("cornerStyle", v as CornerStyle)} options={[{ value: "sharp", label: "Sharp" }, { value: "rounded", label: "Rounded" }, { value: "round", label: "Extra round" }]} /></Field>
+            <Field label="Header"><Select value={f.heroStyle} onValueChange={(v) => set("heroStyle", v as HeroStyle)} options={[{ value: "plain", label: "Plain" }, { value: "band", label: "Coloured band (main colour)" }]} /></Field>
+          </fieldset>
+          <div className="border-t border-border" />
+          <fieldset disabled={!canEdit} className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-3 text-sm font-semibold">Careers page content</legend>
+            <Field label="Careers page headline" className="sm:col-span-2"><Input value={f.careersHeadline} onChange={(e) => set("careersHeadline", e.target.value)} placeholder={`Join ${db.org.name}`} /></Field>
+            <Field label="Introduction" className="sm:col-span-2"><Textarea value={f.careersIntro} onChange={(e) => set("careersIntro", e.target.value)} className="min-h-20" placeholder="A few words about working with you." /></Field>
+            <Field label="Benefits" hint="One per line." className="sm:col-span-2"><Textarea value={f.benefits} onChange={(e) => set("benefits", e.target.value)} className="min-h-20" placeholder={"Hybrid working\nLearning budget"} /></Field>
+            <Field label="Careers page language"><Select value={f.careersLanguage} onValueChange={(v) => set("careersLanguage", v as "en" | "el")} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά (Greek)" }]} /></Field>
+            <Field label="Job list layout"><Select value={f.careersLayout} onValueChange={(v) => set("careersLayout", v as "list" | "grid")} options={[{ value: "list", label: "List" }, { value: "grid", label: "Cards" }]} /></Field>
+          </fieldset>
+        </Panel>
+        <div className="space-y-2 lg:sticky lg:top-4">
+          <p className="text-xs font-medium text-muted-foreground">Preview{dirty ? " · not saved yet" : ""}</p>
+          <CareersPreview theme={resolveCareersTheme(f, enabled)} name={db.org.name} logoUrl={theme.background && luminance(theme.background) < 0.2 && db.org.logoDarkUrl ? db.org.logoDarkUrl : db.org.logoUrl} headline={f.careersHeadline} intro={f.careersIntro} benefits={benefitList} layout={f.careersLayout} />
+        </div>
+      </div>
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
         <Globe className="size-4 text-muted-foreground" />
         <div className="min-w-0 flex-1"><p className="text-sm font-medium">Public careers page</p><p className="truncate text-xs text-muted-foreground">{careersUrl}</p></div>

@@ -307,6 +307,30 @@ test("C - branding & logo replacement", async () => {
   assert.ok(!sitemap.includes("secret-draft-role"), "drafts are not in the sitemap");
 });
 
+test("C2 - careers page theme (colours, fonts, style)", async () => {
+  const brand = (payload) => owner.cmd(S.A.id, "settings.branding", payload);
+  assert.equal((await brand({ headingFont: "Comic Sans" })).status, 400, "unknown font rejected");
+  assert.equal((await brand({ cornerStyle: "blob" })).status, 400, "unknown corner style rejected");
+  assert.equal((await brand({ backgroundColor: "#fff;}body{display:none" })).status, 400, "CSS injection rejected");
+  assert.equal((await brand({ backgroundColor: "#0E1A2B", textColor: "", primaryColor: "#0B3D91", accentColor: "#F2A900", headingFont: "eb-garamond", bodyFont: "manrope", cornerStyle: "round", heroStyle: "band" })).status, 200);
+  const css = (html) => html.match(/:root:root\{[^<]*\}/)?.[0] ?? "";
+  const themed = css(await (await fetch(`${BASE}/careers/${S.slugA}`)).text());
+  assert.ok(themed.includes("--background:#0E1A2B") && themed.includes("--foreground:#ffffff"), "custom background with automatic text colour");
+  assert.ok(themed.includes("--primary:#0B3D91") && themed.includes("--careers-accent:#F2A900") && themed.includes("--radius:1rem"));
+  assert.ok(/--font-display-serif:'EB Garamond'/.test(themed) && /--font-geist-sans:'Manrope'/.test(themed), "chosen fonts");
+  assert.ok(css(await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}`)).text()).includes("--background:#0E1A2B"), "job page uses the theme");
+  // The platform admin can switch custom branding off for a company: the careers page falls back to the defaults.
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  await db.query("insert into org_features (org_id, feature_key, enabled) values ($1, 'custom_branding', false) on conflict (org_id, feature_key) do update set enabled = false", [S.A.id]);
+  const off = css(await (await fetch(`${BASE}/careers/${S.slugA}`)).text());
+  await db.query("delete from org_features where org_id = $1 and feature_key = 'custom_branding'", [S.A.id]);
+  await db.end();
+  assert.ok(off.includes("--primary:#193329") && !off.includes("--background:") && !off.includes("EB Garamond"), "defaults when custom branding is off");
+  assert.equal((await brand({ backgroundColor: "", headingFont: "default", bodyFont: "default", cornerStyle: "rounded", heroStyle: "plain" })).status, 200, "back to defaults");
+  assert.ok(!css(await (await fetch(`${BASE}/careers/${S.slugA}`)).text()).includes("--background:"), "empty background = follow light/dark");
+});
+
 test("B - platform super admin", async () => {
   // The first registered account on a fresh platform is bootstrapped as platform admin in development.
   // Promote the test owner explicitly so this test is independent of ordering.

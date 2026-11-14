@@ -1,3 +1,4 @@
+import type { CareersFontKey, CornerStyle, HeroStyle } from "./careers-theme";
 /**
  * Domain types. These mirror the shapes a future REST/GraphQL API would return,
  * so the mock layer in `lib/api` can later be swapped for real endpoints.
@@ -343,6 +344,13 @@ export interface OrgBranding {
   benefits?: string[];
   careersLanguage?: "en" | "el";
   careersLayout?: "list" | "grid";
+  /** Careers page theme. "" / missing = default. */
+  backgroundColor?: string;
+  textColor?: string;
+  headingFont?: CareersFontKey;
+  bodyFont?: CareersFontKey;
+  cornerStyle?: CornerStyle;
+  heroStyle?: HeroStyle;
 }
 
 export interface WorkspaceOrg {

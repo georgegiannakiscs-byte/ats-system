@@ -8,6 +8,7 @@ import { randomToken, sha256 } from "./security";
 import { sendMail } from "./mail";
 import { newId } from "./cv";
 import { logoUrl } from "./branding";
+import { resolveCareersTheme } from "@/lib/careers-theme";
 
 /*
  * Quick Check: a short, optional, role-related check offered after applying.
@@ -183,7 +184,7 @@ async function view(q: Q, a: AttemptRow) {
   const cfg = ctx.cfg ? configFromRow(ctx.cfg) : DEFAULT_CONFIG;
   const base = {
     status: a.status,
-    company: { name: ctx.org_name, slug: ctx.org_slug, primaryColor: (ctx.branding?.primaryColor as string) ?? null, logoUrl: logoUrl(a.org_id, ctx.branding ?? {}) },
+    company: { name: ctx.org_name, slug: ctx.org_slug, theme: resolveCareersTheme(ctx.branding ?? {}, await featureEnabled(a.org_id, "custom_branding")), logoUrl: logoUrl(a.org_id, ctx.branding ?? {}) },
     jobSlug: ctx.job_slug,
     jobTitle: ctx.job_title,
     firstName: ctx.first_name,

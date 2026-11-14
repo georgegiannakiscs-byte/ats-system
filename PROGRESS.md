@@ -20,6 +20,7 @@ Status legend: **✅ Implemented and tested** · **🟡 Implemented, not tested*
 | 6 | Independent company dashboards | ✅ | `/app/[slug]/dashboard`; workspace fully remounts on switch. |
 | 7 | All My Companies overview (`/app`) | ✅ | Per-company counts computed under each company's own RLS context. |
 | 8 | Company branding (colours, careers headline/intro/benefits, language, layout) | ✅ | |
+| 8b | Careers page theme: main + accent colour, page background & text colour, heading/text fonts (17 self-hosted fonts, all with Greek), corners, coloured header band; live preview and readability warnings in Settings | ✅ | Applies to careers, job/apply and Quick Check pages. Off (Ulysse look) when the platform switches Custom Branding off for the company (tested). Custom background overrides the visitor's dark mode. No cover image yet. |
 | 9 | Company logo upload (light & dark variants) | ✅ | PNG/JPG/WebP (re-encoded, metadata stripped, resized), SVG with strict safety check; replace/remove; versioned URLs. Shown in switcher, workspace, careers pages, application form & confirmation. |
 | 9a | Logo in branded emails / offer documents | 🔑 | Emails are plain text until an email provider is configured; offers are Phase 4. |
 | 10 | Memberships, roles & permissions | ✅ | Admin / Recruiter / Hiring Manager / Interviewer per company, enforced server-side (tested: same user is admin in one company and interviewer in another). Invitations with single-use tokens. |
