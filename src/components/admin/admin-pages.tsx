@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, ShieldOff, Smartphone, UserX, UserCheck } from "lucide-react";
+import { Archive, ArchiveRestore, Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, ShieldOff, Smartphone, Trash2, UserX, UserCheck } from "lucide-react";
 import { apiFetch, type ApiError } from "@/lib/api/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +84,7 @@ export function AdminCompanies() {
       <AdminHeader title="Companies" description="Every registered company workspace." action={<Button onClick={() => setCreate(true)}><Plus />Create company</Button>} />
       <div className="mb-3 flex flex-wrap gap-2">
         <label className="relative w-full sm:w-72"><Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-subtle-foreground" /><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or address" className="pl-8" aria-label="Search companies" /></label>
-        <Select value={status} onValueChange={setStatus} className="w-40" ariaLabel="Status" options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "suspended", label: "Suspended" }]} />
+        <Select value={status} onValueChange={setStatus} className="w-40" ariaLabel="Status" options={[{ value: "all", label: "All statuses" }, { value: "active", label: "Active" }, { value: "suspended", label: "Archived" }]} />
       </div>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
@@ -93,7 +93,7 @@ export function AdminCompanies() {
             {!data ? <tr><td colSpan={7} className="p-6"><Skeleton className="h-6" /></td></tr> : data.companies.length === 0 ? <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No companies found</td></tr> : data.companies.map((c) => (
               <tr key={c.id} className="hover:bg-accent/50">
                 <td className="px-4 py-2.5"><Link href={`/admin/companies/${c.id}`} className="flex items-center gap-2.5 font-medium hover:underline"><CompanyLogo name={c.name} logoUrl={c.logoUrl} size={24} />{c.name}<span className="font-normal text-subtle-foreground">/{c.slug}</span></Link></td>
-                <td className="px-3">{c.status === "active" ? <Badge tone="success">Active</Badge> : <Badge tone="warning">Suspended</Badge>}</td>
+                <td className="px-3">{c.status === "active" ? <Badge tone="success">Active</Badge> : <Badge tone="warning">Archived</Badge>}</td>
                 <td className="max-w-48 truncate px-3 text-xs text-muted-foreground">{c.admins || "-"}</td>
                 <td className="tabular px-3 text-right">{c.members}</td><td className="tabular px-3 text-right">{c.jobs}</td><td className="tabular px-3 text-right">{c.applications}</td>
                 <td className="px-3 text-xs text-muted-foreground">{shortDate(c.createdAt)}</td>
@@ -151,6 +151,8 @@ export function AdminCompany({ id }: { id: string }) {
   const [suspend, setSuspend] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [edit, setEdit] = React.useState<{ name: string; slug: string } | null>(null);
+  const [del, setDel] = React.useState<{ name: string; reason: string; password: string } | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   if (!data) return <Loading />;
   const c = data.company;
   const patch = (body: Record<string, unknown>, msg: string) => apiFetch(`/api/admin/companies/${id}`, { method: "PATCH", body: JSON.stringify(body) }).then(() => (toast.success(msg), reload())).catch((e: ApiError) => toast.error(e.message));
@@ -162,10 +164,11 @@ export function AdminCompany({ id }: { id: string }) {
         <CompanyLogo name={c.name} logoUrl={c.logoUrl} size={44} className="rounded-lg" />
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold">{c.name}</h1>
-          <p className="text-sm text-muted-foreground">/{c.slug} · created {shortDate(c.created_at)} · {c.status === "active" ? "Active" : `Suspended - ${c.suspended_reason}`}</p>
+          <p className="text-sm text-muted-foreground">/{c.slug} · created {shortDate(c.created_at)} · {c.status === "active" ? "Active" : `Archived - ${c.suspended_reason}`}</p>
         </div>
         <Button variant="outline" onClick={() => setEdit({ name: c.name, slug: c.slug })}>Edit</Button>
-        {c.status === "active" ? <Button variant="destructive-ghost" onClick={() => setSuspend(true)}>Suspend workspace</Button> : <Button onClick={() => patch({ status: "active" }, "Company reactivated")}>Reactivate</Button>}
+        {c.status === "active" ? <Button variant="outline" onClick={() => setSuspend(true)}><Archive />Archive</Button> : <Button onClick={() => patch({ status: "active" }, "Company restored")}><ArchiveRestore />Restore</Button>}
+        <Button variant="destructive-ghost" onClick={() => setDel({ name: "", reason: "", password: "" })}><Trash2 />Delete permanently</Button>
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-4 lg:col-span-1">
@@ -191,9 +194,36 @@ export function AdminCompany({ id }: { id: string }) {
           ))}
         </ul>
       </Card>
-      <ConfirmDialog open={suspend} onOpenChange={setSuspend} title={`Suspend ${c.name}?`} description="Members lose access and the careers page goes offline until you reactivate it. No data is deleted." confirmLabel="Suspend" destructive onConfirm={() => { if (!reason.trim()) { toast.error("Add a reason"); return; } patch({ status: "suspended", reason }, "Company suspended"); }}>
-        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (visible in the audit log)" aria-label="Suspension reason" />
+      <ConfirmDialog open={suspend} onOpenChange={setSuspend} title={`Archive ${c.name}?`} description="Nobody can open the workspace and the careers page goes offline. All data is kept, and you can restore it at any time." confirmLabel="Archive" destructive onConfirm={() => { if (!reason.trim()) { toast.error("Add a reason"); return; } patch({ status: "suspended", reason }, "Company archived"); }}>
+        <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (visible in the audit log)" aria-label="Archive reason" />
       </ConfirmDialog>
+      <Dialog open={!!del} onOpenChange={(o) => !o && !deleting && setDel(null)}>
+        <DialogContent size="sm">
+          {del && (
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setDeleting(true);
+              try {
+                await apiFetch(`/api/admin/companies/${id}`, { method: "DELETE", body: JSON.stringify({ confirmName: del.name, reason: del.reason, password: del.password }) });
+                toast.success(`${c.name} was deleted permanently`);
+                window.location.href = "/admin/companies";
+              } catch (err) { toast.error((err as ApiError).message); setDeleting(false); }
+            }}>
+              <DialogHeader icon={<Trash2 />} title={`Delete ${c.name} permanently?`} description="This deletes the company and everything in it: jobs, candidates, applications, CVs and other files, notes, interviews, Quick Check data, members' access, invitations and settings. It can't be undone. User accounts stay, and the audit log keeps a record of the deletion." />
+              <DialogBody className="space-y-3">
+                <p className="rounded-md bg-destructive-soft px-3 py-2 text-xs text-destructive">{data.usage.jobs} jobs · {data.usage.candidates} candidates · {data.usage.applications} applications · {bytes(data.usage.cv_bytes)} of CVs will be deleted.</p>
+                <Field label={`Type the company name: ${c.name}`}><Input autoFocus value={del.name} onChange={(e) => setDel({ ...del, name: e.target.value })} autoComplete="off" /></Field>
+                <Field label="Reason"><Input value={del.reason} onChange={(e) => setDel({ ...del, reason: e.target.value })} placeholder="e.g. contract ended, data deletion request" /></Field>
+                <Field label="Your password"><Input type="password" autoComplete="current-password" value={del.password} onChange={(e) => setDel({ ...del, password: e.target.value })} /></Field>
+              </DialogBody>
+              <DialogFooter>
+                <Button type="button" variant="outline" disabled={deleting} onClick={() => setDel(null)}>Cancel</Button>
+                <Button type="submit" variant="destructive" disabled={deleting || del.name.trim() !== c.name.trim() || del.reason.trim().length < 3 || !del.password}>{deleting ? "Deleting…" : "Delete permanently"}</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
         <DialogContent size="sm">
           {edit && (

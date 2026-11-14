@@ -130,6 +130,7 @@ AI Copilot, workflow builder, offer management, e-signatures, careers page build
 | Area | Status | Notes |
 |---|---|---|
 | Security headers (HSTS, nosniff, frame-ancestors, referrer, permissions) | ✅ | |
+| Archive / permanent deletion of a company | ✅ | Admin → Companies → company: **Archive** (no access, careers page offline, data kept, **Restore** any time) and **Delete permanently** (type the name, a reason and your password). Deletion removes all company data and files (CVs, CV Builder drafts and photos, logos; on disk or in the database), keeps user accounts, and is recorded in the audit log. Tested with both storage drivers. |
 | Audit logging | ✅ | Company creation/suspension, invitations, role changes, logo & branding, CV access, platform settings, features, recovery links. |
 | Data export / deletion / retention workflows | ⬜ ⚖️ | Retention default is configurable at platform level; enforcement job not built. |
 | Language | ✅ | English only. The Greek option was removed everywhere (careers, application form, /talent, Quick Check, CV Builder, settings); `?lang=el` shows English. The Greek texts stay unused in `src/lib/i18n`, so the option can come back later. CVs and answers can still contain Greek text. |
