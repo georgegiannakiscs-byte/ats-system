@@ -211,7 +211,7 @@ function GenerateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const jobs = db.jobs.filter((j) => j.status !== "archived");
   const [jobId, setJobId] = React.useState("");
   const [count, setCount] = React.useState(4);
-  const [language, setLanguage] = React.useState<"en" | "el">("en");
+  const language = "en" as const; // English-only product
   const [mix, setMix] = React.useState<"multiple_choice" | "mixed">("multiple_choice");
   const [competencies, setCompetencies] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -237,7 +237,6 @@ function GenerateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
           <Field label="Job" required><Select value={jobId} onValueChange={setJobId} placeholder="Choose a job" options={jobs.map((j) => ({ value: j.id, label: j.title }))} /></Field>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Questions"><Input type="number" min={3} max={6} value={count} onChange={(e) => setCount(Math.min(6, Math.max(3, Number(e.target.value) || 4)))} /></Field>
-            <Field label="Language"><Select value={language} onValueChange={(v) => setLanguage(v as "en" | "el")} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
             <Field label="Format"><Select value={mix} onValueChange={(v) => setMix(v as typeof mix)} options={[{ value: "multiple_choice", label: "Multiple choice" }, { value: "mixed", label: "Mostly multiple choice + 1 written" }]} /></Field>
           </div>
           <Field label="Competencies to cover (optional)"><Textarea value={competencies} onChange={(e) => setCompetencies(e.target.value)} rows={2} maxLength={500} placeholder="e.g. data quality checks, stakeholder communication" /></Field>

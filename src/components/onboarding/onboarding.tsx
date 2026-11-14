@@ -210,7 +210,6 @@ function CareersStep({ onDone }: { onDone: () => void }) {
     <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); await api.settings.updateBranding({ ...f, careersLanguage: f.careersLanguage as "en" | "el" }).then(onDone, () => {}); }}>
       <Field label="Headline"><Input value={f.careersHeadline} onChange={(e) => setF({ ...f, careersHeadline: e.target.value })} /></Field>
       <Field label="Introduction"><Textarea value={f.careersIntro} onChange={(e) => setF({ ...f, careersIntro: e.target.value })} className="min-h-20" placeholder="Why people love working here." /></Field>
-      <Field label="Language"><Select value={f.careersLanguage} onValueChange={(v) => setF({ ...f, careersLanguage: v as "en" | "el" })} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
       <p className="text-xs text-muted-foreground">Your careers page lives at /careers/{db.org.slug}</p>
       <StepActions />
     </form>

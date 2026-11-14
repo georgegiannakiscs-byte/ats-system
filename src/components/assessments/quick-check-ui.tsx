@@ -238,9 +238,6 @@ export function JobQuickCheckSettings({ jobId }: { jobId: ID }) {
         <Field label="Seconds per question">
           <Input type="number" min={20} max={60} value={cfg.secondsPerQuestion} disabled={!cfg.timed || !canManage} onChange={(e) => set({ secondsPerQuestion: Math.min(60, Math.max(20, Number(e.target.value) || 30)) })} />
         </Field>
-        <Field label="Language">
-          <Select value={cfg.language} onValueChange={(v) => set({ language: v as "en" | "el" })} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} />
-        </Field>
         <div className="space-y-2 text-sm">
           <label className="flex items-center gap-2"><Switch checked={cfg.allowLater} onCheckedChange={(v) => set({ allowLater: v })} disabled={!canManage} />Email a link to complete later</label>
           <label className="flex items-center gap-2"><Switch checked={cfg.allowExtendedTime} onCheckedChange={(v) => set({ allowExtendedTime: v })} disabled={!canManage} />Offer extended time (2×)</label>
@@ -293,7 +290,6 @@ export function QuestionDialog({ open, onOpenChange, question }: { open: boolean
           <Field label="Question" required><Textarea value={v.questionText} onChange={(e) => set({ questionText: e.target.value })} rows={3} maxLength={600} placeholder="Yesterday's conversions dropped 60% while traffic was flat. What do you check first?" /></Field>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="Type"><Select value={v.type} onValueChange={(t) => set({ type: t as QuestionInput["type"] })} options={[{ value: "multiple_choice", label: "Multiple choice" }, { value: "short_text", label: "Short written answer" }]} /></Field>
-            <Field label="Language"><Select value={v.language} onValueChange={(t) => set({ language: t as "en" | "el" })} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
             <Field label="Difficulty"><Select value={v.difficulty} onValueChange={(t) => set({ difficulty: t as QuestionInput["difficulty"] })} options={[{ value: "easy", label: "Easy" }, { value: "medium", label: "Medium" }, { value: "hard", label: "Hard" }]} /></Field>
             <Field label="Competency"><Input value={v.competency} onChange={(e) => set({ competency: e.target.value })} maxLength={120} placeholder="Data quality" /></Field>
             <Field label="Job (optional)"><Select value={v.jobId ?? "any"} onValueChange={(t) => set({ jobId: t === "any" ? null : t })} options={[{ value: "any", label: "Any job" }, ...db.jobs.map((j) => ({ value: j.id, label: j.title }))]} /></Field>

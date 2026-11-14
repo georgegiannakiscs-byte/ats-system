@@ -20,5 +20,5 @@ export const GET = handler(async (req) => {
   const [counts] = await sys<Record<string, number>>(
     "select count(*)::int total, count(*) filter (where status = 'new')::int new, count(*) filter (where status = 'reviewed')::int reviewed, count(*) filter (where status = 'contacted')::int contacted, count(*) filter (where status = 'archived')::int archived from talent_leads",
   );
-  return json({ leads: rows.map(toLead), counts, links: { en: `${env.appUrl}/talent?lang=en&utm_source=linkedin&utm_medium=social`, el: `${env.appUrl}/talent?lang=el&utm_source=linkedin&utm_medium=social` } }, { headers: { "Cache-Control": "private, no-store" } });
+  return json({ leads: rows.map(toLead), counts, links: { en: `${env.appUrl}/talent?lang=en&utm_source=linkedin&utm_medium=social` } }, { headers: { "Cache-Control": "private, no-store" } });
 });

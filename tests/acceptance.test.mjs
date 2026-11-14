@@ -338,7 +338,9 @@ test("C3 - optional Nice to have list on the job page", async () => {
   const html = await page();
   assert.ok(html.includes(">Nice to have</h2>") && html.includes("<li>Server-side tagging</li>") && html.includes("<li>Greek language skills</li>"));
   assert.equal((await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.find((j) => j.id === S.jobA).niceToHave, "Server-side tagging\n\nGreek language skills");
-  assert.ok((await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}?lang=el`)).text()).includes(">Επιθυμητά</h2>"), "Greek title");
+  const el = await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}?lang=el`)).text();
+  assert.ok(el.includes(">Nice to have</h2>") && !el.includes("Επιθυμητά"), "English only, even with ?lang=el");
+  assert.ok(!el.includes('aria-label="Language"'), "no language switch on careers pages");
   await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { niceToHave: "" } });
   assert.ok(!(await page()).includes(">Nice to have</h2>"), "hidden again once cleared");
 });

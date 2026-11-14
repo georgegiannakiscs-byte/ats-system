@@ -158,7 +158,7 @@ export function CvBuilder({
     try { const s = JSON.parse(localStorage.getItem(storeKey) ?? "{}").template; if (templates.includes(s)) return s; } catch {}
     return templates.includes(defaultTemplate) ? defaultTemplate : templates[0];
   });
-  const [cvLang, setCvLang] = React.useState<CvLang>(lang);
+  const cvLang: CvLang = lang; // English-only product: the CV follows the page language
   const [photo, setPhoto] = React.useState<string | null>(() => { try { return JSON.parse(localStorage.getItem(storeKey) ?? "{}").photo ?? null; } catch { return null; } });
   const [step, setStep] = React.useState<Step>("personal");
   const [mobilePreview, setMobilePreview] = React.useState(false);
@@ -421,10 +421,6 @@ export function CvBuilder({
         <h2 id="cvb-title" className="font-display text-xl">{t.title}</h2>
         <span className="hidden text-xs text-muted-foreground sm:inline" aria-live="polite">{savedAt ? `✓ ${t.saved}` : ""}</span>
         <div className="ml-auto flex items-center gap-2">
-          <label className="hidden items-center gap-1.5 text-sm sm:flex">
-            <span className="text-muted-foreground">{t.cvLanguage}</span>
-            <select value={cvLang} onChange={(e) => setCvLang(e.target.value as CvLang)} className="h-8 rounded-md border border-input bg-surface px-2 text-sm"><option value="en">English</option><option value="el">Ελληνικά</option></select>
-          </label>
           <button type="button" onClick={() => setMobilePreview((v) => !v)} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-2.5 text-sm lg:hidden">{mobilePreview ? <><Pencil className="size-3.5" />{t.hidePreview}</> : <><Eye className="size-3.5" />{t.showPreview}</>}</button>
           <button type="button" onClick={onClose} aria-label={t.close} className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"><X className="size-5" /></button>
         </div>
