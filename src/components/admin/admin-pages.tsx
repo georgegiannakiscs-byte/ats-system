@@ -403,8 +403,6 @@ export function AdminSettings() {
         <SettingsSection title="General" onSave={() => save("general")}>
           <Field label="Platform name"><Input value={draft.general.platformName} onChange={(e) => set("general", "platformName", e.target.value)} /></Field>
           <Field label="Support email"><Input value={draft.general.supportEmail} onChange={(e) => set("general", "supportEmail", e.target.value)} /></Field>
-          <Field label="Default language"><Select value={draft.general.defaultLanguage} onValueChange={(v) => set("general", "defaultLanguage", v)} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
-          <Field label="Supported languages"><div className="flex h-8 items-center gap-4 text-sm">{["en", "el"].map((l) => <label key={l} className="flex items-center gap-1.5"><input type="checkbox" checked={draft.general.supportedLanguages.includes(l)} onChange={(e) => set("general", "supportedLanguages", e.target.checked ? [...draft.general.supportedLanguages, l] : draft.general.supportedLanguages.filter((x: string) => x !== l))} />{l === "en" ? "English" : "Greek"}</label>)}</div></Field>
         </SettingsSection>
         <SettingsSection title="Sign-up" onSave={() => save("signup")}>
           <Field label="Who can create an account" hint="Invitation only: only people invited to a company (and the emails in PLATFORM_ADMIN_EMAILS) can sign up. Recommended for a server reachable from the internet."><Select value={draft.signup?.policy ?? "open"} onValueChange={(v) => setDraft({ ...draft, signup: { policy: v } })} options={[{ value: "open", label: "Anyone with the link" }, { value: "invite_only", label: "Invitation only" }]} /></Field>
@@ -419,7 +417,6 @@ export function AdminSettings() {
         </SettingsSection>
         <SettingsSection title="Recruitment defaults" onSave={() => save("recruitment_defaults")}>
           <Field label="Default data retention (months)"><Input type="number" value={draft.recruitment_defaults.retentionMonths} onChange={(e) => set("recruitment_defaults", "retentionMonths", Number(e.target.value))} /></Field>
-          <Field label="Default careers language"><Select value={draft.recruitment_defaults.careersLanguage} onValueChange={(v) => set("recruitment_defaults", "careersLanguage", v)} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
         </SettingsSection>
         {draft.ai && (
           <SettingsSection title="AI (Anthropic Claude)" onSave={() => save("ai")}>
@@ -469,13 +466,10 @@ export function AdminTalent() {
         <Card className="mb-4 p-4">
           <p className="text-sm font-semibold">Links to share on LinkedIn</p>
           <p className="mt-0.5 text-xs text-muted-foreground">Visitors from these links are recorded with source “LinkedIn”.</p>
-          {(["en", "el"] as const).map((l) => (
-            <div key={l} className="mt-2 flex items-center gap-2">
-              <span className="w-8 text-xs font-medium text-muted-foreground">{l === "en" ? "EN" : "ΕΛ"}</span>
-              <Input readOnly value={data.links[l]} onFocus={(e) => e.currentTarget.select()} aria-label={`Link (${l})`} className="font-mono text-xs" />
-              <Button size="sm" variant="outline" onClick={() => copy(data.links[l])}><Copy />Copy</Button>
-            </div>
-          ))}
+          <div className="mt-2 flex items-center gap-2">
+            <Input readOnly value={data.links.en} onFocus={(e) => e.currentTarget.select()} aria-label="Link" className="font-mono text-xs" />
+            <Button size="sm" variant="outline" onClick={() => copy(data.links.en)}><Copy />Copy</Button>
+          </div>
         </Card>
       )}
       <div className="mb-3 flex flex-wrap items-center gap-2">

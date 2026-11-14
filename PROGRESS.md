@@ -132,7 +132,7 @@ AI Copilot, workflow builder, offer management, e-signatures, careers page build
 | Security headers (HSTS, nosniff, frame-ancestors, referrer, permissions) | ✅ | |
 | Audit logging | ✅ | Company creation/suspension, invitations, role changes, logo & branding, CV access, platform settings, features, recovery links. |
 | Data export / deletion / retention workflows | ⬜ ⚖️ | Retention default is configurable at platform level; enforcement job not built. |
-| i18n | 🔶 | Careers pages, application form and confirmation emails in EN/EL. Workspace UI is English. |
+| Language | ✅ | English only. The Greek option was removed everywhere (careers, application form, /talent, Quick Check, CV Builder, settings); `?lang=el` shows English. The Greek texts stay unused in `src/lib/i18n`, so the option can come back later. CVs and answers can still contain Greek text. |
 | Public API & webhooks | ⬜ | |
 | Background job queue | ⬜ | Emails send inline today; move to a queue before scale. |
 | Rate limiting | 🔶 | In-memory per instance (expired buckets pruned). Use Redis for multi-instance deployments. Behind a proxy set `CLIENT_IP_HEADER` or `TRUSTED_PROXY_HOPS`, otherwise the client-supplied part of `X-Forwarded-For` is used. |

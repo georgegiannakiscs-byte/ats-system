@@ -272,7 +272,7 @@ function BrandingSettings() {
           <div className="border-t border-border" />
           <fieldset disabled={!canEdit || !enabled} className="grid gap-4 sm:grid-cols-2">
             <legend className="mb-3 text-sm font-semibold">Fonts &amp; style</legend>
-            <Field label="Headings font" hint="All fonts include Greek."><Select value={f.headingFont} onValueChange={(v) => set("headingFont", v as CareersFontKey)} options={fontOptions} /></Field>
+            <Field label="Headings font"><Select value={f.headingFont} onValueChange={(v) => set("headingFont", v as CareersFontKey)} options={fontOptions} /></Field>
             <Field label="Text font"><Select value={f.bodyFont} onValueChange={(v) => set("bodyFont", v as CareersFontKey)} options={fontOptions} /></Field>
             <Field label="Corners"><Select value={f.cornerStyle} onValueChange={(v) => set("cornerStyle", v as CornerStyle)} options={[{ value: "sharp", label: "Sharp" }, { value: "rounded", label: "Rounded" }, { value: "round", label: "Extra round" }]} /></Field>
             <Field label="Header"><Select value={f.heroStyle} onValueChange={(v) => set("heroStyle", v as HeroStyle)} options={[{ value: "plain", label: "Plain" }, { value: "band", label: "Coloured band (main colour)" }]} /></Field>
@@ -283,7 +283,6 @@ function BrandingSettings() {
             <Field label="Careers page headline" className="sm:col-span-2"><Input value={f.careersHeadline} onChange={(e) => set("careersHeadline", e.target.value)} placeholder={`Join ${db.org.name}`} /></Field>
             <Field label="Introduction" className="sm:col-span-2"><Textarea value={f.careersIntro} onChange={(e) => set("careersIntro", e.target.value)} className="min-h-20" placeholder="A few words about working with you." /></Field>
             <Field label="Benefits" hint="One per line." className="sm:col-span-2"><Textarea value={f.benefits} onChange={(e) => set("benefits", e.target.value)} className="min-h-20" placeholder={"Hybrid working\nLearning budget"} /></Field>
-            <Field label="Careers page language"><Select value={f.careersLanguage} onValueChange={(v) => set("careersLanguage", v as "en" | "el")} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά (Greek)" }]} /></Field>
             <Field label="Job list layout"><Select value={f.careersLayout} onValueChange={(v) => set("careersLayout", v as "list" | "grid")} options={[{ value: "list", label: "List" }, { value: "grid", label: "Cards" }]} /></Field>
           </fieldset>
         </Panel>

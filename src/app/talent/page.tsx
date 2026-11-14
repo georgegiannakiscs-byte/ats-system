@@ -11,14 +11,15 @@ import { talentDict, type TalentLang } from "@/lib/i18n/talent";
 
 type Props = { searchParams: Promise<Record<string, string | undefined>> };
 
-const langOf = (q?: string): TalentLang => (q === "el" ? "el" : "en");
+/** English only (the Greek texts stay in the dictionary, unused). */
+const langOf = (_q?: string): TalentLang => "en";
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const t = talentDict[langOf((await searchParams).lang)];
   return {
     title: { absolute: t.metaTitle },
     description: t.metaDescription,
-    alternates: { canonical: `${env.appUrl}/talent`, languages: { en: `${env.appUrl}/talent?lang=en`, el: `${env.appUrl}/talent?lang=el` } },
+    alternates: { canonical: `${env.appUrl}/talent` },
     openGraph: { title: t.metaTitle, description: t.metaDescription, url: `${env.appUrl}/talent`, type: "website", siteName: "Ulysse" },
   };
 }
@@ -38,13 +39,6 @@ export default async function TalentPage({ searchParams }: Props) {
       <header className="border-b border-border bg-surface/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4">
           <Link href={href(lang)} aria-label="Ulysse" className="inline-flex"><BrandMark height={24} /></Link>
-          <nav aria-label="Language" className="ml-auto flex gap-1 text-xs">
-            {(["en", "el"] as const).map((l) => (
-              <Link key={l} href={href(l)} hrefLang={l} aria-current={l === lang ? "true" : undefined} className={l === lang ? "rounded px-2 py-1 font-semibold text-foreground" : "rounded px-2 py-1 text-muted-foreground hover:text-foreground"}>
-                {l === "en" ? "EN" : "ΕΛ"}
-              </Link>
-            ))}
-          </nav>
         </div>
       </header>
       <main className="flex-1">

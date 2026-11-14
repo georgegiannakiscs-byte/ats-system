@@ -48,11 +48,13 @@ test("setup - a platform admin and a regular user", async () => {
   await db.end();
 });
 
-test("landing page renders in English and Greek", async () => {
+test("landing page renders in English only", async () => {
   const en = await fetch(`${BASE}/talent?utm_source=linkedin`).then((r) => r.text());
   assert.match(en, /Your next role, without the endless forms/);
+  assert.ok(!en.includes('aria-label="Language"'), "no language switch");
   const el = await fetch(`${BASE}/talent?lang=el`).then((r) => r.text());
-  assert.match(el, /Η επόμενη θέση σας/);
+  assert.match(el, /Your next role, without the endless forms/, "?lang=el still shows English");
+  assert.doesNotMatch(el, /Η επόμενη θέση σας/);
 });
 
 test("submit with an uploaded CV (LinkedIn source) and idempotent retry", async () => {

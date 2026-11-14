@@ -12,7 +12,7 @@ export function careersTheme(org: Org): CareersTheme {
   return resolveCareersTheme(org.branding, org.customBranding ?? true);
 }
 
-export function CareersFrame({ org, theme, lang, path, children, hideLanguage }: { org: Org; theme?: CareersTheme; lang: CareersLang; path: string; children: React.ReactNode; hideLanguage?: boolean }) {
+export function CareersFrame({ org, theme, lang, children }: { org: Org; theme?: CareersTheme; lang: CareersLang; path?: string; children: React.ReactNode; hideLanguage?: boolean }) {
   const t = careersDict[lang];
   const th = theme ?? careersTheme(org);
   // Declared on the document root (not just this wrapper) so dialogs and menus rendered in portals match too.
@@ -29,13 +29,6 @@ export function CareersFrame({ org, theme, lang, path, children, hideLanguage }:
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {logo ? <img src={logo} alt={org.name} className="h-9 max-w-44 object-contain" /> : <span className="font-display text-lg font-semibold tracking-tight">{org.name}</span>}
           </Link>
-          {!hideLanguage && <nav aria-label="Language" className="ml-auto flex gap-1 text-xs">
-            {(["en", "el"] as const).map((l) => (
-              <Link key={l} href={`${path}?lang=${l}`} hrefLang={l} aria-current={l === lang ? "true" : undefined} className={l === lang ? "rounded px-2 py-1 font-semibold text-foreground" : "rounded px-2 py-1 text-muted-foreground hover:text-foreground"}>
-                {l === "en" ? "EN" : "ΕΛ"}
-              </Link>
-            ))}
-          </nav>}
         </div>
       </header>
       <main className="flex-1">{children}</main>
@@ -50,6 +43,7 @@ export function CareersFrame({ org, theme, lang, path, children, hideLanguage }:
   );
 }
 
-export function langOf(org: { branding: Record<string, unknown> }, q?: string): CareersLang {
-  return q === "el" || q === "en" ? q : ((org.branding.careersLanguage as CareersLang) ?? "en");
+/** Careers pages are English only (the Greek texts stay in the dictionaries, unused). */
+export function langOf(_org: { branding: Record<string, unknown> }, _q?: string): CareersLang {
+  return "en";
 }

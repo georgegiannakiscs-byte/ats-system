@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     description: (org.branding.careersIntro as string) || org.about || `Open positions at ${org.name}.`,
-    alternates: { canonical: `${env.appUrl}/careers/${org.slug}`, languages: { en: `${env.appUrl}/careers/${org.slug}?lang=en`, el: `${env.appUrl}/careers/${org.slug}?lang=el` } },
+    alternates: { canonical: `${env.appUrl}/careers/${org.slug}` },
     openGraph: { title, type: "website", url: `${env.appUrl}/careers/${org.slug}`, images: org.logoUrl ? [`${env.appUrl}${org.logoUrl}`] : undefined },
   };
 }
