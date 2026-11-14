@@ -76,11 +76,11 @@ export default async function JobPage({ params, searchParams }: Props) {
   return (
     <CareersFrame org={org} lang={lang} path={`/careers/${org.slug}/${job.slug}`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <div className="mx-auto grid max-w-4xl gap-10 px-4 py-10 lg:grid-cols-[1fr_380px]">
-        <article className="min-w-0">
+      <div className="careers-job-page mx-auto grid max-w-4xl gap-10 px-4 py-10 lg:grid-cols-[1fr_380px]">
+        <article className="careers-job-details min-w-0">
           <Link href={`/careers/${org.slug}?lang=${lang}`} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-3.5" />{t.backToJobs}</Link>
-          <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight">{job.title}</h1>
-          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <h1 className="careers-headline mt-4 font-display text-4xl leading-tight tracking-tight">{job.title}</h1>
+          <p className="careers-job-meta mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {job.location && <span className="inline-flex items-center gap-1"><MapPin className="size-4" />{job.location}</span>}
             <span className="inline-flex items-center gap-1"><Briefcase className="size-4" />{job.workplace} · {job.employment_type}</span>
             {job.department && <span>{job.department}</span>}
@@ -92,15 +92,15 @@ export default async function JobPage({ params, searchParams }: Props) {
           <Section title={t.niceToHave} items={lines(job.nice_to_have)} />
           <Section title={t.experience} text={job.required_experience} />
           {(job.skills?.length > 0 || job.preferred_skills?.length > 0) && (
-            <section className="mt-8">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t.skills}</h2>
+            <section className="careers-job-section mt-8">
+              <h2 className="careers-section-title text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t.skills}</h2>
               <div className="mt-3 flex flex-wrap gap-1.5">{job.skills.map((s: string) => <span key={s} className="rounded-md border border-border bg-surface px-2 py-0.5 text-sm">{s}</span>)}</div>
               {job.preferred_skills?.length > 0 && <p className="mt-3 text-sm text-muted-foreground">{t.niceToHave}: {job.preferred_skills.join(", ")}</p>}
             </section>
           )}
           <Section title={t.benefits} items={lines(job.benefits)} />
         </article>
-        <aside id="apply" className="lg:sticky lg:top-6 lg:self-start">
+        <aside id="apply" className="careers-apply lg:sticky lg:top-6 lg:self-start">
           <Suspense><ApplicationForm lang={lang} orgSlug={org.slug} jobSlug={job.slug} jobTitle={job.title} companyName={org.name} logoUrl={org.logoUrl} maxMb={mb} questions={job.screening_questions ?? []} builder={builder} jobSkills={[...(job.skills ?? []), ...(job.preferred_skills ?? [])]} /></Suspense>
         </aside>
       </div>
@@ -111,8 +111,8 @@ export default async function JobPage({ params, searchParams }: Props) {
 function Section({ title, items, text }: { title: string; items?: string[]; text?: string }) {
   if (!items?.length && !text) return null;
   return (
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
+      <section className="careers-job-section mt-8">
+        <h2 className="careers-section-title text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
         {text && <p className="mt-3 whitespace-pre-line leading-relaxed text-foreground/85">{text}</p>}
         {items && items.length > 0 && <ul className="mt-3 list-disc space-y-1.5 pl-5 leading-relaxed text-foreground/85 marker:text-subtle-foreground">{items.map((i) => <li key={i}>{i}</li>)}</ul>}
       </section>

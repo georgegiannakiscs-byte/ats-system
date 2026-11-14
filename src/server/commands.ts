@@ -1,5 +1,6 @@
 import "server-only";
 import { CAREERS_FONT_KEYS, CORNER_STYLES, HERO_STYLES } from "@/lib/careers-theme";
+import { CUSTOM_CSS_MAX, customCssProblems } from "@/lib/careers-css";
 import { z } from "zod";
 import { sys, tenantTx, type Q } from "./db";
 import { HttpError } from "./http";
@@ -151,6 +152,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
       // "" = back to the default (follow Ulysse's light/dark theme / automatic text colour).
       backgroundColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]), textColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]),
       headingFont: z.enum(CAREERS_FONT_KEYS), bodyFont: z.enum(CAREERS_FONT_KEYS), cornerStyle: z.enum(CORNER_STYLES), heroStyle: z.enum(HERO_STYLES),
+      // CSS only (never HTML/JS), checked in careers-css.ts.
+      customCss: z.string().max(CUSTOM_CSS_MAX).superRefine((css, ctx) => { for (const m of customCssProblems(css)) ctx.addIssue({ code: "custom", message: `Custom CSS: ${m}` }); }),
     }).partial().parse(p);
     await sys("update organizations set branding = branding || $2::jsonb where id = $1", [orgId, JSON.stringify(v)]);
     await audit({ scope: "org", action: "company.branding_updated", actorId: a.user.id, orgId, metadata: { fields: Object.keys(v) } });

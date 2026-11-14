@@ -1,0 +1,32 @@
+/* Example custom CSS for a careers page (Settings → Branding & careers → Custom CSS):
+   black hero, large tight headline, neon-green accents and buttons.
+   Pair with: Main colour #1EFF1E, Accent #1EFF1E, Page background #FFFFFF, Text #000000,
+   Corners: Extra round, Header: Plain. */
+
+/* Headings in the same clean sans-serif as the text, tight like cloudevo.ai */
+:root:root { --font-display-serif: var(--font-geist-sans); }
+.ulysse-careers { letter-spacing: -0.01em; }
+
+/* Black hero with a large headline and the neon-green line */
+.careers-hero { background: #000; color: #fff; }
+.careers-hero > section { padding-top: 6rem; padding-bottom: 6rem; }
+.careers-hero .careers-headline { font-weight: 500; font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 0.95; letter-spacing: -0.05em; }
+.careers-hero .careers-intro { color: rgba(255, 255, 255, 0.78); font-weight: 300; font-size: 1.15rem; max-width: 46rem; }
+.careers-accent-line { background: #1eff1e; width: 4rem; }
+.careers-benefit { background: transparent; border-color: rgba(255, 255, 255, 0.3); color: #fff; }
+
+/* Open positions */
+.careers-jobs-section { padding-top: 4rem; }
+.careers-jobs-title { font-weight: 300; font-size: 2.25rem; letter-spacing: -0.04em; }
+.careers-jobs { border-radius: 20px; border-color: #000; }
+.careers-job a:hover { background: rgba(30, 255, 30, 0.12); }
+.careers-job-title { font-weight: 500; font-size: 1.2rem; letter-spacing: -0.02em; }
+
+/* Job page */
+.careers-job-details .careers-headline { font-weight: 500; letter-spacing: -0.04em; }
+.careers-section-title { color: #000; letter-spacing: 0.06em; }
+
+/* Application form and buttons: neon green, black text and outline */
+.careers-form { border-radius: 20px; border-color: #000; }
+.careers-button { background: #1eff1e; color: #000; border: 1px solid #000; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+.careers-button:hover { background: #000; color: #1eff1e; opacity: 1; }

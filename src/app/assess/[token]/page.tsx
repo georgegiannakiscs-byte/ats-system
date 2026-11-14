@@ -23,7 +23,7 @@ export default async function AssessPage({ params }: { params: Promise<{ token: 
       </main>
     );
   }
-  const org = { slug: view.company.slug, name: view.company.name, logoUrl: view.company.logoUrl, branding: {} };
+  const org = { slug: view.company.slug, name: view.company.name, logoUrl: view.company.logoUrl, branding: {}, customCss: view.company.customCss };
   return (
     <CareersFrame org={org} theme={view.company.theme} lang={view.language} path={`/careers/${org.slug}`} hideLanguage>
       <QuickCheck token={token} initial={view} />

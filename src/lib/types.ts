@@ -353,6 +353,8 @@ export interface OrgBranding {
   bodyFont?: CareersFontKey;
   cornerStyle?: CornerStyle;
   heroStyle?: HeroStyle;
+  /** Company's own CSS for its careers pages (no HTML/JS, no url()). */
+  customCss?: string;
 }
 
 export interface WorkspaceOrg {

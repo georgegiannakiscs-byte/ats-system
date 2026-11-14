@@ -21,6 +21,7 @@ import type { CompanyProfile, EmailTemplate, NotificationPrefs, Role, StageConfi
 import { cn, relativeTime, uid } from "@/lib/utils";
 import { CAREERS_FONTS, DEFAULT_ACCENT, DEFAULT_PRIMARY, contrastWarnings, isHex, luminance, onColor, resolveCareersTheme, type CareersFontKey, type CornerStyle, type HeroStyle } from "@/lib/careers-theme";
 import { CareersPreview } from "@/components/settings/careers-preview";
+import { CAREERS_CSS_HOOKS, CUSTOM_CSS_MAX, customCssProblems } from "@/lib/careers-css";
 
 const SECTIONS = [
   { id: "company", label: "Company profile", icon: Building2 },
@@ -291,6 +292,7 @@ function BrandingSettings() {
           <CareersPreview theme={resolveCareersTheme(f, enabled)} name={db.org.name} logoUrl={theme.background && luminance(theme.background) < 0.2 && db.org.logoDarkUrl ? db.org.logoDarkUrl : db.org.logoUrl} headline={f.careersHeadline} intro={f.careersIntro} benefits={benefitList} layout={f.careersLayout} />
         </div>
       </div>
+      <CustomCssPanel canEdit={canEdit} enabled={enabled} />
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
         <Globe className="size-4 text-muted-foreground" />
         <div className="min-w-0 flex-1"><p className="text-sm font-medium">Public careers page</p><p className="truncate text-xs text-muted-foreground">{careersUrl}</p></div>
@@ -298,6 +300,41 @@ function BrandingSettings() {
         <Button size="sm" asChild><a href={`/careers/${db.org.slug}`} target="_blank" rel="noreferrer">Open<ExternalLink /></a></Button>
       </div>
     </div>
+  );
+}
+
+/** Advanced: the company's own CSS for its careers pages. Saved on its own, checked on the server too. */
+function CustomCssPanel({ canEdit, enabled }: { canEdit: boolean; enabled: boolean }) {
+  const db = useDb();
+  const saved = db.org.branding.customCss ?? "";
+  const [css, setCss] = React.useState(saved);
+  const [showHooks, setShowHooks] = React.useState(false);
+  const problems = customCssProblems(css);
+  const save = async () => {
+    if (problems.length) return toast.error("Fix the custom CSS first", { description: problems.join(" · ") });
+    await api.settings.updateBranding({ customCss: css });
+    toast.success("Custom CSS saved", { description: "Open your careers page to see it." });
+  };
+  return (
+    <Panel className="space-y-3" footer={canEdit && enabled && <><Button variant="outline" asChild><a href={`/careers/${db.org.slug}`} target="_blank" rel="noreferrer">Open careers page<ExternalLink /></a></Button><Button disabled={css === saved || problems.length > 0} onClick={save}>Save CSS</Button></>}>
+      <div>
+        <p className="text-sm font-semibold">Custom CSS <span className="font-normal text-muted-foreground">· advanced</span></p>
+        <p className="mt-1 text-xs text-muted-foreground">Your own CSS for the careers pages (job list, job page, application form, Quick Check), applied after the settings above. For security, only CSS is accepted: no HTML or JavaScript, and nothing that loads files from other sites (<code>url()</code>, <code>@import</code>, <code>@font-face</code>). Use the fonts list above for fonts and upload your logo above.</p>
+      </div>
+      <fieldset disabled={!canEdit || !enabled}>
+        <Textarea value={css} onChange={(e) => setCss(e.target.value)} spellCheck={false} aria-label="Custom CSS" className="min-h-56 font-mono text-xs" placeholder={".careers-headline { letter-spacing: -0.04em; }\n.careers-button { border-radius: 999px; }"} />
+      </fieldset>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className={problems.length ? "text-destructive" : "text-muted-foreground"} aria-live="polite">{problems.length ? problems.join(" · ") : `${css.length.toLocaleString("en")} / ${CUSTOM_CSS_MAX.toLocaleString("en")} characters`}</span>
+        <button type="button" className="text-muted-foreground underline-offset-2 hover:underline" onClick={() => setShowHooks((v) => !v)}>{showHooks ? "Hide" : "Show"} class names you can style</button>
+      </div>
+      {showHooks && (
+        <ul className="grid gap-1 rounded-lg border border-border bg-surface-2 p-3 text-xs sm:grid-cols-2">
+          {CAREERS_CSS_HOOKS.map(([sel, what]) => <li key={sel}><code className="font-mono text-foreground">{sel}</code> <span className="text-muted-foreground">{what}</span></li>)}
+          <li className="sm:col-span-2 text-muted-foreground">Colour and font variables: <code className="font-mono text-foreground">--primary --careers-accent --background --foreground --radius --font-display-serif --font-geist-sans</code> (set them on <code className="font-mono">:root:root</code>).</li>
+        </ul>
+      )}
+    </Panel>
   );
 }
 
