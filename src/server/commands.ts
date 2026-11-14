@@ -41,6 +41,7 @@ const JobInput = z.object({
   summary: Str(4000).optional(),
   responsibilities: Str(8000).optional(),
   requirements: Str(8000).optional(),
+  niceToHave: Str(8000).optional(),
   requiredExperience: Str(1000).optional(),
   benefits: Str(4000).optional(),
   skills: z.array(Str(60)).max(40).optional(),
@@ -66,7 +67,7 @@ const COLS: Record<string, string> = {
 const JOB_COLS: Record<string, string> = {
   title: "title", department: "department", location: "location", workplace: "workplace", employmentType: "employment_type", contractType: "contract_type", seniority: "seniority", status: "status",
   hiringManagerId: "hiring_manager_id", recruiterId: "recruiter_id", openings: "openings", salaryMin: "salary_min", salaryMax: "salary_max", currency: "currency", summary: "summary",
-  responsibilities: "responsibilities", requirements: "requirements", requiredExperience: "required_experience", benefits: "benefits", skills: "skills", preferredSkills: "preferred_skills",
+  responsibilities: "responsibilities", requirements: "requirements", niceToHave: "nice_to_have", requiredExperience: "required_experience", benefits: "benefits", skills: "skills", preferredSkills: "preferred_skills",
   screeningQuestions: "screening_questions", channels: "channels", targetHireDate: "target_hire_date",
 };
 const JSON_COLS = new Set(["screening_questions", "channels", "extra"]);

@@ -56,7 +56,7 @@ export function JobForm({ job }: { job?: Job }) {
         ? (({ id: _i, createdAt: _c, publishedAt: _p, ...rest }) => rest)(job)
         : {
             title: "", department: "", location: "", workplace: "Hybrid", employmentType: "Full-time", seniority: "Mid-level", status: "draft",
-            hiringManagerId: "", recruiterId: db.currentUserId, openings: 1, currency: "EUR", summary: "", responsibilities: "", requirements: "", skills: [],
+            hiringManagerId: "", recruiterId: db.currentUserId, openings: 1, currency: "EUR", summary: "", responsibilities: "", requirements: "", niceToHave: "", skills: [],
             channels: { careersPage: true, linkedin: false, indeed: false },
           },
     [job, db.currentUserId],
@@ -194,6 +194,9 @@ export function JobForm({ job }: { job?: Job }) {
                 </Field>
                 <Field label="Requirements" hint="One per line." className="sm:col-span-2" htmlFor="req">
                   <Textarea id="req" value={f.requirements} onChange={(e) => set("requirements", e.target.value)} className="min-h-28" />
+                </Field>
+                <Field label="Nice to have" hint="Optional. One per line. Shown on the job page only when filled in." className="sm:col-span-2" htmlFor="nice">
+                  <Textarea id="nice" value={f.niceToHave ?? ""} onChange={(e) => set("niceToHave", e.target.value)} className="min-h-20" placeholder={"Experience with server-side tagging\nGreek language skills"} />
                 </Field>
                 <Field label="Required experience" className="sm:col-span-2" htmlFor="exp">
                   <Input id="exp" value={f.requiredExperience ?? ""} onChange={(e) => set("requiredExperience", e.target.value)} placeholder="e.g. 3+ years in a similar role" />

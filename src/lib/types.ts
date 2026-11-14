@@ -70,6 +70,8 @@ export interface Job {
   summary: string;
   responsibilities: string;
   requirements: string;
+  /** Optional "Nice to have" list, one per line. */
+  niceToHave?: string;
   requiredExperience?: string;
   benefits?: string;
   skills: string[];

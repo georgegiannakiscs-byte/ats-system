@@ -117,7 +117,7 @@ export async function buildSnapshot(access: OrgAccess) {
     jobs: data.jobs.map((j) => ({
       id: j.id, slug: j.slug, title: j.title, department: j.department, location: j.location, workplace: j.workplace, employmentType: j.employment_type, contractType: j.contract_type, seniority: j.seniority, status: j.status,
       hiringManagerId: j.hiring_manager_id ?? "", recruiterId: j.recruiter_id ?? "", openings: j.openings, salaryMin: j.salary_min ?? undefined, salaryMax: j.salary_max ?? undefined, currency: j.currency,
-      summary: j.summary, responsibilities: j.responsibilities, requirements: j.requirements, requiredExperience: j.required_experience, benefits: j.benefits, skills: j.skills, preferredSkills: j.preferred_skills,
+      summary: j.summary, responsibilities: j.responsibilities, requirements: j.requirements, niceToHave: j.nice_to_have ?? "", requiredExperience: j.required_experience, benefits: j.benefits, skills: j.skills, preferredSkills: j.preferred_skills,
       screeningQuestions: j.screening_questions, channels: j.channels, createdAt: iso(j.created_at), publishedAt: iso(j.published_at), targetHireDate: iso(j.target_hire_date),
     })),
     candidates: data.candidates.map((c) => ({

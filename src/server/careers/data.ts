@@ -13,7 +13,7 @@ export const getCareersOrg = cache(async (slug: string) => {
   return { id: o.id, slug: o.slug, name: o.name, about: o.profile.about ?? "", website: o.profile.website ?? "", headquarters: o.profile.headquarters ?? "", branding: o.branding, customBranding, logoUrl: logoUrl(o.id, o.branding), logoDarkUrl: logoUrl(o.id, o.branding, "dark") };
 });
 
-const JOB_COLS = "id, slug, title, department, location, workplace, employment_type, contract_type, seniority, salary_min, salary_max, currency, summary, responsibilities, requirements, required_experience, benefits, skills, preferred_skills, screening_questions, published_at, openings";
+const JOB_COLS = "id, slug, title, department, location, workplace, employment_type, contract_type, seniority, salary_min, salary_max, currency, summary, responsibilities, requirements, nice_to_have, required_experience, benefits, skills, preferred_skills, screening_questions, published_at, openings";
 
 export const getPublishedJobs = cache(async (orgId: string) =>
   sys(`select ${JOB_COLS} from jobs where org_id = $1 and status = 'published' order by published_at desc nulls last`, [orgId]));

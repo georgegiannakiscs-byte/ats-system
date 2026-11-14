@@ -89,6 +89,7 @@ export default async function JobPage({ params, searchParams }: Props) {
           <Section title={t.about} text={job.summary} />
           <Section title={t.responsibilities} items={lines(job.responsibilities)} />
           <Section title={t.requirements} items={lines(job.requirements)} />
+          <Section title={t.niceToHave} items={lines(job.nice_to_have)} />
           <Section title={t.experience} text={job.required_experience} />
           {(job.skills?.length > 0 || job.preferred_skills?.length > 0) && (
             <section className="mt-8">
