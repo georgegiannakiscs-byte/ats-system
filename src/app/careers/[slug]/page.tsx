@@ -5,7 +5,8 @@ import { notFound } from "next/navigation";
 import { ArrowRight, MapPin } from "lucide-react";
 import { env } from "@/server/env";
 import { getCareersOrg, getPublishedJobs } from "@/server/careers/data";
-import { CareersFrame, langOf } from "@/components/careers/frame";
+import { CareersFrame, careersTheme, langOf } from "@/components/careers/frame";
+import { cn } from "@/lib/utils";
 import { JobFilters } from "@/components/careers/job-filters";
 import { careersDict } from "@/lib/i18n/careers";
 
@@ -34,16 +35,24 @@ export default async function CareersPage({ params, searchParams }: Props) {
   const jobs = all.filter((j) => (!q || `${j.title} ${j.department} ${j.location}`.toLowerCase().includes(q)) && (!sp.location || j.location === sp.location) && (!sp.type || j.employment_type === sp.type) && (!sp.department || j.department === sp.department));
   const benefits = (org.branding.benefits as string[] | undefined) ?? [];
   const grid = org.branding.careersLayout === "grid";
+  const band = careersTheme(org).hero === "band";
   return (
     <CareersFrame org={org} lang={lang} path={`/careers/${org.slug}`}>
-      <section className="mx-auto max-w-4xl px-4 pb-6 pt-12">
-        <h1 className="font-display text-4xl tracking-tight sm:text-5xl">{(org.branding.careersHeadline as string) || (lang === "el" ? `Καριέρα στην ${org.name}` : `Careers at ${org.name}`)}</h1>
-        {((org.branding.careersIntro as string) || org.about) && <p className="mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed text-foreground/80">{(org.branding.careersIntro as string) || org.about}</p>}
-        {benefits.length > 0 && (
-          <ul className="mt-6 flex flex-wrap gap-2">{benefits.map((b) => <li key={b} className="rounded-full border border-border bg-surface px-3 py-1 text-sm">{b}</li>)}</ul>
-        )}
-      </section>
-      <section className="mx-auto max-w-4xl px-4 pb-16" aria-labelledby="open-positions">
+      <div className={band ? "bg-primary text-primary-foreground" : undefined}>
+        <section className={cn("mx-auto max-w-4xl px-4", band ? "py-14" : "pb-6 pt-12")}>
+          <span aria-hidden className="mb-5 block h-1 w-12 rounded-full bg-[var(--careers-accent)]" />
+          <h1 className="font-display text-4xl tracking-tight sm:text-5xl">{(org.branding.careersHeadline as string) || (lang === "el" ? `Καριέρα στην ${org.name}` : `Careers at ${org.name}`)}</h1>
+          {((org.branding.careersIntro as string) || org.about) && <p className={cn("mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed", band ? "opacity-90" : "text-foreground/80")}>{(org.branding.careersIntro as string) || org.about}</p>}
+          {benefits.length > 0 && (
+            <ul className="mt-6 flex flex-wrap gap-2">{benefits.map((b) => (
+              <li key={b} className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm", band ? "border-current/25 bg-current/5" : "border-border bg-surface")}>
+                <span aria-hidden className="size-1.5 rounded-full bg-[var(--careers-accent)]" />{b}
+              </li>
+            ))}</ul>
+          )}
+        </section>
+      </div>
+      <section className={cn("mx-auto max-w-4xl px-4 pb-16", band && "pt-10")} aria-labelledby="open-positions">
         <div className="mb-4 flex items-baseline justify-between gap-3">
           <h2 id="open-positions" className="text-lg font-semibold">{t.openPositions} <span className="tabular text-muted-foreground">{all.length}</span></h2>
         </div>
@@ -62,7 +71,7 @@ export default async function CareersPage({ params, searchParams }: Props) {
                       <span>{j.workplace}</span><span>{j.employment_type}</span>{j.department && <span>{j.department}</span>}
                     </p>
                   </div>
-                  <ArrowRight className="size-4 shrink-0 text-subtle-foreground transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="size-4 shrink-0 text-subtle-foreground transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-[var(--careers-accent)]" />
                 </Link>
               </li>
             ))}
