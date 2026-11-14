@@ -388,20 +388,20 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
 }
 
 function RolesSettings() {
-  const perms: { label: string; roles: [boolean | "partial", boolean | "partial", boolean | "partial", boolean | "partial"] }[] = [
-    { label: "View all jobs and candidates", roles: [true, true, "partial", "partial"] },
-    { label: "Create and edit jobs", roles: [true, true, "partial", false] },
-    { label: "Move candidates between stages", roles: [true, true, true, false] },
-    { label: "Reject candidates and make offers", roles: [true, true, true, false] },
+  // Mirrors the permission matrix the server enforces on every request (src/server/permissions.ts).
+  const perms: { label: string; roles: [boolean, boolean, boolean, boolean] }[] = [
+    { label: "View jobs and candidates", roles: [true, true, true, true] },
+    { label: "Write notes, submit scorecards, manage tasks", roles: [true, true, true, true] },
+    { label: "Download CVs", roles: [true, true, true, false] },
+    { label: "Edit candidates, move them between stages, reject", roles: [true, true, true, false] },
     { label: "Schedule interviews", roles: [true, true, true, false] },
-    { label: "Submit scorecards", roles: [true, true, true, true] },
-    { label: "See salary information", roles: [true, true, true, false] },
-    { label: "View analytics", roles: [true, true, "partial", false] },
-    { label: "Create, approve and assign Quick Check questions", roles: [true, true, false, false] },
+    { label: "View analytics", roles: [true, true, true, false] },
     { label: "View Quick Check responses", roles: [true, true, true, false] },
-    { label: "Manage team, settings and integrations", roles: [true, false, false, false] },
+    { label: "Create and edit jobs", roles: [true, true, false, false] },
+    { label: "Create, approve and assign Quick Check questions", roles: [true, true, false, false] },
+    { label: "Manage team, branding, settings and integrations", roles: [true, false, false, false] },
   ];
-  const cell = (v: boolean | "partial") => v === true ? <Check className="mx-auto size-4 text-success" aria-label="Allowed" /> : v === "partial" ? <span className="mx-auto block w-fit rounded bg-muted px-1.5 text-[11px] text-muted-foreground">Own jobs</span> : <Minus className="mx-auto size-4 text-subtle-foreground" aria-label="Not allowed" />;
+  const cell = (v: boolean) => v ? <Check className="mx-auto size-4 text-success" aria-label="Allowed" /> : <Minus className="mx-auto size-4 text-subtle-foreground" aria-label="Not allowed" />;
   return (
     <div className="space-y-3">
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-xs">
@@ -410,7 +410,9 @@ function RolesSettings() {
           <tbody className="divide-y divide-border">{perms.map((p) => <tr key={p.label}><td className="px-4 py-2.5">{p.label}</td>{p.roles.map((v, i) => <td key={i} className="px-3 py-2.5 text-center">{cell(v)}</td>)}</tr>)}</tbody>
         </table>
       </div>
-      <p className="text-xs text-muted-foreground">Default role presets. Custom roles and enforcement arrive with authentication - this matrix documents the intended model.</p>
+      <ul className="space-y-1 text-xs text-muted-foreground">
+        <li>Enforced by the server on every request, and by the database for company data. Each person only sees the companies they&apos;ve been invited to, with the role given in each one.</li>
+      </ul>
     </div>
   );
 }
