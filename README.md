@@ -8,7 +8,9 @@ See **[PROGRESS.md](PROGRESS.md)** for the honest status of every feature.
 
 1. Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 2. On GitHub: **Code → Download ZIP**, then unzip it.
-3. Double-click **`Start-Ulysse-Windows.bat`** (Windows) or **`Start-Ulysse-Mac.command`** (macOS; the first time, right-click → **Open**, because it was downloaded from the internet).
+3. Double-click **`Start-Ulysse-Windows.bat`** (Windows) or **`Start-Ulysse-Mac.command`** (macOS).
+   - Windows may show "Windows protected your PC": click **More info → Run anyway**.
+   - macOS blocks it the first time because it was downloaded from the internet ("Not Opened"): click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to `Start-Ulysse-Mac.command`, and confirm. Later runs open with a plain double-click.
 
 The first start builds the app, which takes a few minutes. When it's ready, the browser opens http://localhost:3000. Sign in with `demo@example.com` / `Ulysse-demo-2026`, which is a platform admin and admin of the demo company "Aegean Analytics". The launcher writes a local `.env` with a random `APP_SECRET`, runs `docker compose up -d --build` and adds demo data with `docker compose --profile demo run --rm seed`. Data stays in Docker volumes between runs. To stop: Docker Desktop → Containers → `ats-system` → Stop. This is for trying it out on your own machine only: don't seed demo data on a public server.
 
