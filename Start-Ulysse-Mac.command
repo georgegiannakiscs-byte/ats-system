@@ -8,9 +8,19 @@ say_and_wait() { echo; echo "$1"; echo; read -r -p "Press Enter to close this wi
 
 echo "=== Ulysse: local start ==="
 
+# A double-clicked script doesn't read the user's shell profile, so add the places where Docker
+# Desktop puts its command line tools (system install, per-user install, inside the app, Homebrew).
+export PATH="$PATH:/usr/local/bin:/opt/homebrew/bin:$HOME/.docker/bin:/Applications/Docker.app/Contents/Resources/bin"
+
+if ! command -v docker >/dev/null 2>&1 && [ -d /Applications/Docker.app ]; then
+  echo "Starting Docker Desktop..."
+  open -a Docker 2>/dev/null
+  for _ in $(seq 1 90); do command -v docker >/dev/null 2>&1 && break; sleep 2; done
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   open "https://www.docker.com/products/docker-desktop/" 2>/dev/null
-  say_and_wait "Docker Desktop is not installed. Install it from the page that just opened, start it once, then double-click this file again."
+  say_and_wait "Docker Desktop is not installed. Download it from the page that just opened, open Docker.dmg, drag Docker into Applications, open Docker once and wait until it says 'Engine running', then double-click this file again."
 fi
 
 if ! docker info >/dev/null 2>&1; then
