@@ -101,6 +101,14 @@ The application still requires **only full name, email and a CV**. A generated P
 | Neon database | 🟡 | Free Neon PostgreSQL that doesn't expire; the connection string is pasted into Render. Migrations now use transaction-level locks, so Neon's pooled connection string works too. Tested with concurrent and repeated runs locally, not yet against Neon. |
 | Admin access | ✅ | Whoever signs up with the email given in `PLATFORM_ADMIN_EMAILS` becomes platform admin. No demo account with a known password is created on public deployments. |
 
+## One-click local start (own computer)
+
+| Feature | Status | Notes |
+|---|---|---|
+| `Start-Ulysse-Mac.command` | 🟡 | Starts Docker Desktop if it isn't running. Writes a local `.env` with a random `APP_SECRET`, runs `docker compose up -d --build`, waits for the app health check, adds demo data and opens http://localhost:3000. Tested end to end on Linux from an empty Docker state: start, demo data, and a browser check of the Greek /talent page, the talent form, login, /admin/talent, CV download, company dashboard and careers page. A second run is safe: the demo data is already there and nothing is duplicated. Not yet run on a real Mac. Here the app image came from the same production build, because the full `docker build` needs npm and Google Fonts, which this environment blocks. |
+| `Start-Ulysse-Windows.bat` | 🟡 | Same steps for Windows. Not run here: there's no Windows in the build environment. |
+| `seed` compose service (`--profile demo`) | ✅ | Adds the demo data with the plain `node:22-bookworm-slim` image, so Node isn't needed on the computer. Only for local use. |
+
 ## Phase 3 - Integrations & growth
 
 | Feature | Status | Notes |
