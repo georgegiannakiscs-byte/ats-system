@@ -302,6 +302,7 @@ test("C - branding & logo replacement", async () => {
   const job = await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}`)).text();
   assert.ok(job.includes('"@type":"JobPosting"'), "JobPosting structured data");
   assert.ok(job.includes(`rel="canonical"`), "canonical URL");
+  assert.ok(!/Posted\s/.test(job.replace(/<script[\s\S]*?<\/script>/g, "")), "no posting date on the job page");
   const sitemap = await (await fetch(`${BASE}/sitemap.xml`)).text();
   assert.ok(sitemap.includes(`/careers/${S.slugA}/${S.jobSlugA}`));
   assert.ok(!sitemap.includes("secret-draft-role"), "drafts are not in the sitemap");

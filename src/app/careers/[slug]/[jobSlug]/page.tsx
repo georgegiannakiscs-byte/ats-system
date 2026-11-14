@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Briefcase, Clock, MapPin } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin } from "lucide-react";
 import { env } from "@/server/env";
 import { getCareersOrg, getPublishedJob, maxCvMb } from "@/server/careers/data";
 import { CareersFrame, langOf } from "@/components/careers/frame";
@@ -63,6 +63,7 @@ export default async function JobPage({ params, searchParams }: Props) {
     "@type": "JobPosting",
     title: job.title,
     description: [job.summary, ...lines(job.responsibilities), ...lines(job.requirements)].filter(Boolean).join("\n") || job.title,
+    // Not shown on the page, but required by search engines for job listings.
     datePosted: job.published_at ? new Date(job.published_at).toISOString().slice(0, 10) : undefined,
     employmentType: { "Full-time": "FULL_TIME", "Part-time": "PART_TIME", Contract: "CONTRACTOR", Internship: "INTERN" }[job.employment_type as string] ?? "OTHER",
     hiringOrganization: { "@type": "Organization", name: org.name, sameAs: org.website || undefined, logo: org.logoUrl ? `${env.appUrl}${org.logoUrl}` : undefined },
@@ -83,7 +84,6 @@ export default async function JobPage({ params, searchParams }: Props) {
             {job.location && <span className="inline-flex items-center gap-1"><MapPin className="size-4" />{job.location}</span>}
             <span className="inline-flex items-center gap-1"><Briefcase className="size-4" />{job.workplace} · {job.employment_type}</span>
             {job.department && <span>{job.department}</span>}
-            {job.published_at && <span className="inline-flex items-center gap-1"><Clock className="size-4" />{t.posted} {new Date(job.published_at).toLocaleDateString(lang === "el" ? "el-GR" : "en-GB", { day: "numeric", month: "long" })}</span>}
           </p>
           {salary && <p className="mt-2 text-sm"><span className="text-muted-foreground">{t.salary}: </span>{job.salary_min ? salary.format(job.salary_min) : ""}{job.salary_min && job.salary_max ? " – " : ""}{job.salary_max ? salary.format(job.salary_max) : ""}</p>}
           <Section title={t.about} text={job.summary} />
