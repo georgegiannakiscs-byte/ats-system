@@ -46,6 +46,23 @@ Free limits:
 
 Files are stored in the database (`STORAGE_DRIVER=db`), because free Render services have no disk. Every merge to `main` redeploys automatically.
 
+## Run it on your company's servers
+
+Ulysse is a standard Docker image plus PostgreSQL, so the IT team can run it on any server, cloud or Kubernetes cluster, under the company's own domain (e.g. `careers.company.gr`).
+
+1. **Database:** PostgreSQL 14+ (managed, e.g. RDS / Azure / Cloud SQL, or self-hosted), with daily backups. The app connects as a **non-superuser** owner: superusers bypass Row Level Security.
+2. **App:** run the image (`docker compose up -d`, or the same image in Kubernetes) with these settings:
+   - `DATABASE_URL`, `APP_URL=https://careers.company.gr`, `APP_SECRET` (`openssl rand -hex 32`, stored in the company's secret manager), `PLATFORM_ADMIN_EMAILS`
+   - files: `STORAGE_DIR` on a persistent volume, or `STORAGE_DRIVER=db`
+   - optional: `SMTP_URL`/`MAIL_FROM` (email), `CLAMAV_HOST` (malware scanning), `ANTHROPIC_API_KEY` (AI)
+3. **HTTPS and IPs:** put it behind the company's reverse proxy or load balancer, which handles HTTPS. Then tell Ulysse which IP to trust for rate limiting:
+   - `TRUSTED_PROXY_HOPS=1` for one proxy in front, or
+   - `CLIENT_IP_HEADER=cf-connecting-ip` (or the edge's own header) behind Cloudflare or a similar edge.
+4. **Lock it down:** after the first admin signs up, go to **Admin → Platform settings** and set **Sign-up → Invitation only** and **Company creation → Platform admins only**. Ask every admin to turn on two-step verification under **Account & security**.
+5. **Moving data:** to bring data from a test install, use `pg_dump` and `pg_restore`, plus the files (the `files` volume, or nothing extra with `STORAGE_DRIVER=db`). Keep the same `APP_SECRET`, otherwise users have to set up two-step verification again with a recovery code.
+
+Updates: pull the new image and restart. Database migrations run automatically on start (`AUTO_MIGRATE=true`).
+
 ## Production
 
 ```bash
@@ -64,6 +81,7 @@ npm run test:quick-check   # CV Builder & Quick Check scenarios A–G (API + dat
                            # ANTHROPIC_BASE_URL=http://127.0.0.1:4599 to exercise the AI paths, or without
                            # a key to check the no-AI fallbacks.
 npm run test:talent        # /talent landing page + Admin → Talent leads (API + database)
+npm run test:security      # two-step verification, recovery codes, password change, invitation-only sign-up
 npm run test:e2e           # browser journey (requires Playwright + Chromium)
 npm run test:e2e:quick-check  # browser journey: build a CV → apply → Quick Check → recruiter review
 ```

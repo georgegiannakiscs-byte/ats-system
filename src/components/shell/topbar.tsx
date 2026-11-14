@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { ShieldCheck, LayoutGrid } from "lucide-react";
+import { ShieldCheck, LayoutGrid, LockKeyhole } from "lucide-react";
 import { useMe, signOut } from "@/lib/session";
 import { Bell, BriefcaseBusiness, CalendarPlus, ChevronRight, ListChecks, LogOut, Menu, Monitor, Moon, Plus, Search, Settings, Sun, UserPlus, Keyboard, User, CheckCheck } from "lucide-react";
 import { cn, relativeTime } from "@/lib/utils";
@@ -157,6 +157,7 @@ function UserMenu({ onShowShortcuts }: { onShowShortcuts: () => void }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => router.push(orgPath("/settings?section=team"))}><User />Profile &amp; team</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => router.push(orgPath("/settings"))} shortcut="G S"><Settings />Settings</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push("/account")}><LockKeyhole />Account &amp; security</DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>{theme === "dark" ? <Moon /> : theme === "system" ? <Monitor /> : <Sun />}Theme</DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-40">

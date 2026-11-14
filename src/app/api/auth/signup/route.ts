@@ -16,6 +16,11 @@ export const POST = handler(async (req) => {
   const ip = clientIp(req);
   if (!rateLimit(`signup:${ip}`, 10, 60 * 60_000).ok) throw new HttpError(429, "Too many sign-ups from this network. Try again later.", "rate_limited");
   const v = Body.parse(await req.json());
+  const [policy] = await sys<{ value: { policy?: string } }>("select value from platform_settings where key = 'signup'");
+  if (policy?.value.policy === "invite_only" && !env.platformAdminEmails.includes(v.email)) {
+    const invited = await sys("select 1 from invitations where lower(email) = $1 and accepted_at is null and revoked_at is null and expires_at > now()", [v.email]);
+    if (!invited.length) throw new HttpError(403, "Sign-up is by invitation only. Ask your company administrator for an invitation.", "invite_only");
+  }
   const exists = await sys("select 1 from users where lower(email) = $1", [v.email]);
   if (exists.length) throw new HttpError(409, "An account with this email already exists. Sign in instead.", "email_taken");
   const adminCount = Number((await sys<{ n: string }>("select count(*) n from users where is_platform_admin"))[0].n);

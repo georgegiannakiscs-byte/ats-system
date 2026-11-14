@@ -42,6 +42,9 @@ export const env = {
    * accepted by the same-origin check. Only for setups behind a tunnel that rewrites the Origin
    * header (the Codespaces demo). Unset in normal deployments.
    */
+  /** See clientIp() in http.ts. */
+  clientIpHeader: (process.env.CLIENT_IP_HEADER ?? "").trim().toLowerCase(),
+  trustedProxyHops: Math.max(0, Math.min(5, Number(process.env.TRUSTED_PROXY_HOPS ?? 0) || 0)),
   extraAllowedOrigins: (process.env.EXTRA_ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim().replace(/\/$/, "")).filter(Boolean),
 };
 
