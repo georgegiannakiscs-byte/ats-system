@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LockKeyhole, LogOut, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/shell/brand-mark";
 import { Button } from "@/components/ui/button";
 import { useMe, signOut } from "@/lib/session";
@@ -13,6 +13,7 @@ export function PlainTopBar() {
       <div className="ml-auto flex items-center gap-2">
         {me?.user.isPlatformAdmin && <Button variant="ghost" size="sm" asChild><Link href="/admin"><ShieldCheck />Platform admin</Link></Button>}
         {me && <span className="hidden text-sm text-muted-foreground sm:inline">{me.user.email}</span>}
+        <Button variant="ghost" size="sm" asChild><Link href="/account"><LockKeyhole />Account &amp; security</Link></Button>
         <Button variant="ghost" size="sm" onClick={() => signOut()}><LogOut />Sign out</Button>
       </div>
     </header>

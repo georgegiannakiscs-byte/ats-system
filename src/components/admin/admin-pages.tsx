@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, UserX, UserCheck } from "lucide-react";
+import { Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, ShieldOff, Smartphone, UserX, UserCheck } from "lucide-react";
 import { apiFetch, type ApiError } from "@/lib/api/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -218,6 +218,8 @@ export function AdminUsers() {
   const { data, reload } = useAdmin<{ users: any[]; invitations: any[] }>(`/api/admin/users?q=${encodeURIComponent(q)}`);
   const [confirm, setConfirm] = React.useState<any | null>(null);
   const [recovery, setRecovery] = React.useState<{ link: string; email: string } | null>(null);
+  const [reset2fa, setReset2fa] = React.useState<any | null>(null);
+  const [reason, setReason] = React.useState("");
   const patch = (id: string, body: Record<string, unknown>, msg: string) => apiFetch(`/api/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }).then(() => (toast.success(msg), reload())).catch((e: ApiError) => toast.error(e.message));
   return (
     <>
@@ -227,11 +229,12 @@ export function AdminUsers() {
         {!data ? <div className="p-6"><Skeleton className="h-6" /></div> : data.users.map((u) => (
           <div key={u.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">{u.name}{u.isPlatformAdmin && <Badge tone="brand"><ShieldCheck />Platform admin</Badge>}{u.status !== "active" && <Badge tone="danger">Deactivated</Badge>}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">{u.name}{u.isPlatformAdmin && <Badge tone="brand"><ShieldCheck />Platform admin</Badge>}{u.twoFactor && <Badge tone="success"><Smartphone />2-step</Badge>}{u.status !== "active" && <Badge tone="danger">Deactivated</Badge>}</p>
               <p className="text-xs text-muted-foreground">{u.email} · joined {shortDate(u.createdAt)} · {u.lastLoginAt ? `last sign-in ${relativeTime(u.lastLoginAt)}` : "never signed in"}</p>
               {u.memberships.length > 0 && <p className="mt-1 flex flex-wrap gap-1">{u.memberships.map((m: any) => <span key={m.orgId} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{m.company} · {m.role}{m.status !== "active" ? " (removed)" : ""}</span>)}</p>}
             </div>
             <Button size="sm" variant="outline" onClick={() => apiFetch<{ link: string; email: string }>(`/api/admin/users/${u.id}/recovery`, { method: "POST" }).then(setRecovery).catch((e: ApiError) => toast.error(e.message))}><KeyRound />Recovery link</Button>
+            {u.twoFactor && <Button size="sm" variant="ghost" onClick={() => (setReason(""), setReset2fa(u))}><ShieldOff />Reset 2-step</Button>}
             {u.status === "active" ? <Button size="sm" variant="destructive-ghost" onClick={() => setConfirm(u)}><UserX />Deactivate</Button> : <Button size="sm" variant="ghost" onClick={() => patch(u.id, { status: "active" }, "User reactivated")}><UserCheck />Reactivate</Button>}
           </div>
         ))}
@@ -243,6 +246,16 @@ export function AdminUsers() {
         </Card>
       )}
       <ConfirmDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)} title={`Deactivate ${confirm?.name}?`} description="They're signed out everywhere and can't sign in until reactivated. Company data is unaffected." confirmLabel="Deactivate" destructive onConfirm={() => patch(confirm.id, { status: "deactivated" }, "User deactivated")} />
+      <Dialog open={!!reset2fa} onOpenChange={(o) => !o && setReset2fa(null)}>
+        <DialogContent size="sm">
+          <DialogHeader icon={<ShieldOff />} title={`Turn off two-step verification for ${reset2fa?.name}?`} description="Only when they've lost their phone and their recovery codes, and you've confirmed who they are through a trusted channel. They're signed out everywhere; the reset is recorded in the audit log." />
+          <DialogBody><Field label="Reason"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. lost phone, identity confirmed by video call" /></Field></DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReset2fa(null)}>Cancel</Button>
+            <Button variant="destructive" disabled={reason.trim().length < 3} onClick={() => apiFetch(`/api/admin/users/${reset2fa.id}/two-factor`, { method: "DELETE", body: JSON.stringify({ reason }) }).then(() => (toast.success("Two-step verification turned off"), setReset2fa(null), reload())).catch((e: ApiError) => toast.error(e.message))}>Turn off</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!recovery} onOpenChange={(o) => !o && setRecovery(null)}>
         <DialogContent size="sm">
           <DialogHeader icon={<KeyRound />} title="Access recovery link" description={`Send this to ${recovery?.email} through a trusted channel. It works once and expires in 60 minutes.`} />
@@ -392,6 +405,9 @@ export function AdminSettings() {
           <Field label="Support email"><Input value={draft.general.supportEmail} onChange={(e) => set("general", "supportEmail", e.target.value)} /></Field>
           <Field label="Default language"><Select value={draft.general.defaultLanguage} onValueChange={(v) => set("general", "defaultLanguage", v)} options={[{ value: "en", label: "English" }, { value: "el", label: "Ελληνικά" }]} /></Field>
           <Field label="Supported languages"><div className="flex h-8 items-center gap-4 text-sm">{["en", "el"].map((l) => <label key={l} className="flex items-center gap-1.5"><input type="checkbox" checked={draft.general.supportedLanguages.includes(l)} onChange={(e) => set("general", "supportedLanguages", e.target.checked ? [...draft.general.supportedLanguages, l] : draft.general.supportedLanguages.filter((x: string) => x !== l))} />{l === "en" ? "English" : "Greek"}</label>)}</div></Field>
+        </SettingsSection>
+        <SettingsSection title="Sign-up" onSave={() => save("signup")}>
+          <Field label="Who can create an account" hint="Invitation only: only people invited to a company (and the emails in PLATFORM_ADMIN_EMAILS) can sign up. Recommended for a server reachable from the internet."><Select value={draft.signup?.policy ?? "open"} onValueChange={(v) => setDraft({ ...draft, signup: { policy: v } })} options={[{ value: "open", label: "Anyone with the link" }, { value: "invite_only", label: "Invitation only" }]} /></Field>
         </SettingsSection>
         <SettingsSection title="Company creation" onSave={() => save("company_creation")}>
           <Field label="Who can create companies"><Select value={draft.company_creation.policy} onValueChange={(v) => set("company_creation", "policy", v)} options={[{ value: "any_user", label: "Any signed-in user" }, { value: "platform_admins", label: "Platform admins only" }]} /></Field>

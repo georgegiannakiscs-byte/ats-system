@@ -135,7 +135,30 @@ AI Copilot, workflow builder, offer management, e-signatures, careers page build
 | i18n | 🔶 | Careers pages, application form and confirmation emails in EN/EL. Workspace UI is English. |
 | Public API & webhooks | ⬜ | |
 | Background job queue | ⬜ | Emails send inline today; move to a queue before scale. |
-| Rate limiting | 🔶 | In-memory per instance. Use Redis for multi-instance deployments. |
+| Rate limiting | 🔶 | In-memory per instance (expired buckets pruned). Use Redis for multi-instance deployments. Behind a proxy set `CLIENT_IP_HEADER` or `TRUSTED_PROXY_HOPS`, otherwise the client-supplied part of `X-Forwarded-For` is used. |
+| Two-step verification (authenticator app, TOTP) | ✅ | Account & security page: QR set-up, 10 one-time recovery codes (hashed), secret encrypted (AES-256-GCM), replay-protected codes, other devices signed out when turned on. Sign-in asks for the code; platform admin can reset it with a reason (audited). Tested (`npm run test:security`). **Not yet:** making it mandatory per company, passkeys. |
+| Password change while signed in | ✅ | Needs the current password; other sessions are signed out. Tested. |
+| Invitation-only sign-up | ✅ | Admin → Platform settings → Sign-up. Tested. |
+
+### Security review (2026-11)
+
+Code review of authentication, sessions, CSRF, file access, tenant isolation and public endpoints. Not an independent penetration test.
+
+| Finding | Severity | Status |
+|---|---|---|
+| No second factor for sign-in | High | ✅ Fixed: two-step verification (above). |
+| Anyone with the URL could create an account | Medium | ✅ Fixed: optional invitation-only sign-up. |
+| `?next=/\evil.example` after sign-in could redirect to another site (open redirect) | Medium | ✅ Fixed and commented. |
+| Unknown email answered faster than a wrong password (account enumeration by timing) | Low | ✅ Fixed: a dummy hash is checked. |
+| Per-IP rate limits trust the client-supplied `X-Forwarded-For` | Medium | 🔶 Configurable (`CLIENT_IP_HEADER`, `TRUSTED_PROXY_HOPS`); the default keeps the old behaviour until the hosting's proxy headers are confirmed. Per-account sign-in limits are unaffected. |
+| Rate-limit buckets could grow without bound | Low | ✅ Expired buckets pruned. |
+| No password change for signed-in users | Low | ✅ Added. |
+| Sign-up says when an email already has an account | Low | Accepted (needed for a clear sign-up flow). |
+| The first sign-up with an email in `PLATFORM_ADMIN_EMAILS` becomes platform admin | Medium | ⚠️ Sign up with that email right after deploying. If it says the account already exists, stop and investigate. |
+| CVs aren't scanned for malware unless ClamAV is configured | Medium | 🔑 Needs `CLAMAV_HOST`; files are labelled "not scanned". |
+| No Content-Security-Policy for scripts (only `frame-ancestors`) | Low | ⬜ Needs nonce support for Next.js inline scripts. |
+
+Checked without findings: scrypt password hashing; hashed session, reset and invitation tokens; `SameSite=Lax` + `Secure` + `HttpOnly` session cookie; same-origin check on every mutation; RLS with `FORCE ROW LEVEL SECURITY` and a tenant role without access to `users`; signed, short-lived, user-bound file links re-authorised on every download; SVG logos checked and served with `sandbox` CSP; careers-page CSS values validated twice; JSON-LD escaped; no secrets in the repository.
 
 ## Services requiring credentials
 

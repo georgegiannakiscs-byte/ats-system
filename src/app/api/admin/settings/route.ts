@@ -7,6 +7,7 @@ import { audit } from "@/server/org";
 const SCHEMAS = {
   general: z.object({ platformName: z.string().min(2).max(60), supportEmail: z.string().email().or(z.literal("")), defaultLanguage: z.enum(["en", "el"]), supportedLanguages: z.array(z.enum(["en", "el"])).min(1) }),
   company_creation: z.object({ policy: z.enum(["any_user", "platform_admins"]) }),
+  signup: z.object({ policy: z.enum(["open", "invite_only"]) }),
   storage: z.object({ maxCvMb: z.number().int().min(1).max(50), maxLogoMb: z.number().int().min(1).max(10), perCompanyQuotaMb: z.number().int().min(100).max(1_000_000) }),
   maintenance: z.object({ enabled: z.boolean(), message: z.string().max(300) }),
   recruitment_defaults: z.object({ retentionMonths: z.number().int().min(1).max(120), careersLanguage: z.enum(["en", "el"]) }),

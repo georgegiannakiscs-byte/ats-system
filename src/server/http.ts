@@ -11,8 +11,21 @@ export class HttpError extends Error {
 
 export const json = (data: unknown, init?: number | ResponseInit) => NextResponse.json(data, typeof init === "number" ? { status: init } : init);
 
+/**
+ * Client IP for rate limiting. X-Forwarded-For is set by proxies but its left part can be written by
+ * the client, so behind a known proxy set one of:
+ *  - CLIENT_IP_HEADER: a header only your edge sets (e.g. "cf-connecting-ip" behind Cloudflare), or
+ *  - TRUSTED_PROXY_HOPS: how many proxies append to X-Forwarded-For (1 = nginx/Traefik in front).
+ * Without either, the left-most X-Forwarded-For entry is used (previous behaviour).
+ */
 export function clientIp(req: Request) {
-  return (req.headers.get("x-forwarded-for")?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "local").trim();
+  if (env.clientIpHeader) {
+    const v = req.headers.get(env.clientIpHeader);
+    if (v) return v.split(",")[0].trim();
+  }
+  const xff = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (env.trustedProxyHops > 0 && xff.length) return xff[Math.max(0, xff.length - env.trustedProxyHops)];
+  return (xff[0] ?? req.headers.get("x-real-ip") ?? "local").trim();
 }
 
 /** CSRF defence for cookie-authenticated mutations: same-origin requests only. */

@@ -9,30 +9,63 @@ import { apiFetch, type ApiError } from "@/lib/api/store";
 function useNext() {
   const sp = useSearchParams();
   const n = sp.get("next");
-  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
+  // Same-site paths only: browsers treat "//host" and "/\host" as other sites (open redirect).
+  return n && n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") ? n : "/";
 }
 
 export function LoginForm() {
   const next = useNext();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [ticket, setTicket] = React.useState<string | null>(null);
+  const [code, setCode] = React.useState("");
+  const [useRecovery, setUseRecovery] = React.useState(false);
   const [error, setError] = React.useState<string>();
   const [busy, setBusy] = React.useState(false);
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true);
+    setError(undefined);
+    try { await fn(); } catch (err) { setError((err as ApiError).message); setBusy(false); }
+  };
+  if (ticket) {
+    return (
+      <form
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!code.trim()) return setError(useRecovery ? "Enter one of your recovery codes" : "Enter the 6-digit code");
+          void run(async () => {
+            const r = await apiFetch<{ recoveryCodesLeft?: number }>("/api/auth/login/verify", { method: "POST", body: JSON.stringify({ ticket, code }) });
+            if (r.recoveryCodesLeft !== undefined) window.alert(`You used a recovery code. ${r.recoveryCodesLeft} left. Create new ones in Account & security.`);
+            window.location.href = next;
+          });
+        }}
+        className="space-y-4"
+      >
+        <p className="text-sm text-muted-foreground">{useRecovery ? "Enter one of the recovery codes you saved when you turned on two-step verification." : "Open your authenticator app and enter the 6-digit code for Ulysse."}</p>
+        <Field label={useRecovery ? "Recovery code" : "Verification code"} htmlFor="code">
+          <Input id="code" autoFocus autoComplete="one-time-code" inputMode={useRecovery ? "text" : "numeric"} maxLength={useRecovery ? 20 : 6} placeholder={useRecovery ? "xxxx-xxxx-xxxx" : "123456"} value={code} onChange={(e) => setCode(useRecovery ? e.target.value : e.target.value.replace(/\D/g, ""))} />
+        </Field>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <Button type="submit" className="w-full" size="lg" disabled={busy}>{busy ? "Checking…" : "Verify"}</Button>
+        <div className="flex justify-between text-xs">
+          <button type="button" className="text-muted-foreground hover:text-foreground hover:underline" onClick={() => (setUseRecovery(!useRecovery), setCode(""), setError(undefined))}>{useRecovery ? "Use the authenticator app" : "Use a recovery code"}</button>
+          <button type="button" className="text-muted-foreground hover:text-foreground hover:underline" onClick={() => (setTicket(null), setCode(""), setPassword(""), setError(undefined))}>Back</button>
+        </div>
+      </form>
+    );
+  }
   return (
     <form
       noValidate
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault();
         if (!email || !password) return setError("Enter your email and password");
-        setBusy(true);
-        setError(undefined);
-        try {
-          await apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+        void run(async () => {
+          const r = await apiFetch<{ ok?: boolean; mfaRequired?: boolean; ticket?: string }>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
+          if (r.mfaRequired && r.ticket) { setTicket(r.ticket); setBusy(false); return; }
           window.location.href = next;
-        } catch (err) {
-          setError((err as ApiError).message);
-          setBusy(false);
-        }
+        });
       }}
       className="space-y-4"
     >

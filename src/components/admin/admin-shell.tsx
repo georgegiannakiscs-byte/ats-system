@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles, Inbox } from "lucide-react";
+import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles, Inbox, LockKeyhole } from "lucide-react";
 import { BrandLogo } from "@/components/shell/brand-mark";
 import { signOut } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ export function AdminShell({ email, children }: { email: string; children: React
         </nav>
         <div className="space-y-1 border-t border-border p-2.5">
           <Link href="/app" className="flex h-8 items-center gap-2.5 rounded-md px-2 text-sm text-sidebar-foreground hover:bg-accent"><ArrowLeft className="size-4" />My companies</Link>
+          <Link href="/account" className="flex h-8 items-center gap-2.5 rounded-md px-2 text-sm text-sidebar-foreground hover:bg-accent"><LockKeyhole className="size-4" />Account &amp; security</Link>
           <button onClick={() => signOut()} className="flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-sm text-sidebar-foreground hover:bg-accent"><LogOut className="size-4" />Sign out</button>
           <p className="truncate px-2 text-[11px] text-subtle-foreground">{email}</p>
         </div>
