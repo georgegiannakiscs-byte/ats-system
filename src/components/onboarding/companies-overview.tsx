@@ -24,7 +24,7 @@ export function CompaniesOverview({ suspended }: { suspended?: string }) {
     <div className="min-h-dvh">
       <PlainTopBar />
       <main className="mx-auto max-w-6xl p-4 sm:p-8">
-        {suspended && <p className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-sm">{suspended} is currently suspended. Contact Ulysse support to restore access.</p>}
+        {suspended && <p className="mb-4 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-sm">{suspended} is archived. Contact your platform administrator to restore access.</p>}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-display text-3xl tracking-tight">My companies</h1>
@@ -49,7 +49,7 @@ export function CompaniesOverview({ suspended }: { suspended?: string }) {
                       <CompanyLogo name={c.name} logoUrl={c.logoUrl} size={40} className="rounded-lg" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium group-hover:underline">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.role}{c.status !== "active" && " · Suspended"}</p>
+                        <p className="text-xs text-muted-foreground">{c.role}{c.status !== "active" && " · Archived"}</p>
                       </div>
                       <ArrowRight className="size-4 text-subtle-foreground transition-transform group-hover:translate-x-0.5" />
                     </div>

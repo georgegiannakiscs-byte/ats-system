@@ -45,6 +45,23 @@ export async function deleteObject(key: string) {
   await fs.rm(resolve(key), { force: true });
 }
 
+/** Prefixes under which a company's files are stored (CVs, CV Builder drafts and photos, logos). */
+export const orgFilePrefixes = (orgId: string) => ["cv", "cv-drafts", "cv-photos", "logos"].map((p) => `${p}/${checkKey(orgId)}/`);
+
+/**
+ * Deletes every stored file of a company. With the database driver this runs inside the caller's
+ * transaction (q), so files and rows disappear together; on disk it runs after the commit.
+ */
+export async function deleteOrgFiles(orgId: string, q?: (text: string, params?: unknown[]) => Promise<unknown>) {
+  const prefixes = orgFilePrefixes(orgId);
+  if (env.storageDriver === "db") {
+    const run = q ?? sys;
+    await run("delete from stored_objects where key like any($1)", [prefixes.map((p) => `${p}%`)]);
+    return;
+  }
+  for (const p of prefixes) await fs.rm(resolve(p.slice(0, -1)), { recursive: true, force: true });
+}
+
 /** Malware scan via ClamAV (clamd INSTREAM) when CLAMAV_HOST is configured. */
 export async function scanBuffer(data: Buffer): Promise<"clean" | "infected" | "not_scanned" | "error"> {
   if (!env.clamavHost) return "not_scanned";

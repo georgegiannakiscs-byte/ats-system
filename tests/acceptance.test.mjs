@@ -35,7 +35,7 @@ function client() {
     post: (u, b) => call("POST", u, b),
     put: (u, b) => call("PUT", u, b),
     patch: (u, b) => call("PATCH", u, b),
-    del: (u) => call("DELETE", u),
+    del: (u, b) => call("DELETE", u, b),
     form: (u, fd) => call("POST", u, fd, true),
     cmd: (org, type, payload) => call("POST", `/api/orgs/${org}/commands`, { type, payload }),
   };
@@ -419,6 +419,52 @@ test("B - platform super admin", async () => {
   // no candidate data in admin APIs
   const all = JSON.stringify([ov.data, list.data, users.data, ih.data, audit.data]);
   assert.ok(!all.includes(`eleni-${run}@example.com`), "no candidate personal data in platform admin responses");
+});
+
+test("B2 - archive and permanent deletion of a company (data and files)", async () => {
+  // A company with a published job, an application with a CV and a logo
+  const org = await owner.post("/api/orgs", { name: `Zeta ${run}` });
+  assert.equal(org.status, 201);
+  const zid = org.data.id;
+  const job = id("j");
+  assert.equal((await owner.cmd(zid, "jobs.create", { id: job, input: { title: "Doomed role", status: "published" } })).status, 200);
+  const snap = (await owner.get(`/api/orgs/${zid}/snapshot`)).data;
+  const app = await apply(snap.org.slug, snap.jobs[0].slug, { fullName: "Zoe Zeta", email: `zoe-${run}@example.com` });
+  assert.equal(app.status, 201, JSON.stringify(app.data));
+  const fd = new FormData();
+  fd.append("file", file("logo-a.png", "image/png"));
+  assert.equal((await owner.form(`/api/orgs/${zid}/logo`, fd)).status, 201);
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  // Row Level Security hides company data even from the owner role, so read in the system context.
+  const asSystem = async (sql, params) => { await db.query("begin"); await db.query("select set_config('app.bypass', 'on', true)"); try { return await db.query(sql, params); } finally { await db.query("commit"); } };
+  const keys = (await asSystem("select storage_key from cv_documents where org_id = $1", [zid])).rows.map((r) => r.storage_key);
+  assert.equal(keys.length, 1);
+  // Archive = no access, data kept, reversible
+  assert.equal((await owner.patch(`/api/admin/companies/${zid}`, { status: "suspended", reason: "Archive test" })).status, 200);
+  assert.equal((await owner.get(`/api/orgs/${zid}/snapshot`)).status, 423);
+  assert.equal((await owner.patch(`/api/admin/companies/${zid}`, { status: "active" })).status, 200);
+  assert.equal((await owner.get(`/api/orgs/${zid}/snapshot`)).status, 200, "restored");
+  // Permanent deletion: platform admin only, exact name, reason and password
+  const body = { confirmName: `Zeta ${run}`, reason: "Contract ended", password: "correct-horse-battery-1" };
+  assert.equal((await other.del(`/api/admin/companies/${zid}`, body)).status, 403);
+  assert.equal((await owner.del(`/api/admin/companies/${zid}`, { ...body, confirmName: "Zeta" })).status, 400, "name must match");
+  assert.equal((await owner.del(`/api/admin/companies/${zid}`, { ...body, password: "wrong-password-123" })).status, 400, "password required");
+  assert.equal((await owner.del(`/api/admin/companies/${zid}`, { ...body, reason: "" })).status, 400, "reason required");
+  const del = await owner.del(`/api/admin/companies/${zid}`, body);
+  assert.equal(del.status, 200);
+  assert.deepEqual(del.data.deleted, { jobs: 1, candidates: 1, applications: 1, members: 1 });
+  assert.equal((await owner.get(`/api/orgs/${zid}/snapshot`)).status, 404);
+  assert.equal((await fetch(`${BASE}/careers/${snap.org.slug}`)).status, 404);
+  for (const t of ["jobs", "candidates", "applications", "cv_documents", "memberships", "invitations"])
+    assert.equal((await asSystem(`select count(*)::int n from ${t} where org_id = $1`, [zid])).rows[0].n, 0, t);
+  assert.equal((await asSystem("select count(*)::int n from stored_objects where key like any($1)", [[`cv/${zid}/%`, `logos/${zid}/%`]])).rows[0].n, 0, "files in the database are gone");
+  if (process.env.STORAGE_DIR) for (const k of keys) assert.equal(fs.existsSync(path.join(process.env.STORAGE_DIR, k)), false, "CV file on disk is gone");
+  const log = (await asSystem("select org_id, metadata from audit_logs where action = 'company.deleted' and target_id = $1", [zid])).rows;
+  await db.end();
+  assert.equal(log.length, 1, "deletion recorded in the audit log");
+  assert.equal(log[0].metadata.reason, "Contract ended");
+  assert.equal((await owner.get(`/api/admin/companies/${zid}`)).status, 404);
 });
 
 test("Authentication basics", async () => {

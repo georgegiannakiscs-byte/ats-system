@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { sys } from "@/server/db";
+import { sys, sysTx } from "@/server/db";
+import { deleteOrgFiles } from "@/server/storage";
+import { confirmPassword } from "@/server/reauth";
 import { HttpError, clientIp, handler, json } from "@/server/http";
 import { requirePlatformAdmin } from "@/server/auth";
 import { audit, slugify } from "@/server/org";
@@ -55,4 +57,35 @@ export const PATCH = handler(async (req, ctx: Ctx) => {
   const action = v.status === "suspended" ? "company.suspended" : v.status === "active" ? "company.reactivated" : "company.updated_by_platform_admin";
   await audit({ scope: "platform", action, actorId: admin.id, orgId: id, targetType: "organization", targetId: id, metadata: v, ip: clientIp(req) });
   return json({ ok: true });
+});
+
+const Delete = z.object({
+  confirmName: z.string().trim().min(1),
+  reason: z.string().trim().min(3, "Give a reason").max(500),
+  password: z.string().min(1).max(200),
+});
+
+/**
+ * Permanently deletes a company and everything in it: jobs, candidates, applications, CVs and other
+ * files, notes, interviews, Quick Check data, members, invitations and settings. User accounts stay
+ * (they may belong to other companies). The audit log keeps a record of the deletion.
+ */
+export const DELETE = handler(async (req, ctx: Ctx) => {
+  const admin = await requirePlatformAdmin();
+  const id = uuid.parse((await ctx.params).id);
+  const v = Delete.parse(await req.json());
+  await confirmPassword(admin.id, v.password);
+  const [o] = await sys<{ name: string; slug: string }>("select name, slug from organizations where id = $1", [id]);
+  if (!o) throw new HttpError(404, "Company not found", "not_found");
+  if (v.confirmName !== o.name.trim()) throw new HttpError(400, `Type the company name exactly: ${o.name}`, "name_mismatch");
+  const counts = await sysTx(async (q) => {
+    const [c] = await q<Record<string, string>>(`select (select count(*) from jobs where org_id = $1) jobs, (select count(*) from candidates where org_id = $1) candidates,
+      (select count(*) from applications where org_id = $1) applications, (select count(*) from memberships where org_id = $1) members`, [id]);
+    await deleteOrgFiles(id, q);
+    await q("delete from organizations where id = $1", [id]); // everything else cascades
+    return Object.fromEntries(Object.entries(c).map(([k, n]) => [k, Number(n)]));
+  });
+  await deleteOrgFiles(id).catch((e) => console.error("[delete-company] files", e)); // disk storage: after the commit
+  await audit({ scope: "platform", action: "company.deleted", actorId: admin.id, targetType: "organization", targetId: id, metadata: { name: o.name, slug: o.slug, reason: v.reason, ...counts }, ip: clientIp(req) });
+  return json({ ok: true, deleted: counts });
 });

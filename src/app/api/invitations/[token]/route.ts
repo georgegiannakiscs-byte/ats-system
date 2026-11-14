@@ -26,7 +26,7 @@ export const POST = handler(async (_req, ctx: Ctx) => {
   const user = await requireUser();
   const inv = await find((await ctx.params).token);
   if (!inv) throw new HttpError(404, "This invitation is invalid or has expired", "invalid_invitation");
-  if (inv.status !== "active") throw new HttpError(423, "This company workspace is suspended", "suspended");
+  if (inv.status !== "active") throw new HttpError(423, "This company workspace is archived", "suspended");
   if (user.email.toLowerCase() !== inv.email.toLowerCase()) throw new HttpError(403, `This invitation was sent to ${inv.email}. Sign in with that email to accept it.`, "email_mismatch");
   await sys(
     `insert into memberships (org_id, user_id, role, last_accessed_at) values ($1,$2,$3, now())
