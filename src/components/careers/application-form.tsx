@@ -180,7 +180,7 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
   );
 
   return (
-    <form onSubmit={submit} noValidate className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6" aria-labelledby="apply-title">
+    <form onSubmit={submit} noValidate className="careers-form rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-6" aria-labelledby="apply-title">
       <h2 id="apply-title" className="text-lg font-semibold tracking-tight">{t.applyFor}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{t.minutes}</p>
 
@@ -322,7 +322,7 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
       </details>
 
       {formError && <p role="alert" className="mt-4 text-sm text-destructive">{formError}</p>}
-      <button type="submit" disabled={status === "sending"} className="mt-5 flex h-12 w-full items-center justify-center rounded-md bg-primary text-[15px] font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-70">
+      <button type="submit" disabled={status === "sending"} className="careers-button mt-5 flex h-12 w-full items-center justify-center rounded-md bg-primary text-[15px] font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-70">
         {status === "sending" ? (progress < 100 ? `${t.uploading} ${progress}%` : t.submitting) : t.submit}
       </button>
       {builderOpen && builder && (

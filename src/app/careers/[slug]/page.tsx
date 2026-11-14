@@ -38,35 +38,35 @@ export default async function CareersPage({ params, searchParams }: Props) {
   const band = careersTheme(org).hero === "band";
   return (
     <CareersFrame org={org} lang={lang} path={`/careers/${org.slug}`}>
-      <div className={band ? "bg-primary text-primary-foreground" : undefined}>
+      <div className={cn("careers-hero", band && "careers-hero-band bg-primary text-primary-foreground")}>
         <section className={cn("mx-auto max-w-4xl px-4", band ? "py-14" : "pb-6 pt-12")}>
-          <span aria-hidden className="mb-5 block h-1 w-12 rounded-full bg-[var(--careers-accent)]" />
-          <h1 className="font-display text-4xl tracking-tight sm:text-5xl">{(org.branding.careersHeadline as string) || (lang === "el" ? `Καριέρα στην ${org.name}` : `Careers at ${org.name}`)}</h1>
-          {((org.branding.careersIntro as string) || org.about) && <p className={cn("mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed", band ? "opacity-90" : "text-foreground/80")}>{(org.branding.careersIntro as string) || org.about}</p>}
+          <span aria-hidden className="careers-accent-line mb-5 block h-1 w-12 rounded-full bg-[var(--careers-accent)]" />
+          <h1 className="careers-headline font-display text-4xl tracking-tight sm:text-5xl">{(org.branding.careersHeadline as string) || (lang === "el" ? `Καριέρα στην ${org.name}` : `Careers at ${org.name}`)}</h1>
+          {((org.branding.careersIntro as string) || org.about) && <p className={cn("careers-intro mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed", band ? "opacity-90" : "text-foreground/80")}>{(org.branding.careersIntro as string) || org.about}</p>}
           {benefits.length > 0 && (
-            <ul className="mt-6 flex flex-wrap gap-2">{benefits.map((b) => (
-              <li key={b} className={cn("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm", band ? "border-current/25 bg-current/5" : "border-border bg-surface")}>
+            <ul className="careers-benefits mt-6 flex flex-wrap gap-2">{benefits.map((b) => (
+              <li key={b} className={cn("careers-benefit inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm", band ? "border-current/25 bg-current/5" : "border-border bg-surface")}>
                 <span aria-hidden className="size-1.5 rounded-full bg-[var(--careers-accent)]" />{b}
               </li>
             ))}</ul>
           )}
         </section>
       </div>
-      <section className={cn("mx-auto max-w-4xl px-4 pb-16", band && "pt-10")} aria-labelledby="open-positions">
+      <section className={cn("careers-jobs-section mx-auto max-w-4xl px-4 pb-16", band && "pt-10")} aria-labelledby="open-positions">
         <div className="mb-4 flex items-baseline justify-between gap-3">
-          <h2 id="open-positions" className="text-lg font-semibold">{t.openPositions} <span className="tabular text-muted-foreground">{all.length}</span></h2>
+          <h2 id="open-positions" className="careers-jobs-title text-lg font-semibold">{t.openPositions} <span className="tabular text-muted-foreground">{all.length}</span></h2>
         </div>
         {all.length > 1 && <Suspense><JobFilters lang={lang} jobs={all.map((j) => ({ location: j.location, type: j.employment_type, department: j.department }))} current={{ q: sp.q ?? "", location: sp.location ?? "", type: sp.type ?? "", department: sp.department ?? "" }} /></Suspense>}
         {jobs.length === 0 ? (
           <p className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted-foreground">{t.noJobs}</p>
         ) : (
-          <ul className={grid ? "grid gap-3 sm:grid-cols-2" : "divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface"}>
+          <ul className={cn("careers-jobs", grid ? "grid gap-3 sm:grid-cols-2" : "divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface")}>
             {jobs.map((j) => (
-              <li key={j.id} className={grid ? "rounded-xl border border-border bg-surface" : ""}>
+              <li key={j.id} className={cn("careers-job", grid && "rounded-xl border border-border bg-surface")}>
                 <Link href={`/careers/${org.slug}/${j.slug}?lang=${lang}`} className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/50">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium group-hover:underline">{j.title}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                    <p className="careers-job-title font-medium group-hover:underline">{j.title}</p>
+                    <p className="careers-job-meta mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                       {j.location && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{j.location}</span>}
                       <span>{j.workplace}</span><span>{j.employment_type}</span>{j.department && <span>{j.department}</span>}
                     </p>

