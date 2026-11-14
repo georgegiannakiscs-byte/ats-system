@@ -185,6 +185,7 @@ function JobDetails({ jobId }: { jobId: string }) {
         <section><SectionTitle>About the role</SectionTitle><p className="text-sm leading-relaxed">{job.summary}</p></section>
         <section><SectionTitle>Responsibilities</SectionTitle><ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed marker:text-subtle-foreground">{list(job.responsibilities).map((l) => <li key={l}>{l}</li>)}</ul></section>
         <section><SectionTitle>Requirements</SectionTitle><ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed marker:text-subtle-foreground">{list(job.requirements).map((l) => <li key={l}>{l}</li>)}</ul></section>
+        {list((job.niceToHave ?? "").trim()).length > 0 && <section><SectionTitle>Nice to have</SectionTitle><ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed marker:text-subtle-foreground">{list(job.niceToHave ?? "").map((l) => <li key={l}>{l}</li>)}</ul></section>}
         <section><SectionTitle>Skills</SectionTitle><div className="flex flex-wrap gap-1.5">{job.skills.map((s) => <Badge key={s} size="md">{s}</Badge>)}</div></section>
       </article>
       <aside className="space-y-5">

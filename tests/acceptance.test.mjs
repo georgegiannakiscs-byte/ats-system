@@ -331,6 +331,18 @@ test("C2 - careers page theme (colours, fonts, style)", async () => {
   assert.ok(!css(await (await fetch(`${BASE}/careers/${S.slugA}`)).text()).includes("--background:"), "empty background = follow light/dark");
 });
 
+test("C3 - optional Nice to have list on the job page", async () => {
+  const page = async () => (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}?lang=en`)).text();
+  assert.ok(!(await page()).includes(">Nice to have</h2>"), "hidden while empty");
+  assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { niceToHave: "Server-side tagging\n\nGreek language skills" } })).status, 200);
+  const html = await page();
+  assert.ok(html.includes(">Nice to have</h2>") && html.includes("<li>Server-side tagging</li>") && html.includes("<li>Greek language skills</li>"));
+  assert.equal((await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.find((j) => j.id === S.jobA).niceToHave, "Server-side tagging\n\nGreek language skills");
+  assert.ok((await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}?lang=el`)).text()).includes(">Επιθυμητά</h2>"), "Greek title");
+  await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { niceToHave: "" } });
+  assert.ok(!(await page()).includes(">Nice to have</h2>"), "hidden again once cleared");
+});
+
 test("B - platform super admin", async () => {
   // The first registered account on a fresh platform is bootstrapped as platform admin in development.
   // Promote the test owner explicitly so this test is independent of ordering.
