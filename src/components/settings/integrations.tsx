@@ -1,7 +1,11 @@
 "use client";
 import * as React from "react";
 import { CircleDashed, CircleCheck, Hourglass, Lock, Mail, ShieldCheck, CircleAlert, ExternalLink } from "lucide-react";
-import { useDb } from "@/lib/api/store";
+import { useCan, useDb } from "@/lib/api/store";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { Field, Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/controls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader } from "@/components/ui/overlays";
@@ -63,6 +67,7 @@ export function IntegrationsSettings() {
             ))}
           </ul>
         </div>
+        <LinkedInJobsFeed />
       </article>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -95,6 +100,41 @@ export function IntegrationsSettings() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Opt-in to the free LinkedIn Basic Jobs feed: published jobs are listed in LinkedIn Jobs under the company's page. */
+function LinkedInJobsFeed() {
+  const db = useDb();
+  const canEdit = useCan("settings.manage");
+  const saved = db.org.linkedinFeed;
+  const [f, setF] = React.useState(saved);
+  const [error, setError] = React.useState<string>();
+  const dirty = JSON.stringify(f) !== JSON.stringify(saved);
+  const short = db.jobs.filter((j) => j.status === "published" && `${j.summary} ${j.responsibilities} ${j.requirements} ${j.niceToHave ?? ""} ${j.benefits ?? ""}`.replace(/\s+/g, " ").trim().length < 100);
+  const save = async () => {
+    setError(undefined);
+    if (f.enabled && !/^\d{1,20}$/.test(f.companyId.trim())) return setError("Add the LinkedIn Company ID (a number) first.");
+    if (f.enabled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.posterEmail.trim())) return setError("Add the email LinkedIn should use for these job posts.");
+    try { await api.settings.updateLinkedInFeed({ ...f, companyId: f.companyId.trim(), posterEmail: f.posterEmail.trim(), country: f.country.trim().toUpperCase() || "GR" }); toast.success(f.enabled ? "Your published jobs are in the LinkedIn feed" : "LinkedIn feed off"); } catch (e) { setError((e as Error).message); }
+  };
+  return (
+    <div className="space-y-3 border-t border-border px-5 py-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold">LinkedIn Jobs, free (Basic Jobs feed)</p>
+        <Badge tone={saved.enabled ? "success" : "muted"}>{saved.enabled ? "On" : "Off"}</Badge>
+      </div>
+      <p className="max-w-3xl text-xs text-muted-foreground">Your published jobs go into Ulysse&apos;s job feed for LinkedIn. Once LinkedIn has accepted the feed (your platform administrator sends it to them), they appear for free in LinkedIn Jobs under your company page, and “Apply” brings candidates to your job page here. Applications from there count as source “LinkedIn”.</p>
+      <fieldset disabled={!canEdit} className="grid gap-3 sm:grid-cols-[auto_1fr_1fr_8rem] sm:items-end">
+        <label className="flex h-9 items-center gap-2 text-sm"><Switch checked={f.enabled} onCheckedChange={(v) => setF({ ...f, enabled: v })} aria-label="Include our jobs in the LinkedIn feed" />Include our jobs</label>
+        <Field label="LinkedIn Company ID" hint="The number in your LinkedIn page's admin address: linkedin.com/company/12345678/admin"><Input inputMode="numeric" value={f.companyId} onChange={(e) => setF({ ...f, companyId: e.target.value })} placeholder="12345678" /></Field>
+        <Field label="Poster email" hint="Required by LinkedIn to verify the employer. Not shown to candidates."><Input type="email" value={f.posterEmail} onChange={(e) => setF({ ...f, posterEmail: e.target.value })} placeholder="careers@company.com" /></Field>
+        <Field label="Country" hint="2 letters"><Input value={f.country} maxLength={2} onChange={(e) => setF({ ...f, country: e.target.value.toUpperCase() })} /></Field>
+      </fieldset>
+      {short.length > 0 && <p className="text-xs text-warning">Left out until their description reaches LinkedIn&apos;s minimum of 100 characters: {short.map((j) => j.title).join(", ")}.</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {canEdit && <div className="flex justify-end"><Button size="sm" disabled={!dirty} onClick={save}>Save</Button></div>}
     </div>
   );
 }

@@ -323,6 +323,7 @@ export function AdminIntegrations() {
   return (
     <>
       <AdminHeader title="Integration health" description="Configuration status only - credentials and tokens are never displayed." />
+      <LinkedInFeedCard />
       <Card className="divide-y divide-border">
         {!data ? <div className="p-6"><Skeleton className="h-6" /></div> : data.platform.map((p) => (
           <div key={p.provider} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
@@ -572,5 +573,47 @@ function TalentLeadDialog({ lead, onClose, onChanged }: { lead: any; onClose: ()
       <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title={`Delete ${lead.fullName}?`} description="Their details and CV are permanently removed (e.g. for a deletion request). This can't be undone." confirmLabel="Delete" destructive
         onConfirm={() => apiFetch(`/api/admin/talent/${lead.id}`, { method: "DELETE" }).then(() => (toast.success("Lead deleted"), onClose(), onChanged())).catch((e: ApiError) => toast.error(e.message))} />
     </Dialog>
+  );
+}
+
+/** LinkedIn Basic Jobs feed: the secret address to give LinkedIn, and what's in it. */
+function LinkedInFeedCard() {
+  const { data, reload } = useAdmin<{ url: string; applyUrlOk: boolean; report: { included: { company: string; job: string }[]; skipped: { company: string; job: string; reason: string }[] }; companies: { name: string; enabled: boolean; has_id: boolean; has_email: boolean }[] }>("/api/admin/linkedin-feed");
+  const [rotate, setRotate] = React.useState(false);
+  if (!data) return <Card className="mb-4 p-6"><Skeleton className="h-6" /></Card>;
+  const on = data.companies.filter((c) => c.enabled);
+  return (
+    <Card className="mb-4 space-y-3 p-4">
+      <div>
+        <p className="text-sm font-semibold">LinkedIn Jobs feed (free Basic Jobs)</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">LinkedIn downloads this address and lists the jobs for free in LinkedIn Jobs, under each company&apos;s page. Keep it private: it contains the companies&apos; poster emails.</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Input readOnly value={data.url} onFocus={(e) => e.currentTarget.select()} aria-label="LinkedIn feed address" className="font-mono text-xs" />
+        <Button size="sm" variant="outline" onClick={() => navigator.clipboard?.writeText(data.url).then(() => toast.success("Copied"))}><Copy />Copy</Button>
+        <Button size="sm" variant="ghost" onClick={() => setRotate(true)}>New address</Button>
+      </div>
+      {!data.applyUrlOk && <p className="rounded-md bg-warning-soft px-3 py-2 text-xs">LinkedIn&apos;s specification asks for apply links that start with <code>https://www.</code> Ulysse&apos;s address doesn&apos;t yet. Connect your own domain (e.g. www.yourdomain.com) before sending the feed, or ask LinkedIn whether they accept the current address.</p>}
+      <div className="grid gap-3 text-sm sm:grid-cols-3">
+        <div><p className="text-xs text-muted-foreground">Companies included</p><p className="font-semibold">{on.length} of {data.companies.length}</p></div>
+        <div><p className="text-xs text-muted-foreground">Jobs in the feed</p><p className="font-semibold">{data.report.included.length}</p></div>
+        <div><p className="text-xs text-muted-foreground">Jobs left out</p><p className="font-semibold">{data.report.skipped.length}</p></div>
+      </div>
+      {data.report.skipped.length > 0 && (
+        <ul className="space-y-1 rounded-md border border-border p-3 text-xs">
+          {data.report.skipped.map((s, i) => <li key={i}><span className="font-medium">{s.company} · {s.job}</span> <span className="text-muted-foreground">- {s.reason}</span></li>)}
+        </ul>
+      )}
+      <details className="text-xs text-muted-foreground">
+        <summary className="cursor-pointer text-foreground">How to send it to LinkedIn</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>Each company turns it on in Settings → Integrations → LinkedIn Jobs, with its LinkedIn Company ID and a poster email.</li>
+          <li>Check that the jobs you expect are in the feed (above) and open the address once to see the XML.</li>
+          <li>Send the address to LinkedIn&apos;s Business Development team for Basic Jobs (job feed partners), stating that Ulysse is an applicant tracking system whose jobs are posted directly by the employers.</li>
+          <li>LinkedIn reviews the feed (usually 2-8 weeks). After approval it downloads it regularly: new jobs appear and closed jobs disappear on their own.</li>
+        </ol>
+      </details>
+      <ConfirmDialog open={rotate} onOpenChange={setRotate} title="Create a new feed address?" description="The current address stops working at once. Give LinkedIn the new one." confirmLabel="Create new address" destructive onConfirm={() => apiFetch("/api/admin/linkedin-feed", { method: "POST" }).then(() => (toast.success("New address created"), reload())).catch((e: ApiError) => toast.error(e.message))} />
+    </Card>
   );
 }

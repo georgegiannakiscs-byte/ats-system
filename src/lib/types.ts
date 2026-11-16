@@ -369,6 +369,8 @@ export interface WorkspaceOrg {
   logoDarkUrl: string | null;
   onboarding: Record<string, boolean>;
   features: Record<string, boolean>;
+  /** LinkedIn Basic Jobs feed opt-in (Settings → Integrations). */
+  linkedinFeed: { enabled: boolean; companyId: string; posterEmail: string; country: string };
 }
 
 export interface PendingInvitation {
