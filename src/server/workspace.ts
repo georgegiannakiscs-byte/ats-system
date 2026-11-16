@@ -48,8 +48,8 @@ const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOStrin
 /** Builds the workspace payload consumed by the frontend store - one company only. */
 export async function buildSnapshot(access: OrgAccess) {
   const { org, user, role } = access;
-  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string }>(
-    "select name, profile, branding, onboarding, notification_prefs from organizations where id = $1",
+  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string; linkedin_feed: Record<string, unknown> }>(
+    "select name, profile, branding, onboarding, notification_prefs, linkedin_feed from organizations where id = $1",
     [org.id],
   );
   const team = await sys<{ id: string; name: string; email: string; role: OrgRole; title: string | null }>(
@@ -93,6 +93,7 @@ export async function buildSnapshot(access: OrgAccess) {
       logoUrl: logoUrl(org.id, orgRow.branding, "light"),
       logoDarkUrl: logoUrl(org.id, orgRow.branding, "dark"),
       onboarding: orgRow.onboarding,
+      linkedinFeed: { enabled: false, companyId: "", posterEmail: "", country: "GR", ...orgRow.linkedin_feed },
       features: Object.fromEntries(features.map((f) => [f.key, f.enabled])),
     },
     company: {

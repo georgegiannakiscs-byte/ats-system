@@ -159,6 +159,18 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
     await audit({ scope: "org", action: "company.branding_updated", actorId: a.user.id, orgId, metadata: { fields: Object.keys(v) } });
     return;
   }
+  if (type === "settings.linkedinFeed") {
+    need(a, "settings.manage");
+    const v = z.object({
+      enabled: z.boolean(),
+      companyId: z.union([z.string().trim().regex(/^\d{1,20}$/, "The LinkedIn Company ID is a number"), z.literal("")]),
+      posterEmail: z.union([z.string().trim().toLowerCase().email().max(254), z.literal("")]),
+      country: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, "Use a 2-letter country code such as GR"),
+    }).parse(p);
+    await sys("update organizations set linkedin_feed = $2::jsonb where id = $1", [orgId, JSON.stringify(v)]);
+    await audit({ scope: "org", action: "company.linkedin_feed_updated", actorId: a.user.id, orgId, metadata: { enabled: v.enabled } });
+    return;
+  }
   if (type === "settings.onboarding") {
     const v = z.object({ step: z.string().max(40), done: z.boolean() }).parse(p);
     await sys("update organizations set onboarding = onboarding || jsonb_build_object($2::text, $3::boolean) where id = $1", [orgId, v.step, v.done]);

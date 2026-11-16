@@ -281,6 +281,11 @@ const settings = {
     await send("settings.company", patch as Record<string, unknown>);
     return true;
   },
+  async updateLinkedInFeed(v: { enabled: boolean; companyId: string; posterEmail: string; country: string }) {
+    await send("settings.linkedinFeed", v);
+    setState((db) => ({ ...db, org: { ...db.org, linkedinFeed: v } }));
+    return true;
+  },
   async updateBranding(patch: Partial<OrgBranding>) {
     setState((db) => ({ ...db, org: { ...db.org, branding: { ...db.org.branding, ...patch } } }));
     await send("settings.branding", patch as Record<string, unknown>);

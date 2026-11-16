@@ -467,6 +467,49 @@ test("B2 - archive and permanent deletion of a company (data and files)", async 
   assert.equal((await owner.get(`/api/admin/companies/${zid}`)).status, 404);
 });
 
+test("I2 - LinkedIn Basic Jobs XML feed (opt-in, secret address, LinkedIn's format)", async () => {
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  const key = (await db.query("select value->>'key' k from platform_settings where key = 'linkedin_feed'")).rows[0].k;
+  await db.end();
+  assert.ok(key && key.length >= 32);
+  const feed = async (k = key) => fetch(`${BASE}/api/public/linkedin-jobs?key=${encodeURIComponent(k)}`);
+  assert.equal((await feed("")).status, 404, "no key");
+  assert.equal((await feed("x".repeat(key.length))).status, 404, "wrong key");
+  // Opt in, with validation
+  const set = (v) => owner.cmd(S.A.id, "settings.linkedinFeed", v);
+  assert.equal((await set({ enabled: true, companyId: "abc", posterEmail: "jobs@a.example", country: "GR" })).status, 400, "company ID must be a number");
+  assert.equal((await set({ enabled: true, companyId: "12345678", posterEmail: "not-an-email", country: "GR" })).status, 400);
+  assert.equal((await set({ enabled: true, companyId: "12345678", posterEmail: "jobs@a.example", country: "gr" })).status, 200);
+  // A complete job (description over 100 characters, location, skills, salary) and tricky text
+  const long = "We are looking for an analyst who turns marketing data into clear decisions for the whole team, every week.";
+  assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { summary: long, location: "Athens, Greece", workplace: "Hybrid", employmentType: "Full-time", seniority: "Senior", salaryMin: 30000, salaryMax: 42000, currency: "EUR", requirements: "SQL <script>alert(1)</script>\nGA4 ]]> tricks" } })).status, 200);
+  const shortJob = id("j");
+  assert.equal((await owner.cmd(S.A.id, "jobs.create", { id: shortJob, input: { title: "Too short", status: "published", summary: "Short." } })).status, 200);
+  const r = await feed();
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type"), /application\/xml/);
+  const xml = await r.text();
+  assert.ok(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>') && xml.includes("<source>") && xml.trim().endsWith("</source>"));
+  const job = xml.split("<job>").find((j) => j.includes(`<partnerJobId><![CDATA[${S.jobA}]]></partnerJobId>`));
+  assert.ok(job, "published job of an opted-in company is in the feed");
+  for (const part of ["<companyId><![CDATA[12345678]]></companyId>", "<posterEmail><![CDATA[jobs@a.example]]></posterEmail>", "<city><![CDATA[Athens]]></city>", "<country><![CDATA[GR]]></country>",
+    "<workplaceTypes><![CDATA[Hybrid]]></workplaceTypes>", "<jobtype><![CDATA[FULL_TIME]]></jobtype>", "<experienceLevel><![CDATA[MID_SENIOR_LEVEL]]></experienceLevel>",
+    "<amount><![CDATA[42000]]></amount>", "<currencyCode><![CDATA[EUR]]></currencyCode>", "<period><![CDATA[YEARLY]]></period>"]) assert.ok(job.includes(part), part);
+  assert.match(job, /<applyUrl><!\[CDATA\[https?:\/\/[^\]]+\/careers\/[^\]]+\?utm_source=linkedin&utm_medium=jobs[^\]]*\]\]><\/applyUrl>/);
+  assert.match(job, /<description><!\[CDATA\[<p>We are looking/);
+  assert.ok(!job.includes("<script") && (job.match(/\]\]>/g) ?? []).length === (job.match(/<!\[CDATA\[/g) ?? []).length, "user text can't break out of CDATA or add tags");
+  assert.ok(!xml.includes(shortJob), "descriptions under 100 characters are left out");
+  assert.ok(!xml.includes(S.slugB ?? "never-in-feed"), "companies that didn't opt in aren't in the feed");
+  const report = (await owner.get("/api/admin/linkedin-feed")).data;
+  assert.ok(report.report.skipped.some((x) => x.job === "Too short" && /100 characters/.test(x.reason)));
+  assert.equal((await other.get("/api/admin/linkedin-feed")).status, 403);
+  // Opting out removes the jobs
+  assert.equal((await set({ enabled: false, companyId: "12345678", posterEmail: "jobs@a.example", country: "GR" })).status, 200);
+  assert.ok(!(await (await feed()).text()).includes(S.jobA), "gone once the company opts out");
+  assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: shortJob, patch: { status: "closed" } })).status, 200);
+});
+
 test("Authentication basics", async () => {
   const anon = client();
   assert.equal((await anon.get("/api/me")).status, 401);
