@@ -3,7 +3,10 @@ import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MapPin, Clock, Users, Pencil, Send, Building, CalendarPlus, BriefcaseBusiness, Banknote } from "lucide-react";
+import { MapPin, Clock, Users, Pencil, Send, Building, CalendarPlus, BriefcaseBusiness, Banknote, Copy } from "lucide-react";
+import { toast } from "sonner";
+import { LinkedInLogo } from "@/components/common/logos";
+import { linkedInJobUrl, linkedInShareUrl } from "@/lib/linkedin";
 import { useDb } from "@/lib/api/store";
 import { usePageMeta } from "@/components/shell/page-meta";
 import { useUI } from "@/components/shell/ui-context";
@@ -79,6 +82,9 @@ function JobView() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {job.status === "published" && job.slug && db.org.features.linkedin !== false && (
+              <Button variant="outline" size="sm" onClick={() => window.open(linkedInShareUrl(linkedInJobUrl(window.location.origin, db.org.slug, job.slug!)), "_blank", "noopener,noreferrer,width=600,height=680")}><LinkedInLogo className="size-3.5" />Share on LinkedIn</Button>
+            )}
             <Button variant="outline" size="sm" asChild><Link href={orgPath(`/jobs/edit?id=${job.id}`)}><Pencil />Edit</Link></Button>
             {job.status !== "published" && <Button size="sm" onClick={() => setStatus(job, "published")}><Send />Publish</Button>}
             <JobActionsMenu job={job} trigger="button" afterDelete={() => router.push(orgPath("/jobs"))} />
@@ -211,7 +217,7 @@ function JobDetails({ jobId }: { jobId: string }) {
         <div className="space-y-2 rounded-xl border border-border bg-surface p-4 text-sm shadow-xs">
           <SectionTitle className="mb-1">Channels</SectionTitle>
           <p className="flex justify-between"><span>Careers page</span><span className={cn(job.channels.careersPage ? "text-success" : "text-muted-foreground")}>{job.channels.careersPage ? "On" : "Off"}</span></p>
-          <p className="flex justify-between"><span>LinkedIn</span><span className="text-muted-foreground">{job.channels.linkedin ? "Queued (not connected)" : "Off"}</span></p>
+          {db.org.features.linkedin !== false && <LinkedInShare orgSlug={db.org.slug} jobSlug={job.slug ?? ""} published={job.status === "published" && !!job.slug} />}
           <p className="flex justify-between"><span>Indeed</span><span className="text-muted-foreground">{job.channels.indeed ? "Queued (not connected)" : "Off"}</span></p>
         </div>
       </aside>
@@ -237,4 +243,20 @@ function InterviewLine({ i }: { i: Interview }) {
         </div>
       </li>
     );
+}
+
+/** Share on LinkedIn through LinkedIn's own share dialog (no API access needed), with a tracked link. */
+function LinkedInShare({ orgSlug, jobSlug, published }: { orgSlug: string; jobSlug: string; published: boolean }) {
+  if (!published) return <p className="flex justify-between"><span>LinkedIn</span><span className="text-muted-foreground">Publish the job to share it</span></p>;
+  const url = typeof window !== "undefined" ? linkedInJobUrl(window.location.origin, orgSlug, jobSlug) : "";
+  return (
+    <div className="space-y-2 border-t border-border pt-2">
+      <p className="flex items-center gap-1.5"><LinkedInLogo className="size-4" />LinkedIn</p>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => window.open(linkedInShareUrl(url), "_blank", "noopener,noreferrer,width=600,height=680")}>Share on LinkedIn</Button>
+        <Button size="sm" variant="outline" onClick={() => navigator.clipboard?.writeText(url).then(() => toast.success("Link copied", { description: "Applications from it are recorded with source LinkedIn." }))}><Copy />Copy link</Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Post it on your profile or company page, or paste the link into a LinkedIn job post. Applications from it count as source “LinkedIn”.</p>
+    </div>
+  );
 }

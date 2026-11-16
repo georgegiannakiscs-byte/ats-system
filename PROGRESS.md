@@ -116,7 +116,7 @@ The application still requires **only full name, email and a CV**. A generated P
 | Feature | Status | Notes |
 |---|---|---|
 | LinkedIn tracked application links | ✅ | `utm_source=linkedin` → source "LinkedIn" + UTM stored (tested). |
-| "Share on LinkedIn" composer | ⬜ | |
+| Share on LinkedIn | ✅ | Job page (header and Job details → Channels): **Share on LinkedIn** opens LinkedIn's own share dialog, **Copy link** copies the tracked link (`utm_source=linkedin`, `utm_medium=social`, `utm_campaign=<job>`). No API or approval needed; the preview comes from the job page's Open Graph tags. Checked in Chromium. |
 | LinkedIn Company Page / Job Posting / RSC APIs | 🤝 🔑 | Partner approval + developer app required; shown as locked in the UI. |
 | Talent pool & lists | 🔶 | Persisted per company 🟡; AI rediscovery ⬜. |
 | Analytics | 🔶 | Computed from live company data (funnel, sources, time to hire from real hires, stage health, job performance). CSV export of candidates ✅ in UI 🟡. Rejection-reason, recruiter-workload reports ⬜. |

@@ -20,7 +20,7 @@ function StateBadge({ state }: { state: IntegrationState }) {
 }
 
 const LINKEDIN_CAPABILITIES = [
-  { label: "Share jobs on LinkedIn with a tracked application link", detail: "Available without API access - arrives in Phase 3 with the LinkedIn sharing tool.", gated: false },
+  { label: "Share jobs on LinkedIn with a tracked application link", detail: "Available now: Jobs → a published job → Share on LinkedIn or Copy link. No API access needed; applications count as source “LinkedIn”.", gated: false },
   { label: "Company Page connection (OAuth)", detail: "Requires a LinkedIn developer app with Community Management API access.", gated: true },
   { label: "Post jobs to LinkedIn and sync applicants", detail: "Requires LinkedIn Talent Solutions partner approval (Job Posting API).", gated: true },
   { label: "Recruiter System Connect", detail: "Requires RSC partner approval and a LinkedIn Recruiter contract.", gated: true },
@@ -49,7 +49,7 @@ export function IntegrationsSettings() {
           <LinkedInLogo className="size-11 shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-semibold">LinkedIn</h3><StateBadge state={li} /></div>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Publish roles and bring applicants into Ulysse. Deep integrations are only available to approved LinkedIn partners.</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Share roles on LinkedIn with a tracked link today. Posting jobs and syncing applicants through LinkedIn&apos;s APIs is only available to approved LinkedIn partners.</p>
           </div>
           <Button variant="outline" onClick={() => setDetails("linkedin")}>What&apos;s required</Button>
         </div>
@@ -88,7 +88,7 @@ export function IntegrationsSettings() {
                 <ul className="list-disc space-y-1.5 pl-5 text-foreground/85">
                   {(details === "linkedin" ? ["A LinkedIn developer application owned by your organisation", "Approval for the relevant LinkedIn products (Community Management, Talent Solutions, RSC)", "LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET configured on the server"] : details.requires).map((r) => <li key={r}>{r}</li>)}
                 </ul>
-                <p className="text-xs text-muted-foreground">Ask your Ulysse platform administrator to configure the credentials. Once they are in place, this card will offer a real “Connect” flow.</p>
+                <p className="text-xs text-muted-foreground">{details === "linkedin" ? "These APIs are only open to companies LinkedIn approves as partners, and the connection itself isn't built in Ulysse yet. Until then, share jobs with the tracked link (Jobs → a published job → Share on LinkedIn)." : "Credentials alone don't switch it on: the connection itself isn't built in Ulysse yet. It's listed in PROGRESS.md."}</p>
               </DialogBody>
               <DialogFooter><Button onClick={() => setDetails(null)}>Got it</Button></DialogFooter>
             </>
