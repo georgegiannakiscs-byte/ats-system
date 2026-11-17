@@ -19,7 +19,7 @@ const base = "w-full rounded-md border border-input bg-surface px-3 text-[15px] 
  * Minimal public application. Required: full name, email, CV. Nothing else.
  * Optional details are collapsed and only validated when filled in.
  */
-export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName, logoUrl, maxMb, questions, builder, jobSkills = [] }: { lang: CareersLang; orgSlug: string; jobSlug: string; jobTitle: string; companyName: string; logoUrl: string | null; maxMb: number; questions: Question[]; builder?: BuilderConfig | null; jobSkills?: string[] }) {
+export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName, logoUrl, maxMb, questions, builder, jobSkills = [], privacy }: { privacy?: { retentionMonths: number; policyUrl: string; contactEmail: string }; lang: CareersLang; orgSlug: string; jobSlug: string; jobTitle: string; companyName: string; logoUrl: string | null; maxMb: number; questions: Question[]; builder?: BuilderConfig | null; jobSkills?: string[] }) {
   const t = careersDict[lang];
   const b = builderDict[lang];
   const qt = quickCheckDict[lang];
@@ -319,6 +319,13 @@ export function ApplicationForm({ lang, orgSlug, jobSlug, jobTitle, companyName,
       <details className="mt-4 text-xs text-muted-foreground">
         <summary className="inline-flex cursor-pointer items-center gap-1 hover:text-foreground"><ShieldCheck className="size-3.5" />{t.privacyTitle}</summary>
         <p className="mt-2 leading-relaxed">{fmt(t.privacyBody, { company: companyName })}</p>
+        {privacy && (
+          <p className="mt-2 leading-relaxed">
+            Your data is kept for {privacy.retentionMonths} months after your application ends, then deleted automatically.
+            {privacy.contactEmail && <> To see, correct or delete it, write to <a className="underline" href={`mailto:${privacy.contactEmail}`}>{privacy.contactEmail}</a>.</>}
+            {privacy.policyUrl && <> <a className="underline" href={privacy.policyUrl} target="_blank" rel="noopener noreferrer">Full privacy policy</a>.</>}
+          </p>
+        )}
       </details>
 
       {formError && <p role="alert" className="mt-4 text-sm text-destructive">{formError}</p>}

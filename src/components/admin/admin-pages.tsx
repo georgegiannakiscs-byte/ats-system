@@ -319,7 +319,7 @@ export function AdminFeatures() {
 
 /* ───────────── Integrations ───────────── */
 export function AdminIntegrations() {
-  const { data } = useAdmin<{ companies: any[]; platform: any[]; emailOutbox: Record<string, number> }>("/api/admin/integrations");
+  const { data } = useAdmin<{ companies: any[]; platform: any[]; emailOutbox: Record<string, number>; clientIp: { used: string; setting: string; headers: Record<string, string | null> } }>("/api/admin/integrations");
   return (
     <>
       <AdminHeader title="Integration health" description="Configuration status only - credentials and tokens are never displayed." />
@@ -337,6 +337,15 @@ export function AdminIntegrations() {
           <Card className="p-4">
             <p className="mb-2 text-sm font-semibold">Email outbox</p>
             {Object.keys(data.emailOutbox).length === 0 ? <p className="text-sm text-muted-foreground">No emails yet.</p> : <ul className="space-y-1 text-sm">{Object.entries(data.emailOutbox).map(([k, v]) => <li key={k} className="flex justify-between"><span className="capitalize">{k.replace("_", " ")}</span><span className="tabular">{v}</span></li>)}</ul>}
+          </Card>
+          <Card className="p-4 lg:col-span-2">
+            <p className="text-sm font-semibold">Client IP detection (rate limits)</p>
+            <p className="mb-2 text-xs text-muted-foreground">What the hosting&apos;s proxy sent with this page&apos;s request. Your own IP should appear in a header the proxy sets itself, such as cf-connecting-ip behind Cloudflare; then set CLIENT_IP_HEADER to that name.</p>
+            <dl className="grid gap-1 text-xs sm:grid-cols-2">
+              <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Used for rate limits</dt><dd className="font-mono">{data.clientIp.used}</dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Setting</dt><dd className="font-mono">{data.clientIp.setting}</dd></div>
+              {Object.entries(data.clientIp.headers).map(([k, v]) => <div key={k} className="flex justify-between gap-2"><dt className="text-muted-foreground">{k}</dt><dd className="truncate font-mono">{v ?? "-"}</dd></div>)}
+            </dl>
           </Card>
           <Card className="p-4">
             <p className="mb-2 text-sm font-semibold">Company connections</p>

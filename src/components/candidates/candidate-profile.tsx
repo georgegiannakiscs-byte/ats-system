@@ -3,7 +3,7 @@ import { orgPath } from "@/lib/org-path";
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowRightLeft, BriefcaseBusiness, CalendarPlus, Check, ClipboardCheck, Copy, Ellipsis, ExternalLink, FileText, GraduationCap, Languages, ListChecks, Mail, MapPin, MessageSquare, Pencil, Phone, Pin, PartyPopper, Trash2, UserX, Clock, ZoomIn, ZoomOut, Printer, Undo2, Library } from "lucide-react";
+import { ArrowRightLeft, BriefcaseBusiness, CalendarPlus, Check, ClipboardCheck, Copy, Ellipsis, ExternalLink, FileText, GraduationCap, Languages, ListChecks, Mail, MapPin, MessageSquare, Pencil, Phone, Pin, PartyPopper, Trash2, UserX, Clock, ZoomIn, ZoomOut, Printer, Undo2, Library, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarStack } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { EvaluationBadge } from "@/components/common/badges";
 import { EmptyState } from "@/components/common/empty-state";
 import { SectionTitle } from "@/components/common/card";
 import { LinkedInLogo } from "@/components/common/logos";
-import { useDb } from "@/lib/api/store";
+import { currentOrgId, send, useCan, useDb } from "@/lib/api/store";
 import { api } from "@/lib/api";
 import { applicationsFor, averageScore, fullName, interviewFeedback, primaryApplication } from "@/lib/api/selectors";
 import { RECOMMENDATION, SCORE_LABELS, STAGE_TONE } from "@/lib/constants";
@@ -102,6 +102,9 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
   const [confirmHire, setConfirmHire] = React.useState(false);
   const [withdraw, setWithdraw] = React.useState(false);
   const [reason, setReason] = React.useState(WITHDRAWAL_REASONS[0]);
+  const canErase = useCan("candidates.delete");
+  const [erase, setErase] = React.useState(false);
+  const [eraseReason, setEraseReason] = React.useState("");
   const active = app?.status === "active";
   return (
     <div className="flex shrink-0 items-center gap-1.5">
@@ -150,6 +153,13 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild><Link href={orgPath(`/candidates/view?id=${candidate.id}`)}><ExternalLink />Open full profile</Link></DropdownMenuItem>
+          {canErase && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><a href={`/api/orgs/${currentOrgId()}/candidates/${candidate.id}/export`} download><Download />Export data (GDPR)</a></DropdownMenuItem>
+              <DropdownMenuItem destructive onSelect={() => (setEraseReason(""), setErase(true))}><Trash2 />Delete candidate and data</DropdownMenuItem>
+            </>
+          )}
           {app && active && (
             <>
               <DropdownMenuSeparator />
@@ -160,6 +170,24 @@ export function CandidateActions({ candidate, app }: { candidate: Candidate; app
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      <ConfirmDialog
+        open={erase}
+        onOpenChange={setErase}
+        title={`Delete ${fullName(candidate)} and all their data?`}
+        description="This permanently deletes the candidate in this company: applications, CVs and photos, notes, evaluations, Quick Check answers and emails sent to them. Use it when they ask you to delete their data. It can't be undone."
+        confirmLabel="Delete permanently"
+        destructive
+        onConfirm={async () => {
+          if (eraseReason.trim().length < 3) { toast.error("Add a reason (kept in the audit log)"); return; }
+          try {
+            await send("candidates.erase", { id: candidate.id, reason: eraseReason.trim() });
+            toast.success("Candidate and their data deleted");
+            window.location.href = orgPath("/candidates");
+          } catch (e) { toast.error((e as Error).message); }
+        }}
+      >
+        <Textarea value={eraseReason} onChange={(e) => setEraseReason(e.target.value)} placeholder="Reason, e.g. the candidate asked us to delete their data" aria-label="Reason for deleting" />
+      </ConfirmDialog>
       {app && (
         <ConfirmDialog
           open={confirmHire}

@@ -19,4 +19,19 @@ export async function register() {
   } finally {
     await c.end().catch(() => {});
   }
+  // GDPR retention: delete candidate data whose retention period has run out. First run shortly
+  // after start (a sleeping free instance wakes up often), then every 6 hours. RETENTION_JOB=off disables it.
+  if ((process.env.RETENTION_JOB ?? "on") !== "off") {
+    const run = async () => {
+      try {
+        const { runRetention } = await import("./server/erasure");
+        const r = await runRetention();
+        if (r.erased) console.log(`[retention] erased ${r.erased} candidate(s) past their retention period`);
+      } catch (e) {
+        console.error("[retention]", e);
+      }
+    };
+    setTimeout(run, 2 * 60_000).unref();
+    setInterval(run, 6 * 60 * 60_000).unref();
+  }
 }
