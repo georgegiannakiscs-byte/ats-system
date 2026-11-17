@@ -226,6 +226,9 @@ export function JobForm({ job }: { job?: Job }) {
                 <Field label="Recruiter" required error={err("recruiterId")}>
                   <TeamPicker value={f.recruiterId ? [f.recruiterId] : []} onChange={(v) => set("recruiterId", v.at(-1) ?? "")} filter={(r) => r === "Recruiter" || r === "Admin"} invalid={!!err("recruiterId")} placeholder="Select recruiter" />
                 </Field>
+                <Field label="Hiring team" className="sm:col-span-2" hint={db.org.restrictToHiringTeam ? "Interviewers and others who should see this job and its candidates. Hiring managers and interviewers only see the jobs they're on; interviewers you schedule are added automatically." : "Interviewers and others working on this job."}>
+                  <TeamPicker multiple value={(f.hiringTeam ?? []).filter((m) => m !== f.hiringManagerId && m !== f.recruiterId)} onChange={(v) => set("hiringTeam", v)} placeholder="Add teammates" />
+                </Field>
                 <Field label="Target hire date" htmlFor="thd">
                   <Input id="thd" type="date" value={f.targetHireDate?.slice(0, 10) ?? ""} onChange={(e) => set("targetHireDate", e.target.value ? new Date(e.target.value).toISOString() : undefined)} />
                 </Field>
@@ -259,7 +262,7 @@ export function JobForm({ job }: { job?: Job }) {
                     ].map(([k, v]) => (
                       <div key={k} className="flex gap-4 px-3 py-2"><dt className="w-28 shrink-0 text-muted-foreground">{k}</dt><dd className="min-w-0 flex-1">{v}</dd></div>
                     ))}
-                    <div className="flex gap-4 px-3 py-2"><dt className="w-28 shrink-0 text-muted-foreground">Hiring team</dt><dd className="flex flex-wrap gap-3">{f.hiringManagerId && <Person id={f.hiringManagerId} />}{f.recruiterId && <Person id={f.recruiterId} />}</dd></div>
+                    <div className="flex gap-4 px-3 py-2"><dt className="w-28 shrink-0 text-muted-foreground">Hiring team</dt><dd className="flex flex-wrap gap-3">{f.hiringManagerId && <Person id={f.hiringManagerId} />}{f.recruiterId && <Person id={f.recruiterId} />}{(f.hiringTeam ?? []).filter((m) => m !== f.hiringManagerId && m !== f.recruiterId).map((m) => <Person key={m} id={m} />)}</dd></div>
                   </dl>
                 </section>
                 <p className="flex items-start gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted-foreground"><Info className="mt-px size-3.5 shrink-0" />Publishing makes the job visible on {db.company.name}&apos;s public careers page with its own application link. Nothing is posted to external job boards.</p>

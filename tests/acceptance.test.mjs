@@ -296,6 +296,11 @@ test("Permissions are per company and enforced server-side", async () => {
   const token = inv.data.link.split("/invite/")[1];
   const acc = await other.post(`/api/invitations/${token}`);
   assert.equal(acc.status, 200);
+  // Interviewers only see jobs whose hiring team they're on (the default): nothing yet.
+  assert.equal((await other.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.length, 0, "not on any hiring team yet");
+  S.otherId = (await other.get("/api/me")).data.user.id;
+  assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { hiringTeam: [S.otherId] } })).status, 200);
+  assert.deepEqual((await other.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.map((j) => j.id), [S.jobA]);
   // Same user: Admin in Company C, Interviewer in Company A
   const me = (await other.get("/api/me")).data.companies;
   assert.equal(me.find((c) => c.id === S.C.id).role, "admin");
@@ -675,6 +680,95 @@ test("M - a company can require two-step verification for its members", async ()
   await enableTwoFactor(other, "correct-horse-battery-1");
   assert.equal((await other.get(`/api/orgs/${S.A.id}/snapshot`)).status, 200, "allowed once it's on");
   assert.equal((await owner.cmd(S.A.id, "settings.security", { requireTwoFactor: false })).status, 200);
+});
+
+test("N - Hiring Managers and Interviewers see only the jobs they're on", async () => {
+  const hm = client();
+  await signup(hm, "Hiring Manager", `hm-${run}@test.example`);
+  const inv = await owner.post(`/api/orgs/${S.A.id}/invitations`, { email: `hm-${run}@test.example`, role: "Hiring Manager" });
+  assert.equal((await hm.post(`/api/invitations/${inv.data.link.split("/invite/")[1]}`)).status, 200);
+  const hmId = (await hm.get("/api/me")).data.user.id;
+  const jobX = id("j"), jobY = id("j");
+  assert.equal((await owner.cmd(S.A.id, "jobs.create", { id: jobX, input: { title: "Team Lead", status: "published", hiringManagerId: hmId } })).status, 200);
+  assert.equal((await owner.cmd(S.A.id, "jobs.create", { id: jobY, input: { title: "Confidential Director", status: "published" } })).status, 200);
+  const slugs = Object.fromEntries((await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.map((j) => [j.id, j.slug]));
+  assert.equal((await apply(S.slugA, slugs[jobX], { fullName: "Visible Vera", email: `vera-${run}@example.com` })).status, 201);
+  assert.equal((await apply(S.slugA, slugs[jobY], { fullName: "Hidden Hector", email: `hector-${run}@example.com` })).status, 201);
+  assert.equal((await apply(S.slugA, slugs[jobY], { fullName: "Both Bo", email: `bo-${run}@example.com` })).status, 201);
+  assert.equal((await apply(S.slugA, slugs[jobX], { fullName: "Both Bo", email: `bo-${run}@example.com` })).status, 201);
+  const all = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  const cand = (e) => all.candidates.find((c) => c.email === `${e}-${run}@example.com`);
+  const hector = cand("hector"), vera = cand("vera"), bo = cand("bo");
+  const appOf = (c, j) => all.applications.find((x) => x.candidateId === c.id && x.jobId === j);
+  const docOf = (c) => all.cvDocuments.find((d) => d.candidateId === c.id);
+
+  // What the hiring manager sees
+  const snap = (await hm.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  assert.equal(snap.org.seesAllJobs, false);
+  assert.deepEqual(snap.jobs.map((j) => j.id), [jobX], "only their job");
+  assert.deepEqual(snap.candidates.map((c) => c.email).sort(), [`bo-${run}@example.com`, `vera-${run}@example.com`]);
+  assert.ok(snap.applications.every((x) => x.jobId === jobX), "only that job's applications, even for a candidate in both jobs");
+  assert.ok(!snap.cvDocuments.some((d) => d.candidateId === hector.id));
+  assert.ok(!snap.activities.some((x) => x.candidateId === hector.id || x.jobId === jobY || x.jobId === S.jobA), "no activity about other jobs");
+  // ...and can't reach the rest by ID
+  assert.equal((await hm.get(`/api/orgs/${S.A.id}/cv/${docOf(hector).id}`)).status, 404);
+  assert.equal((await hm.cmd(S.A.id, "applications.move", { id: appOf(hector, jobY).id, stage: "screening" })).status, 404);
+  assert.equal((await hm.cmd(S.A.id, "candidates.update", { id: hector.id, patch: { phone: "hacked" } })).status, 404);
+  assert.equal((await hm.cmd(S.A.id, "notes.add", { id: id("n"), candidateId: hector.id, body: "peek" })).status, 403);
+  assert.equal((await hm.cmd(S.A.id, "applications.create", { id: id("a"), candidateId: vera.id, jobId: jobY })).status, 404, "can't add people to other jobs");
+  // Their own job works as usual
+  assert.equal((await hm.get(`/api/orgs/${S.A.id}/cv/${docOf(vera).id}`)).status, 200);
+  assert.equal((await hm.cmd(S.A.id, "applications.move", { id: appOf(vera, jobX).id, stage: "screening" })).status, 200);
+  assert.equal((await hm.cmd(S.A.id, "candidates.create", { id: id("c"), input: { fullName: "No Job", email: `nojob-${run}@example.com` } })).status, 400, "new candidates go into one of their jobs");
+  const rita = await hm.cmd(S.A.id, "candidates.create", { id: id("c"), applicationId: id("a"), jobId: jobX, input: { fullName: "Referral Rita", email: `referral-${run}@example.com` } });
+  assert.equal(rita.status, 200, JSON.stringify(rita.data));
+  assert.equal((await hm.cmd(S.A.id, "candidates.create", { id: id("c"), applicationId: id("a"), jobId: jobY, input: { fullName: "Sneaky Sam", email: `sam-${run}@example.com` } })).status, 404);
+  assert.ok(!(await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.candidates.some((c) => c.email === `sam-${run}@example.com`), "nothing half-saved");
+  // The interviewer on the first job doesn't see these jobs either
+  assert.ok(!(await other.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.some((j) => j.id === jobX || j.id === jobY));
+
+  // The database itself enforces it (not just the API)
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  const asTenant = async (sql, params = []) => {
+    await db.query("begin");
+    try {
+      await db.query("set local role deceler_app");
+      await db.query("select set_config('app.org_id', $1, true), set_config('app.user_id', $2, true)", [S.A.id, hmId]);
+      return (await db.query(sql, params)).rows;
+    } finally { await db.query("rollback"); }
+  };
+  assert.equal((await asTenant("select count(*)::int n from candidates where id = $1", [hector.id]))[0].n, 0);
+  assert.equal((await asTenant("select count(*)::int n from jobs where id = $1", [jobY]))[0].n, 0);
+  assert.equal((await asTenant("select count(*)::int n from cv_documents where candidate_id = $1", [hector.id]))[0].n, 0);
+  assert.equal((await asTenant("update candidates set phone = 'x' where id = $1 returning id", [hector.id])).length, 0);
+  await db.end();
+
+  // Scheduling an interview adds the interviewer to the job's hiring team
+  const ivId = `iv_${crypto.randomBytes(6).toString("hex")}`;
+  assert.equal((await owner.cmd(S.A.id, "records.upsert", { kind: "interview", id: ivId, data: { candidateId: hector.id, jobId: jobY, applicationId: appOf(hector, jobY).id, interviewerIds: [hmId], status: "scheduled", start: new Date(Date.now() + 86400000).toISOString() } })).status, 200);
+  const after = (await hm.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  assert.deepEqual(after.jobs.map((j) => j.id).sort(), [jobX, jobY].sort());
+  assert.ok(after.interviews.some((x) => x.id === ivId));
+
+  // The company can switch it off: then everyone sees every job
+  assert.equal((await hm.cmd(S.A.id, "settings.access", { restrictToHiringTeam: false })).status, 403, "admins only");
+  assert.equal((await owner.cmd(S.A.id, "settings.access", { restrictToHiringTeam: false })).status, 200);
+  const open = (await hm.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  assert.equal(open.org.seesAllJobs, true);
+  assert.ok(open.jobs.some((j) => j.id === S.jobA));
+  assert.equal((await owner.cmd(S.A.id, "settings.access", { restrictToHiringTeam: true })).status, 200);
+});
+
+test("O - a company can hide 'Recruitment powered by Ulysse'", async () => {
+  const footer = /<footer[^>]*careers-footer/;
+  const page = (u = `/careers/${S.slugA}`) => fetch(BASE + u).then((r) => r.text());
+  assert.match(await page(), footer);
+  assert.equal((await owner.cmd(S.A.id, "settings.branding", { hidePoweredBy: true })).status, 200);
+  assert.doesNotMatch(await page(), footer, "footer hidden");
+  assert.doesNotMatch(await page(`/careers/${S.slugA}/${S.jobSlugA}`), footer, "on job pages too");
+  assert.equal((await owner.cmd(S.A.id, "settings.branding", { hidePoweredBy: false })).status, 200);
+  assert.match(await page(), footer);
 });
 
 test("Authentication basics", async () => {

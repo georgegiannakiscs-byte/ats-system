@@ -6,7 +6,7 @@ import { fontFamilyFor } from "@/lib/careers-fonts";
 import { cn } from "@/lib/utils";
 import { safeCustomCss } from "@/lib/careers-css";
 
-type Org = { slug: string; name: string; logoUrl: string | null; logoDarkUrl?: string | null; branding: Record<string, unknown>; customBranding?: boolean; customCss?: string };
+type Org = { slug: string; name: string; logoUrl: string | null; logoDarkUrl?: string | null; branding: Record<string, unknown>; customBranding?: boolean; customCss?: string; hidePoweredBy?: boolean };
 
 /** The company's careers theme (defaults when the platform has switched custom branding off for it). */
 export function careersTheme(org: Org): CareersTheme {
@@ -21,6 +21,8 @@ export function CareersFrame({ org, theme, lang, children }: { org: Org; theme?:
   const css = `:root:root{${cssDeclarations(careersThemeVars(th, fontFamilyFor))}}`;
   // With an explicit theme (Quick Check page) the caller has already applied the feature flag.
   const customCss = safeCustomCss(theme ? org.customCss : (org.customBranding ?? true) ? org.branding.customCss : "");
+  // The company can hide the "powered by" line (part of custom branding, so off when the platform disabled that).
+  const hidePoweredBy = theme ? org.hidePoweredBy === true : (org.customBranding ?? true) && org.branding.hidePoweredBy === true;
   const plate = th.background ? luminance(th.background) < 0.4 : null;
   const logo = th.background && luminance(th.background) < 0.2 && org.logoDarkUrl ? org.logoDarkUrl : org.logoUrl;
   return (
@@ -37,13 +39,13 @@ export function CareersFrame({ org, theme, lang, children }: { org: Org; theme?:
         </div>
       </header>
       <main className="careers-main flex-1">{children}</main>
-      <footer className="careers-footer border-t border-border py-6">
+      {!hidePoweredBy && <footer className="careers-footer border-t border-border py-6">
         <div className="mx-auto flex max-w-4xl items-center justify-center gap-2 px-4 text-xs text-muted-foreground">
           {t.poweredBy}
           {/* The Ulysse wordmark is dark ink: on a dark page it sits on a small cream plate. */}
           <Link href="/" aria-label="Ulysse" className={cn("inline-flex", plate === null ? "dark:rounded dark:bg-[#faf8f3] dark:px-1.5 dark:py-0.5" : plate && "rounded bg-[#faf8f3] px-1.5 py-0.5")}><BrandMark height={13} /></Link>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }

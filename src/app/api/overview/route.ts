@@ -7,14 +7,15 @@ import { ROLE_LABEL, type OrgRole } from "@/server/permissions";
 /** "All my companies": per-company counts, each computed under that company's RLS context. */
 export const GET = handler(async () => {
   const user = await requireUser();
-  const orgs = await sys<{ id: string; slug: string; name: string; role: OrgRole; branding: Record<string, unknown>; status: string }>(
-    "select o.id, o.slug, o.name, o.status, m.role, o.branding from memberships m join organizations o on o.id = m.org_id where m.user_id = $1 and m.status = 'active' order by o.name",
+  const orgs = await sys<{ id: string; slug: string; name: string; role: OrgRole; branding: Record<string, unknown>; status: string; require_two_factor: boolean }>(
+    "select o.id, o.slug, o.name, o.status, m.role, o.branding, o.require_two_factor from memberships m join organizations o on o.id = m.org_id where m.user_id = $1 and m.status = 'active' order by o.name",
     [user.id],
   );
   const companies = [];
   for (const o of orgs) {
     const base = { id: o.id, slug: o.slug, name: o.name, status: o.status, role: ROLE_LABEL[o.role], logoUrl: logoUrl(o.id, o.branding), primaryColor: (o.branding.primaryColor as string) ?? "#193329" };
-    if (o.status !== "active") { companies.push({ ...base, stats: null }); continue; }
+    // No numbers for archived companies, or for ones that require two-step verification the user hasn't turned on.
+    if (o.status !== "active" || (o.require_two_factor && !user.hasTwoFactor)) { companies.push({ ...base, stats: null }); continue; }
     const stats = await tenantTx(o.id, user.id, async (q) => {
       const [r] = await q<Record<string, string>>(`select
         (select count(*) from jobs where status = 'published') as active_jobs,

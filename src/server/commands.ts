@@ -38,6 +38,8 @@ const JobInput = z.object({
   status: JobStatus.optional(),
   hiringManagerId: z.string().optional().nullable(),
   recruiterId: z.string().optional().nullable(),
+  // Members who can see this job and its candidates (besides the hiring manager and recruiter).
+  hiringTeam: z.array(z.string().uuid()).max(50).optional(),
   openings: z.number().int().min(1).max(500).optional(),
   salaryMin: z.number().int().min(0).max(10_000_000).optional().nullable(),
   salaryMax: z.number().int().min(0).max(10_000_000).optional().nullable(),
@@ -70,7 +72,7 @@ const COLS: Record<string, string> = {
 
 const JOB_COLS: Record<string, string> = {
   title: "title", department: "department", location: "location", workplace: "workplace", employmentType: "employment_type", contractType: "contract_type", seniority: "seniority", status: "status",
-  hiringManagerId: "hiring_manager_id", recruiterId: "recruiter_id", openings: "openings", salaryMin: "salary_min", salaryMax: "salary_max", currency: "currency", summary: "summary",
+  hiringManagerId: "hiring_manager_id", recruiterId: "recruiter_id", hiringTeam: "hiring_team", openings: "openings", salaryMin: "salary_min", salaryMax: "salary_max", currency: "currency", summary: "summary",
   responsibilities: "responsibilities", requirements: "requirements", niceToHave: "nice_to_have", requiredExperience: "required_experience", benefits: "benefits", skills: "skills", preferredSkills: "preferred_skills",
   screeningQuestions: "screening_questions", channels: "channels", targetHireDate: "target_hire_date",
 };
@@ -83,6 +85,13 @@ function splitName(full: string) {
 
 async function activity(q: Q, a: OrgAccess, kind: string, message: string, refs: { candidateId?: string; jobId?: string } = {}) {
   await q("insert into activities (org_id, kind, actor_id, candidate_id, job_id, message) values ($1,$2,$3,$4,$5,$6)", [a.org.id, kind, a.user.id, refs.candidateId ?? null, refs.jobId ?? null, message]);
+}
+
+/** Admins and Recruiters see every job; Hiring Managers and Interviewers only their own unless the company turned that off. */
+export async function seesAllJobs(a: OrgAccess) {
+  if (a.role === "admin" || a.role === "recruiter") return true;
+  const [o] = await sys<{ restrict_to_hiring_team: boolean }>("select restrict_to_hiring_team from organizations where id = $1", [a.org.id]);
+  return !o?.restrict_to_hiring_team;
 }
 
 async function teamIds(orgId: string) {
@@ -156,6 +165,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
       backgroundColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]), textColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]),
       headingFont: z.enum(CAREERS_FONT_KEYS), bodyFont: z.enum(CAREERS_FONT_KEYS), cornerStyle: z.enum(CORNER_STYLES), heroStyle: z.enum(HERO_STYLES),
       // CSS only (never HTML/JS), checked in careers-css.ts.
+      // Hides "Recruitment powered by Ulysse" at the bottom of the careers pages.
+      hidePoweredBy: z.boolean(),
       customCss: z.string().max(CUSTOM_CSS_MAX).superRefine((css, ctx) => { for (const m of customCssProblems(css)) ctx.addIssue({ code: "custom", message: `Custom CSS: ${m}` }); }),
     }).partial().parse(p);
     await sys("update organizations set branding = branding || $2::jsonb where id = $1", [orgId, JSON.stringify(v)]);
@@ -234,6 +245,13 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
     await audit({ scope: "org", action: v.requireTwoFactor ? "company.two_factor_required" : "company.two_factor_optional", actorId: a.user.id, orgId });
     return;
   }
+  if (type === "settings.access") {
+    need(a, "settings.manage");
+    const v = z.object({ restrictToHiringTeam: z.boolean() }).strict().parse(p);
+    await sys("update organizations set restrict_to_hiring_team = $2 where id = $1", [orgId, v.restrictToHiringTeam]);
+    await audit({ scope: "org", action: v.restrictToHiringTeam ? "company.access_hiring_team_only" : "company.access_all_jobs", actorId: a.user.id, orgId });
+    return;
+  }
   if (type === "settings.privacy") {
     need(a, "settings.manage");
     const v = z.object({
@@ -262,6 +280,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         const team = await teamIds(orgId);
         if (v.hiringManagerId && !team.includes(v.hiringManagerId)) throw new HttpError(400, "Hiring manager must be a member of this company", "validation");
         if (v.recruiterId && !team.includes(v.recruiterId)) throw new HttpError(400, "Recruiter must be a member of this company", "validation");
+        if (v.hiringTeam?.some((m) => !team.includes(m))) throw new HttpError(400, "Hiring team members must be members of this company", "validation");
+        if (v.hiringTeam) v.hiringTeam = [...new Set(v.hiringTeam)];
         if (v.salaryMin && v.salaryMax && v.salaryMin > v.salaryMax) throw new HttpError(400, "Salary range is invalid", "validation");
         const cols = ["id", "org_id", "slug", "created_by"];
         const vals: unknown[] = [id, orgId, await uniqueJobSlug(q, v.title), a.user.id];
@@ -277,6 +297,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         const v = JobInput.partial().parse(p.patch);
         const team = await teamIds(orgId);
         for (const k of ["hiringManagerId", "recruiterId"] as const) if (v[k] && !team.includes(v[k]!)) throw new HttpError(400, "Assignee must be a member of this company", "validation");
+        if (v.hiringTeam?.some((m) => !team.includes(m))) throw new HttpError(400, "Hiring team members must be members of this company", "validation");
+        if (v.hiringTeam) v.hiringTeam = [...new Set(v.hiringTeam)];
         const cols: string[] = [];
         const vals: unknown[] = [];
         jobAssignments(cols, vals, v);
@@ -348,6 +370,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         need(a, "candidates.edit");
         const id = Id.parse(p.id);
         const v = CandidatePatch.required({ fullName: true, email: true }).parse(p.input);
+        // Members who only see their own jobs add candidates to one of those jobs (otherwise they'd lose sight of them).
+        if (!p.jobId && !(await seesAllJobs(a))) throw new HttpError(400, "Add the candidate to one of your jobs", "validation");
         const exists = await q<{ id: string }>("select id from candidates where lower(email) = lower($1)", [v.email]);
         if (exists.length) throw new HttpError(409, "A candidate with this email already exists in this company", "duplicate", { candidateId: exists[0].id });
         const { first, last } = splitName(v.fullName);
@@ -437,6 +461,12 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         if (JSON.stringify(data).length > 100_000) throw new HttpError(413, "Record too large", "too_large");
         if (kind === "saved_view") data.userId = a.user.id;
         await q("insert into workspace_records (org_id, kind, id, data) values ($1,$2,$3,$4) on conflict (org_id, kind, id) do update set data = excluded.data, updated_at = now()", [orgId, kind, id, JSON.stringify(data)]);
+        // Interviewers join the job's hiring team, so they can see the candidate they interview.
+        if (kind === "interview" && typeof data.jobId === "string" && Array.isArray(data.interviewerIds)) {
+          const team = await teamIds(orgId);
+          const add = data.interviewerIds.filter((x): x is string => typeof x === "string" && team.includes(x));
+          if (add.length) await q("update jobs set hiring_team = array(select distinct unnest(hiring_team || $2::uuid[])) where id = $1", [data.jobId, add]);
+        }
         if (kind === "interview" && p.activity) await activity(q, a, "interview_scheduled", Str(300).parse(p.activity), { candidateId: data.candidateId as string, jobId: data.jobId as string });
         return;
       }

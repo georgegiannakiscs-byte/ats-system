@@ -65,6 +65,8 @@ export interface Job {
   status: JobStatus;
   hiringManagerId: ID;
   recruiterId: ID;
+  /** Other members who can see this job and its candidates (interviewers etc.). */
+  hiringTeam?: ID[];
   openings: number;
   salaryMin?: number;
   salaryMax?: number;
@@ -358,6 +360,8 @@ export interface OrgBranding {
   heroStyle?: HeroStyle;
   /** Company's own CSS for its careers pages (no HTML/JS, no url()). */
   customCss?: string;
+  /** Hide "Recruitment powered by Ulysse" at the bottom of the careers pages. */
+  hidePoweredBy?: boolean;
 }
 
 export interface WorkspaceOrg {
@@ -376,6 +380,10 @@ export interface WorkspaceOrg {
   linkedinFeed: { enabled: boolean; companyId: string; posterEmail: string; country: string };
   /** Everyone must use two-step verification to open this workspace (Settings → Team members). */
   requireTwoFactor: boolean;
+  /** Hiring Managers and Interviewers see only the jobs whose hiring team they are on. */
+  restrictToHiringTeam: boolean;
+  /** Whether the current member sees every job (Admin, Recruiter, or scoping off). */
+  seesAllJobs: boolean;
 }
 
 export interface PendingInvitation {
