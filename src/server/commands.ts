@@ -7,6 +7,7 @@ import { HttpError } from "./http";
 import { audit, slugify, type OrgAccess } from "./org";
 import { can, ROLE_FROM_LABEL, type Permission } from "./permissions";
 import { runAssessmentCommand } from "./assessment-commands";
+import { eraseCandidate } from "./erasure";
 
 /*
  * Every write from the workspace UI goes through here. Each command:
@@ -200,6 +201,24 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
     if (v.userId === a.user.id) throw new HttpError(400, "You can't remove yourself", "validation");
     await sys("update memberships set status = 'removed' where org_id = $1 and user_id = $2", [orgId, v.userId]);
     await audit({ scope: "org", action: "member.removed", actorId: a.user.id, orgId, targetType: "user", targetId: v.userId });
+    return;
+  }
+
+  if (type === "candidates.erase") {
+    need(a, "candidates.delete");
+    const v = z.object({ id: Id, reason: z.string().trim().min(3, "Give a reason").max(300) }).parse(p);
+    if (!(await eraseCandidate(orgId, a.user.id, v.id, v.reason))) throw new HttpError(404, "Candidate not found", "not_found");
+    return;
+  }
+  if (type === "settings.privacy") {
+    need(a, "settings.manage");
+    const v = z.object({
+      retentionMonths: z.union([z.number().int().min(1).max(120), z.null()]),
+      policyUrl: z.union([z.string().trim().url().max(500).refine((u) => /^https:\/\//.test(u), "Use an https:// address"), z.literal("")]),
+      contactEmail: z.union([z.string().trim().toLowerCase().email().max(254), z.literal("")]),
+    }).parse(p);
+    await sys("update organizations set privacy = $2::jsonb where id = $1", [orgId, JSON.stringify(v)]);
+    await audit({ scope: "org", action: "company.privacy_updated", actorId: a.user.id, orgId, metadata: { retentionMonths: v.retentionMonths } });
     return;
   }
 

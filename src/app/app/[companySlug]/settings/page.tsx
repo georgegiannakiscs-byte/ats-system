@@ -21,6 +21,7 @@ import type { CompanyProfile, EmailTemplate, NotificationPrefs, Role, StageConfi
 import { cn, relativeTime, uid } from "@/lib/utils";
 import { CAREERS_FONTS, DEFAULT_ACCENT, DEFAULT_PRIMARY, contrastWarnings, isHex, luminance, onColor, resolveCareersTheme, type CareersFontKey, type CornerStyle, type HeroStyle } from "@/lib/careers-theme";
 import { CareersPreview } from "@/components/settings/careers-preview";
+import { PrivacySettings } from "@/components/settings/privacy";
 import { CAREERS_CSS_HOOKS, CUSTOM_CSS_MAX, customCssProblems } from "@/lib/careers-css";
 
 const SECTIONS = [
@@ -32,6 +33,7 @@ const SECTIONS = [
   { id: "templates", label: "Email templates", icon: Mail },
   { id: "cv-builder", label: "CV Builder", icon: FileText },
   { id: "ai", label: "AI features", icon: Sparkles },
+  { id: "privacy", label: "Data & privacy", icon: Shield },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "integrations", label: "Integrations", icon: Plug },
@@ -79,6 +81,7 @@ function Settings() {
             roles: "What each role can see and do.",
             pipeline: "Name your stages and set target times.",
             templates: "Reusable messages with personalisation variables.",
+            privacy: "How long candidate data is kept, and what candidates are told (GDPR).",
             notifications: "Choose what you hear about, and when.",
             "cv-builder": "Templates and photo handling for candidates who build their CV on your job pages.",
             ai: "Which Claude-powered helpers your company uses. People always make the decisions.",
@@ -94,6 +97,7 @@ function Settings() {
         {section === "templates" && <TemplateSettings />}
         {section === "cv-builder" && <CvBuilderSettings />}
         {section === "ai" && <AiSettings />}
+        {section === "privacy" && <PrivacySettings />}
         {section === "notifications" && <NotificationSettings />}
         {section === "appearance" && <AppearanceSettings />}
         {section === "integrations" && <IntegrationsSettings />}
@@ -435,6 +439,7 @@ function RolesSettings() {
     { label: "View Quick Check responses", roles: [true, true, true, false] },
     { label: "Create and edit jobs", roles: [true, true, false, false] },
     { label: "Create, approve and assign Quick Check questions", roles: [true, true, false, false] },
+    { label: "Export or delete a candidate's data (GDPR)", roles: [true, true, false, false] },
     { label: "Manage team, branding, settings and integrations", roles: [true, false, false, false] },
   ];
   const cell = (v: boolean) => v ? <Check className="mx-auto size-4 text-success" aria-label="Allowed" /> : <Minus className="mx-auto size-4 text-subtle-foreground" aria-label="Not allowed" />;

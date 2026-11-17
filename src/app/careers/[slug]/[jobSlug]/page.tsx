@@ -101,7 +101,7 @@ export default async function JobPage({ params, searchParams }: Props) {
           <Section title={t.benefits} items={lines(job.benefits)} />
         </article>
         <aside id="apply" className="careers-apply lg:sticky lg:top-6 lg:self-start">
-          <Suspense><ApplicationForm lang={lang} orgSlug={org.slug} jobSlug={job.slug} jobTitle={job.title} companyName={org.name} logoUrl={org.logoUrl} maxMb={mb} questions={job.screening_questions ?? []} builder={builder} jobSkills={[...(job.skills ?? []), ...(job.preferred_skills ?? [])]} /></Suspense>
+          <Suspense><ApplicationForm lang={lang} orgSlug={org.slug} jobSlug={job.slug} jobTitle={job.title} companyName={org.name} logoUrl={org.logoUrl} maxMb={mb} questions={job.screening_questions ?? []} builder={builder} jobSkills={[...(job.skills ?? []), ...(job.preferred_skills ?? [])]} privacy={org.privacy} /></Suspense>
         </aside>
       </div>
     </CareersFrame>

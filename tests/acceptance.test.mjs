@@ -510,6 +510,73 @@ test("I2 - LinkedIn Basic Jobs XML feed (opt-in, secret address, LinkedIn's form
   assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: shortJob, patch: { status: "closed" } })).status, 200);
 });
 
+test("K - GDPR: privacy settings, data export, erasure on request and automatic retention", async () => {
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  const asSystem = async (sql, params) => { await db.query("begin"); await db.query("select set_config('app.bypass', 'on', true)"); try { return await db.query(sql, params); } finally { await db.query("commit"); } };
+  try {
+    // Settings, shown to candidates
+    const privacy = (v) => owner.cmd(S.A.id, "settings.privacy", v);
+    assert.equal((await privacy({ retentionMonths: 6, policyUrl: "http://a.example/privacy", contactEmail: "" })).status, 400, "https only");
+    assert.equal((await privacy({ retentionMonths: 0, policyUrl: "", contactEmail: "" })).status, 400);
+    assert.equal((await privacy({ retentionMonths: 6, policyUrl: "https://www.alpha.example/privacy", contactEmail: "privacy@alpha.example" })).status, 200);
+    const page = await (await fetch(`${BASE}/careers/${S.slugA}/${S.jobSlugA}`)).text();
+    assert.ok(page.includes("kept for <!-- -->6<!-- --> months") || page.includes("kept for 6 months"), "retention period on the application form");
+    assert.ok(page.includes("https://www.alpha.example/privacy") && page.includes("mailto:privacy@alpha.example"));
+    assert.equal((await other.get(`/api/orgs/${S.A.id}/privacy`)).status, 403);
+    // A candidate who applied with a CV
+    const app = await apply(S.slugA, S.jobSlugA, { fullName: "Gina Gdpr", email: `gina-${run}@example.com` });
+    assert.equal(app.status, 201);
+    const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+    const cand = snap.candidates.find((c) => c.email === `gina-${run}@example.com`);
+    const keys = (await asSystem("select storage_key from cv_documents where candidate_id = $1", [cand.id])).rows.map((r) => r.storage_key);
+    assert.equal(keys.length, 1);
+    // Export (access request)
+    assert.equal((await other.get(`/api/orgs/${S.A.id}/candidates/${cand.id}/export`)).status, 403, "interviewers can't export");
+    const exp = await owner.get(`/api/orgs/${S.A.id}/candidates/${cand.id}/export`);
+    assert.equal(exp.status, 200);
+    const data = typeof exp.data === "string" ? JSON.parse(exp.data) : exp.data;
+    assert.equal(data.candidate.email, `gina-${run}@example.com`);
+    assert.equal(data.applications.length, 1);
+    assert.equal(data.files.length, 1);
+    // Erasure on request
+    assert.equal((await other.cmd(S.A.id, "candidates.erase", { id: cand.id, reason: "asked" })).status, 403);
+    assert.equal((await owner.cmd(S.A.id, "candidates.erase", { id: cand.id, reason: "" })).status, 400, "reason required");
+    assert.equal((await owner.cmd(S.A.id, "candidates.erase", { id: cand.id, reason: "Candidate asked us to delete their data" })).status, 200);
+    for (const t of ["candidates", "applications", "cv_documents", "notes"]) assert.equal((await asSystem(`select count(*)::int n from ${t} where ${t === "candidates" ? "id" : "candidate_id"} = $1`, [cand.id])).rows[0].n, 0, t);
+    assert.equal((await asSystem("select count(*)::int n from activities where candidate_id = $1", [cand.id])).rows[0].n, 0, "activity lines");
+    assert.equal((await asSystem("select count(*)::int n from email_outbox where lower(to_email) = $1", [`gina-${run}@example.com`])).rows[0].n, 0, "emails to them");
+    assert.equal((await asSystem("select count(*)::int n from stored_objects where key = any($1)", [keys])).rows[0].n, 0, "files in the database");
+    if (process.env.STORAGE_DIR) assert.equal(fs.existsSync(path.join(process.env.STORAGE_DIR, keys[0])), false, "file on disk");
+    const log = (await asSystem("select metadata from audit_logs where action = 'candidate.erased' and target_id = $1", [cand.id])).rows;
+    assert.equal(log.length, 1);
+    assert.ok(!JSON.stringify(log[0].metadata).includes("gina-"), "the audit log keeps no personal data");
+    // Automatic retention: closed applications with no activity for longer than the period
+    const old = await apply(S.slugA, S.jobSlugA, { fullName: "Otto Old", email: `otto-${run}@example.com` });
+    const recent = await apply(S.slugA, S.jobSlugA, { fullName: "Rita Recent", email: `rita-${run}@example.com` });
+    assert.equal(old.status, 201); assert.equal(recent.status, 201);
+    const snap2 = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+    const ottoId = snap2.candidates.find((c) => c.email === `otto-${run}@example.com`).id;
+    const ritaId = snap2.candidates.find((c) => c.email === `rita-${run}@example.com`).id;
+    for (const cid of [ottoId, ritaId]) {
+      const appId = snap2.applications.find((x) => x.candidateId === cid).id;
+      assert.equal((await owner.cmd(S.A.id, "applications.reject", { id: appId, reason: "Not a fit" })).status, 200);
+    }
+    await asSystem("update candidates set created_at = now() - interval '7 months', updated_at = now() - interval '7 months' where id = $1", [ottoId]);
+    await asSystem("update applications set applied_at = now() - interval '7 months', stage_entered_at = now() - interval '7 months' where candidate_id = $1", [ottoId]);
+    assert.ok((await owner.get(`/api/orgs/${S.A.id}/privacy`)).data.dueNow >= 1, "shown as due before it runs");
+    assert.equal((await other.post("/api/admin/retention")).status, 403);
+    const run1 = await owner.post("/api/admin/retention");
+    assert.equal(run1.status, 200);
+    assert.ok(run1.data.erased >= 1);
+    assert.equal((await asSystem("select count(*)::int n from candidates where id = $1", [ottoId])).rows[0].n, 0, "expired candidate deleted");
+    assert.equal((await asSystem("select count(*)::int n from candidates where id = $1", [ritaId])).rows[0].n, 1, "recent candidate kept");
+  } finally {
+    await owner.cmd(S.A.id, "settings.privacy", { retentionMonths: null, policyUrl: "", contactEmail: "" });
+    await db.end();
+  }
+});
+
 test("Authentication basics", async () => {
   const anon = client();
   assert.equal((await anon.get("/api/me")).status, 401);

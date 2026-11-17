@@ -134,7 +134,7 @@ AI Copilot, workflow builder, offer management, e-signatures, careers page build
 | Security headers (HSTS, nosniff, frame-ancestors, referrer, permissions) | ✅ | |
 | Archive / permanent deletion of a company | ✅ | Admin → Companies → company: **Archive** (no access, careers page offline, data kept, **Restore** any time) and **Delete permanently** (type the name, a reason and your password). Deletion removes all company data and files (CVs, CV Builder drafts and photos, logos; on disk or in the database), keeps user accounts, and is recorded in the audit log. Tested with both storage drivers. |
 | Audit logging | ✅ | Company creation/suspension, invitations, role changes, logo & branding, CV access, platform settings, features, recovery links. |
-| Data export / deletion / retention workflows | ⬜ ⚖️ | Retention default is configurable at platform level; enforcement job not built. |
+| Data export / deletion / retention (GDPR) | ✅ | **Settings → Data & privacy:** retention period per company (or the platform default), privacy policy link and data-request email, shown on the application form with the retention period. **Automatic deletion** runs 2 minutes after start and every 6 hours (`RETENTION_JOB=off` disables it): candidates with no open application and no activity for the period are deleted with their CVs/photos (rows and files), notes, evaluations, Quick Check data, activity lines and emails to them; the audit log records counts only. **Candidate profile → Export data** (JSON) and **Delete candidate and data** (reason required, audited without personal data), for Admin and Recruiter. Admins can run it now (`POST /api/admin/retention`). Tested, including the scheduled run. Talent leads (`/talent`) aren't covered by the automatic deletion yet. |
 | Language | ✅ | English only. The Greek option was removed everywhere (careers, application form, /talent, Quick Check, CV Builder, settings); `?lang=el` shows English. The Greek texts stay unused in `src/lib/i18n`, so the option can come back later. CVs and answers can still contain Greek text. |
 | Public API & webhooks | ⬜ | |
 | Background job queue | ⬜ | Emails send inline today; move to a queue before scale. |
@@ -153,7 +153,7 @@ Code review of authentication, sessions, CSRF, file access, tenant isolation and
 | Anyone with the URL could create an account | Medium | ✅ Fixed: optional invitation-only sign-up. |
 | `?next=/\evil.example` after sign-in could redirect to another site (open redirect) | Medium | ✅ Fixed and commented. |
 | Unknown email answered faster than a wrong password (account enumeration by timing) | Low | ✅ Fixed: a dummy hash is checked. |
-| Per-IP rate limits trust the client-supplied `X-Forwarded-For` | Medium | 🔶 Configurable (`CLIENT_IP_HEADER`, `TRUSTED_PROXY_HOPS`); the default keeps the old behaviour until the hosting's proxy headers are confirmed. Per-account sign-in limits are unaffected. |
+| Per-IP rate limits trust the client-supplied `X-Forwarded-For` | Medium | 🔶 Configurable (`CLIENT_IP_HEADER`, `TRUSTED_PROXY_HOPS`). Admin → Integrations now shows which headers the hosting's proxy sends, to pick the right one (likely `cf-connecting-ip` on Render, to be confirmed on the live site). Per-account sign-in limits are unaffected. |
 | Rate-limit buckets could grow without bound | Low | ✅ Expired buckets pruned. |
 | No password change for signed-in users | Low | ✅ Added. |
 | Sign-up says when an email already has an account | Low | Accepted (needed for a clear sign-up flow). |
