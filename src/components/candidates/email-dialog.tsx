@@ -8,7 +8,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader } from "@
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/controls";
-import { useDb } from "@/lib/api/store";
+import { send, useDb } from "@/lib/api/store";
 import { api } from "@/lib/api";
 import type { ID } from "@/lib/types";
 import { fullName, primaryApplication } from "@/lib/api/selectors";
@@ -42,7 +42,8 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
   const [subject, setSubject] = React.useState("");
   const [body, setBody] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
-  const connected = db.integrations.gmail === "connected" || db.integrations.outlook === "connected" || db.integrations.smtp === "connected";
+  const canSend = db.emailDelivery;
+  const [sending, setSending] = React.useState(false);
 
   const applyTemplate = (id: string) => {
     setTemplateId(id);
@@ -58,8 +59,17 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
     e.preventDefault();
     setSubmitted(true);
     if (errors.subject || errors.body) return;
+    if (canSend) {
+      setSending(true);
+      try {
+        await send("emails.send", { candidateId, subject, body });
+        toast.success(`Email sent to ${c.email}`, { description: "Replies come to your own email address." });
+        onClose();
+      } catch (err) { toast.error((err as Error).message); setSending(false); }
+      return;
+    }
     await api.logEmailDraft(candidateId, subject);
-    toast("Draft saved to the timeline", { description: "No email was sent - email delivery is not configured for this company yet." });
+    toast("Draft saved to the timeline", { description: "No email was sent - email delivery is not set up on this platform yet." });
     onClose();
   };
 
@@ -67,13 +77,16 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
     <form onSubmit={save} noValidate className="flex min-h-0 flex-1 flex-col">
       <DialogHeader icon={<Mail />} title={`Email ${fullName(c)}`} description={c.email} />
       <DialogBody className="space-y-4">
-        <div className="flex gap-2 rounded-lg border border-dashed border-border-strong bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
-          <span>
-            {connected ? "Sending from Ulysse is not enabled yet, so" : "No email service is connected, so"} messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft on the timeline.{" "}
-            <Link href={orgPath("/settings?section=integrations")} onClick={onClose} className="text-brand underline-offset-2 hover:underline">Integrations</Link>
-          </span>
-        </div>
+        {canSend ? (
+          <p className="text-xs text-muted-foreground">Sent from {db.company.name} through Ulysse. Replies go to your email address ({me.email}).</p>
+        ) : (
+          <div className="flex gap-2 rounded-lg border border-dashed border-border-strong bg-surface-2/60 px-3 py-2 text-xs text-muted-foreground">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-warning" />
+            <span>Email delivery isn&apos;t set up on this platform yet, so messages are <strong className="font-medium text-foreground">not sent</strong>. You can compose and log a draft on the timeline.{" "}
+              <Link href={orgPath("/settings?section=integrations")} onClick={onClose} className="text-brand underline-offset-2 hover:underline">Integrations</Link>
+            </span>
+          </div>
+        )}
         <Field label="Template">
           <Select value={templateId} onValueChange={applyTemplate} placeholder="Start from a template (optional)" options={db.emailTemplates.map((t) => ({ value: t.id, label: t.name, hint: t.category }))} />
         </Field>
@@ -86,7 +99,7 @@ function EmailForm({ candidateId, onClose }: { candidateId: ID; onClose: () => v
       </DialogBody>
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>Discard</Button>
-        <Button type="submit">Save draft</Button>
+        <Button type="submit" disabled={sending}>{canSend ? (sending ? "Sending…" : "Send email") : "Save draft"}</Button>
       </DialogFooter>
     </form>
   );

@@ -11,7 +11,7 @@ import { EmptyState } from "./empty-state";
 
 const icons: Record<ActivityKind, typeof Inbox> = {
   applied: Inbox, stage_changed: ArrowRightLeft, note_added: MessageSquare, interview_scheduled: CalendarPlus, scorecard_submitted: ClipboardCheck, rejected: UserX, hired: PartyPopper,
-  job_created: BriefcaseBusiness, job_updated: Pencil, job_published: Send, task_completed: CircleCheck, candidate_updated: Pencil, email_drafted: Mail, talent_pool: Library,
+  job_created: BriefcaseBusiness, job_updated: Pencil, job_published: Send, task_completed: CircleCheck, candidate_updated: Pencil, email_drafted: Mail, email_sent: Mail, talent_pool: Library,
 };
 
 export function ActivityFeed({ filter, limit = 40, showContext = false }: { filter?: { candidateId?: ID; jobId?: ID }; limit?: number; showContext?: boolean }) {

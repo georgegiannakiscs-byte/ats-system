@@ -71,6 +71,7 @@ export function LoginForm() {
     >
       <Field label="Email" htmlFor="email"><Input id="email" type="email" autoComplete="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
       <Field label="Password" htmlFor="password"><Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
+      <p className="-mt-2 text-right text-xs"><Link href="/forgot" className="text-muted-foreground hover:text-foreground hover:underline">Forgot your password?</Link></p>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" size="lg" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
     </form>
@@ -160,5 +161,32 @@ export function InviteAccept({ token }: { token: string }) {
         }}>{busy ? "Joining…" : `Join ${info.companyName}`}</Button>
       )}
     </div>
+  );
+}
+
+export function ForgotForm() {
+  const [email, setEmail] = React.useState("");
+  const [state, setState] = React.useState<"idle" | "busy" | "sent" | "not_configured">("idle");
+  const [error, setError] = React.useState<string>();
+  if (state === "sent") return <p role="status" className="text-sm">If an account exists for <strong>{email}</strong>, we&apos;ve emailed a link to choose a new password. It works once and expires in 1 hour. Check your spam folder too.</p>;
+  if (state === "not_configured") return <p role="status" className="text-sm">Email isn&apos;t set up on this platform yet, so we can&apos;t send a reset link. Ask your Ulysse administrator for an access recovery link.</p>;
+  return (
+    <form
+      noValidate
+      className="space-y-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Enter your email address");
+        setState("busy"); setError(undefined);
+        try {
+          const r = await apiFetch<{ delivery: string }>("/api/auth/forgot", { method: "POST", body: JSON.stringify({ email: email.trim() }) });
+          setState(r.delivery === "not_configured" ? "not_configured" : "sent");
+        } catch (err) { setError((err as ApiError).message); setState("idle"); }
+      }}
+    >
+      <Field label="Email" htmlFor="email"><Input id="email" type="email" autoComplete="email" autoFocus value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <Button type="submit" className="w-full" size="lg" disabled={state === "busy"}>{state === "busy" ? "Sending…" : "Email me a link"}</Button>
+    </form>
   );
 }

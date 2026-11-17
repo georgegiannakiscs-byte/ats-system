@@ -1,4 +1,6 @@
 import "server-only";
+import { rateLimit } from "./security";
+import { mailConfigured, sendMail } from "./mail";
 import { CAREERS_FONT_KEYS, CORNER_STYLES, HERO_STYLES } from "@/lib/careers-theme";
 import { CUSTOM_CSS_MAX, customCssProblems } from "@/lib/careers-css";
 import { z } from "zod";
@@ -208,6 +210,19 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
     need(a, "candidates.delete");
     const v = z.object({ id: Id, reason: z.string().trim().min(3, "Give a reason").max(300) }).parse(p);
     if (!(await eraseCandidate(orgId, a.user.id, v.id, v.reason))) throw new HttpError(404, "Candidate not found", "not_found");
+    return;
+  }
+  if (type === "emails.send") {
+    need(a, "pipeline.move");
+    const v = z.object({ candidateId: Id, subject: Str(200).min(1), body: Str(10000).min(5) }).parse(p);
+    if (!mailConfigured()) throw new HttpError(409, "Email delivery isn't set up on this platform yet", "email_not_configured");
+    if (!rateLimit(`email-send:${a.user.id}`, 60, 60 * 60_000).ok) throw new HttpError(429, "Too many emails in the last hour", "rate_limited");
+    const [c] = await tenantTx(orgId, a.user.id, (q) => q<{ email: string; full_name: string }>("select email, full_name from candidates where id = $1", [v.candidateId]));
+    if (!c) throw new HttpError(404, "Candidate not found", "not_found");
+    // From "<Company>" (the platform's verified address); replies go straight to the person who wrote.
+    const delivery = await sendMail(orgId, c.email, v.subject, v.body, "candidate_message", undefined, { replyTo: a.user.email });
+    if (delivery !== "sent") throw new HttpError(502, "The email couldn't be sent. Try again later.", "email_failed");
+    await tenantTx(orgId, a.user.id, (q) => activity(q, a, "email_sent", `emailed ${c.full_name}: “${v.subject}”`, { candidateId: v.candidateId }));
     return;
   }
   if (type === "settings.privacy") {

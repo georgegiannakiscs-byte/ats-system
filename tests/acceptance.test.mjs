@@ -571,10 +571,58 @@ test("K - GDPR: privacy settings, data export, erasure on request and automatic 
     assert.ok(run1.data.erased >= 1);
     assert.equal((await asSystem("select count(*)::int n from candidates where id = $1", [ottoId])).rows[0].n, 0, "expired candidate deleted");
     assert.equal((await asSystem("select count(*)::int n from candidates where id = $1", [ritaId])).rows[0].n, 1, "recent candidate kept");
+    // CV Builder drafts and talent leads, which belong to no candidate record
+    await asSystem("insert into cv_drafts (org_id, job_id, token_hash, template, data, storage_key, size_bytes, sha256, expires_at) values ($1, $2, $3, 'minimal', '{}', $4, 1, 'x', now() - interval '3 days')", [S.A.id, S.jobA, `t-${run}`, `cv-drafts/${S.A.id}/never-${run}.pdf`]);
+    await asSystem(`insert into talent_leads (full_name, email, role, consent_at, cv_key, cv_file_name, cv_mime, cv_size, cv_sha256, submission_key, created_at, updated_at)
+      values ('Old Lead', $1, 'Analyst', now() - interval '30 months', $2, 'cv.pdf', 'application/pdf', 1, 'x', $3, now() - interval '30 months', now() - interval '30 months')`, [`oldlead-${run}@example.com`, `talent/old-${run}.pdf`, `sk-${run}`]);
+    assert.equal((await owner.post("/api/admin/retention")).status, 200);
+    assert.equal((await asSystem("select count(*)::int n from cv_drafts where token_hash = $1", [`t-${run}`])).rows[0].n, 0, "expired unused draft removed");
+    assert.equal((await asSystem("select count(*)::int n from cv_drafts where consumed_at is not null")).rows[0].n, 0, "used drafts keep no copy of the CV data");
+    assert.equal((await asSystem("select count(*)::int n from talent_leads where email = $1", [`oldlead-${run}@example.com`])).rows[0].n, 0, "expired talent lead removed");
   } finally {
     await owner.cmd(S.A.id, "settings.privacy", { retentionMonths: null, policyUrl: "", contactEmail: "" });
     await db.end();
   }
+});
+
+test("L - email: candidate messages, forgot password, sender and reply-to", async () => {
+  const MAILS = process.env.MAIL_CATCHER_DIR; // set when the server runs with SMTP to a local catcher
+  const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  const cand = snap.candidates[0];
+  const anon = client();
+  if (!MAILS) {
+    assert.equal(snap.emailDelivery, false);
+    assert.equal((await owner.cmd(S.A.id, "emails.send", { candidateId: cand.id, subject: "Hello", body: "Hello there" })).status, 409, "not sent without email delivery");
+    assert.equal((await anon.post("/api/auth/forgot", { email: `owner-${run}@test.example` })).data.delivery, "not_configured");
+    return;
+  }
+  const read = () => fs.readdirSync(MAILS).filter((f) => f.endsWith(".json")).map((f) => JSON.parse(fs.readFileSync(path.join(MAILS, f), "utf8")));
+  const before = read().length;
+  assert.equal(snap.emailDelivery, true);
+  assert.equal((await other.cmd(S.A.id, "emails.send", { candidateId: cand.id, subject: "Hi", body: "Hello there" })).status, 403, "interviewers can't email candidates");
+  assert.equal((await owner.cmd(S.A.id, "emails.send", { candidateId: cand.id, subject: "Next steps", body: "Hello, could we talk on Monday?" })).status, 200);
+  // Forgot password: same answer whether the account exists or not; only real accounts get an email.
+  const known = await anon.post("/api/auth/forgot", { email: `owner-${run}@test.example` });
+  const unknown = await anon.post("/api/auth/forgot", { email: `nobody-${run}@test.example` });
+  assert.deepEqual(known.data, unknown.data);
+  await new Promise((r) => setTimeout(r, 500));
+  const mails = read().slice(before);
+  const msg = mails.find((m) => m.subject === "Next steps");
+  assert.ok(msg, "candidate email delivered");
+  assert.equal(msg.to, cand.email);
+  assert.match(msg.from, new RegExp(`"?${snap.org.name}"?`), "sent in the company's name");
+  assert.equal(msg.headers["reply-to"], `owner-${run}@test.example`, "replies go to the sender");
+  const reset = mails.find((m) => m.subject === "Reset your Ulysse password");
+  assert.ok(reset && reset.to === `owner-${run}@test.example`);
+  assert.ok(!mails.some((m) => m.to === `nobody-${run}@test.example`), "no email for unknown accounts");
+  const link = reset.text.match(/\/reset\/([A-Za-z0-9_-]+)/)[1];
+  assert.equal((await anon.post("/api/auth/reset", { token: link, password: "a-brand-new-pass-9" })).status, 200);
+  assert.equal((await anon.post("/api/auth/reset", { token: link, password: "another-new-pass-9" })).status, 400, "single use");
+  const relog = client();
+  assert.equal((await relog.post("/api/auth/login", { email: `owner-${run}@test.example`, password: "a-brand-new-pass-9" })).status, 200);
+  // keep the rest of the suite working with the original password
+  assert.equal((await relog.post("/api/me/password", { currentPassword: "a-brand-new-pass-9", newPassword: "correct-horse-battery-1" })).status, 200);
+  assert.equal((await owner.post("/api/auth/login", { email: `owner-${run}@test.example`, password: "correct-horse-battery-1" })).status, 200);
 });
 
 test("Authentication basics", async () => {

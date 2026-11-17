@@ -1,4 +1,5 @@
 import "server-only";
+import { mailConfigured } from "./mail";
 import { sys, tenantTx, type Q } from "./db";
 import { HttpError } from "./http";
 import { ROLE_LABEL, permissionsFor, type OrgRole } from "./permissions";
@@ -148,6 +149,7 @@ export async function buildSnapshot(access: OrgAccess) {
     notifications: recs("notification").filter((n) => (n as { userId?: string }).userId === user.id).sort((a, b) => String((b as { createdAt?: string }).createdAt).localeCompare(String((a as { createdAt?: string }).createdAt))).slice(0, 50),
     integrations: Object.fromEntries(["linkedin", "google_calendar", "outlook", "gmail", "smtp"].map((p) => [p, integrations.find((i) => i.provider === p)?.status ?? "not_configured"])),
     notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS, ...orgRow.notification_prefs },
+    emailDelivery: mailConfigured(),
   };
 }
 
