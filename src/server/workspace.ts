@@ -49,12 +49,12 @@ const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOStrin
 /** Builds the workspace payload consumed by the frontend store - one company only. */
 export async function buildSnapshot(access: OrgAccess) {
   const { org, user, role } = access;
-  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string; linkedin_feed: Record<string, unknown> }>(
-    "select name, profile, branding, onboarding, notification_prefs, linkedin_feed from organizations where id = $1",
+  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string; linkedin_feed: Record<string, unknown>; require_two_factor: boolean }>(
+    "select name, profile, branding, onboarding, notification_prefs, linkedin_feed, require_two_factor from organizations where id = $1",
     [org.id],
   );
-  const team = await sys<{ id: string; name: string; email: string; role: OrgRole; title: string | null }>(
-    "select u.id, u.name, u.email, m.role, m.title from memberships m join users u on u.id = m.user_id where m.org_id = $1 and m.status = 'active' order by m.created_at",
+  const team = await sys<{ id: string; name: string; email: string; role: OrgRole; title: string | null; has_2fa: boolean }>(
+    "select u.id, u.name, u.email, m.role, m.title, u.totp_enabled_at is not null as has_2fa from memberships m join users u on u.id = m.user_id where m.org_id = $1 and m.status = 'active' order by m.created_at",
     [org.id],
   );
   const invitations = role === "admin"
@@ -95,6 +95,7 @@ export async function buildSnapshot(access: OrgAccess) {
       logoDarkUrl: logoUrl(org.id, orgRow.branding, "dark"),
       onboarding: orgRow.onboarding,
       linkedinFeed: { enabled: false, companyId: "", posterEmail: "", country: "GR", ...orgRow.linkedin_feed },
+      requireTwoFactor: orgRow.require_two_factor,
       features: Object.fromEntries(features.map((f) => [f.key, f.enabled])),
     },
     company: {
@@ -114,7 +115,7 @@ export async function buildSnapshot(access: OrgAccess) {
       ...orgRow.profile,
     },
     stages: data.stages.map((s) => ({ id: s.stage_key, label: s.label, description: s.description, slaDays: s.sla_days })),
-    team: team.map((m) => ({ id: m.id, name: m.name, email: m.email, title: m.title || ROLE_LABEL[m.role], role: ROLE_LABEL[m.role], department: "", hue: hueFor(m.id), status: "active" })),
+    team: team.map((m) => ({ id: m.id, name: m.name, email: m.email, title: m.title || ROLE_LABEL[m.role], role: ROLE_LABEL[m.role], department: "", hue: hueFor(m.id), status: "active", twoFactor: m.has_2fa })),
     invitations: invitations.map((i) => ({ id: i.id, email: i.email, role: ROLE_LABEL[i.role], createdAt: iso(i.created_at), expiresAt: iso(i.expires_at) })),
     jobs: data.jobs.map((j) => ({
       id: j.id, slug: j.slug, title: j.title, department: j.department, location: j.location, workplace: j.workplace, employmentType: j.employment_type, contractType: j.contract_type, seniority: j.seniority, status: j.status,

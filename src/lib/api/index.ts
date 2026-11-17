@@ -286,6 +286,11 @@ const settings = {
     setState((db) => ({ ...db, org: { ...db.org, linkedinFeed: v } }));
     return true;
   },
+  async setRequireTwoFactor(requireTwoFactor: boolean) {
+    await send("settings.security", { requireTwoFactor });
+    setState((db) => ({ ...db, org: { ...db.org, requireTwoFactor } }));
+    return true;
+  },
   async updateBranding(patch: Partial<OrgBranding>) {
     setState((db) => ({ ...db, org: { ...db.org, branding: { ...db.org.branding, ...patch } } }));
     await send("settings.branding", patch as Record<string, unknown>);

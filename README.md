@@ -12,7 +12,7 @@ See **[PROGRESS.md](PROGRESS.md)** for the honest status of every feature.
    - Windows may show "Windows protected your PC": click **More info → Run anyway**.
    - macOS blocks it the first time because it was downloaded from the internet ("Not Opened"): click **Done**, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to `Start-Ulysse-Mac.command`, and confirm. Later runs open with a plain double-click.
 
-The first start builds the app, which takes a few minutes. When it's ready, the browser opens http://localhost:3000. Sign in with `demo@example.com` / `Ulysse-demo-2026`, which is a platform admin and admin of the demo company "Aegean Analytics". The launcher writes a local `.env` with a random `APP_SECRET`, runs `docker compose up -d --build` and adds demo data with `docker compose --profile demo run --rm seed`. Data stays in Docker volumes between runs. To stop: Docker Desktop → Containers → `ats-system` → Stop. This is for trying it out on your own machine only: don't seed demo data on a public server.
+The first start builds the app, which takes a few minutes. When it's ready, the browser opens http://localhost:3000. Sign in with `demo@example.com` / `Ulysse-demo-2026`, which is a platform admin and admin of the demo company "Aegean Analytics". Platform administration asks you to turn on two-step verification first (any authenticator app). The launcher writes a local `.env` with a random `APP_SECRET`, runs `docker compose up -d --build` and adds demo data with `docker compose --profile demo run --rm seed`. Data stays in Docker volumes between runs. To stop: Docker Desktop → Containers → `ats-system` → Stop. This is for trying it out on your own machine only: don't seed demo data on a public server.
 
 ## Quick start (local, for development)
 
@@ -58,7 +58,7 @@ Ulysse is a standard Docker image plus PostgreSQL, so the IT team can run it on 
 3. **HTTPS and IPs:** put it behind the company's reverse proxy or load balancer, which handles HTTPS. Then tell Ulysse which IP to trust for rate limiting:
    - `TRUSTED_PROXY_HOPS=1` for one proxy in front, or
    - `CLIENT_IP_HEADER=cf-connecting-ip` (or the edge's own header) behind Cloudflare or a similar edge.
-4. **Lock it down:** after the first admin signs up, go to **Admin → Platform settings** and set **Sign-up → Invitation only** and **Company creation → Platform admins only**. Ask every admin to turn on two-step verification under **Account & security**.
+4. **Lock it down:** after the first admin signs up, go to **Admin → Platform settings** and set **Sign-up → Invitation only** and **Company creation → Platform admins only**. Platform admins must turn on two-step verification under **Account & security** before Admin opens. To require it for everyone in a company: **Settings → Team members → Require two-step verification**.
 5. **Moving data:** to bring data from a test install, use `pg_dump` and `pg_restore`, plus the files (the `files` volume, or nothing extra with `STORAGE_DRIVER=db`). Keep the same `APP_SECRET`, otherwise users have to set up two-step verification again with a recovery code.
 
 Updates: pull the new image and restart. Database migrations run automatically on start (`AUTO_MIGRATE=true`).
@@ -103,6 +103,7 @@ src/server/              Server-only code
   commands.ts            every workspace write, validated (zod) and permission-checked
   workspace.ts           per-company workspace snapshot
   storage.ts, cv.ts      private file storage, content sniffing, malware-scan hook
+  cv-safety.ts           refuses CVs with active content (PDF JavaScript/launch/embedded files, Word macros/ActiveX/DDE)
   cv/pdf.ts, cv/text.ts  CV Builder PDF rendering (3 templates, Greek/Latin fonts), PDF/DOCX text extraction
   assessments.ts         Quick Check: invitations, server-side timing, deterministic checking
   ai/claude.ts, ai/tasks.ts  Anthropic SDK wrapper (limits, usage, structured outputs) and prompts

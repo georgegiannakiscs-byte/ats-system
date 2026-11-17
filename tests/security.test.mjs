@@ -7,6 +7,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import pg from "pg";
+import { enableTwoFactor, totp } from "./totp.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const DB = process.env.DATABASE_URL ?? "postgres://deceler:deceler_dev@localhost:5432/deceler";
@@ -25,23 +26,6 @@ function client() {
   return { get: (u) => call("GET", u), post: (u, b) => call("POST", u, b), del: (u, b) => call("DELETE", u, b), hasCookie: () => !!cookie };
 }
 
-// RFC 6238 reference implementation, independent of the server's.
-function b32decode(s) {
-  const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let bits = 0, value = 0;
-  const out = [];
-  for (const ch of s.replace(/\s/g, "")) { value = (value << 5) | A.indexOf(ch); bits += 5; if (bits >= 8) { out.push((value >>> (bits - 8)) & 255); bits -= 8; } }
-  return Buffer.from(out);
-}
-function totp(secret, offset = 0) {
-  const step = Math.floor(Date.now() / 30000) + offset;
-  const msg = Buffer.alloc(8);
-  msg.writeBigUInt64BE(BigInt(step));
-  const h = crypto.createHmac("sha1", b32decode(secret)).update(msg).digest();
-  const o = h[h.length - 1] & 15;
-  return String((((h[o] & 127) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]) % 1_000_000).padStart(6, "0");
-}
-
 const PW = "correct-horse-battery-1";
 const email = `sec-${run}@test.example`;
 const user = client();
@@ -58,6 +42,15 @@ test("setup - a user signed in on two devices, and a platform admin", async () =
   await db.query("update users set is_platform_admin = true where email = $1", [`sec-admin-${run}@test.example`]);
   S.userId = (await db.query("select id from users where email = $1", [email])).rows[0].id;
   await db.end();
+});
+
+test("platform administration needs two-step verification", async () => {
+  const before = await admin.get("/api/admin/overview");
+  assert.equal(before.status, 403, "a password alone isn't enough");
+  assert.equal(before.data.code, "two_factor_required");
+  assert.match(await admin.get("/admin").then((r) => r.data), /always needs two-step verification/, "the admin pages explain what to do");
+  S.admin2fa = await enableTwoFactor(admin, PW);
+  assert.equal((await admin.get("/api/admin/overview")).status, 200);
   assert.deepEqual((await user.get("/api/me/security")).data.twoFactor, { enabled: false, enabledAt: null, recoveryCodesLeft: 0 });
 });
 
@@ -170,8 +163,10 @@ test("turning it off needs the password and a code", async () => {
 test("invitation-only sign-up", async () => {
   const set = (policy) => fetch(`${BASE}/api/admin/settings`, { method: "PUT", headers: { "content-type": "application/json", "x-forwarded-for": IP, cookie: S.adminCookie }, body: JSON.stringify({ key: "signup", value: { policy } }) });
   const c = client();
-  const login = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": IP }, body: JSON.stringify({ email: `sec-admin-${run}@test.example`, password: PW }) });
-  S.adminCookie = login.headers.getSetCookie().find((x) => x.startsWith("deceler_session=")).split(";")[0];
+  const login = await fetch(`${BASE}/api/auth/login`, { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": IP }, body: JSON.stringify({ email: `sec-admin-${run}@test.example`, password: PW }) }).then((r) => r.json());
+  assert.ok(login.mfaRequired, "admins always get the second step");
+  const verified = await fetch(`${BASE}/api/auth/login/verify`, { method: "POST", headers: { "content-type": "application/json", "x-forwarded-for": IP }, body: JSON.stringify({ ticket: login.ticket, code: S.admin2fa.recoveryCodes.pop() }) });
+  S.adminCookie = verified.headers.getSetCookie().find((x) => x.startsWith("deceler_session=")).split(";")[0];
   assert.equal((await set("invite_only")).status, 200);
   try {
     const r = await c.post("/api/auth/signup", { name: "Stranger", email: `stranger-${run}@test.example`, password: PW });

@@ -96,7 +96,7 @@ function TwoFactor({ status, reload }: { status: Status; reload: () => void }) {
   }
   if (stage === "disable") return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void call("/api/me/two-factor/disable", { password, code }, () => { toast.success("Two-step verification turned off"); reset(); reload(); }); }}>
-      <p className="text-sm text-muted-foreground">Your account will be protected by your password only.</p>
+      <p className="text-sm text-muted-foreground">Your account will be protected by your password only. Platform administration, and companies that require two-step verification, will be closed to you until you turn it on again (for example on a new phone).</p>
       <Field label="Your password" htmlFor="pw"><Input id="pw" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="max-w-xs" /></Field>
       {codeInput("Code from your app (or a recovery code)")}
       {err}
@@ -152,7 +152,7 @@ function PasswordChange() {
   );
 }
 
-export function AccountSecurity({ email, name }: { email: string; name: string }) {
+export function AccountSecurity({ email, name, next }: { email: string; name: string; next?: string }) {
   const [status, setStatus] = React.useState<Status | null>(null);
   const reload = React.useCallback(() => { apiFetch<{ twoFactor: Status }>("/api/me/security").then((r) => setStatus(r.twoFactor)).catch(() => {}); }, []);
   React.useEffect(() => { reload(); }, [reload]);
@@ -166,6 +166,8 @@ export function AccountSecurity({ email, name }: { email: string; name: string }
         </div>
         <Card title="Two-step verification" icon={<ShieldCheck />} aside={status && (status.enabled ? <Badge tone="success">On</Badge> : <Badge tone="warning">Off</Badge>)}>
           {status ? <TwoFactor status={status} reload={reload} /> : <Skeleton className="h-16" />}
+          {next && status?.enabled && <p className="mt-3 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-sm">You&apos;re all set. <a href={next} className="font-medium underline underline-offset-2">Continue</a></p>}
+          {next && status && !status.enabled && <p className="mt-3 text-sm text-muted-foreground">The page you were opening needs two-step verification. Turn it on above, then continue.</p>}
         </Card>
         <Card title="Password" icon={<KeyRound />}><PasswordChange /></Card>
       </main>

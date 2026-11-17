@@ -14,6 +14,8 @@ export interface SessionUser {
   name: string;
   isPlatformAdmin: boolean;
   preferredLanguage: "en" | "el";
+  /** Two-step verification is on for this account. */
+  hasTwoFactor: boolean;
 }
 
 export async function createSession(userId: string, req?: Request) {
@@ -36,13 +38,13 @@ export async function destroySession() {
 export async function getUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const rows = await sys<{ id: string; email: string; name: string; is_platform_admin: boolean; preferred_language: "en" | "el" }>(
-    `select u.id, u.email, u.name, u.is_platform_admin, u.preferred_language from sessions s join users u on u.id = s.user_id
+  const rows = await sys<{ id: string; email: string; name: string; is_platform_admin: boolean; preferred_language: "en" | "el"; has_2fa: boolean }>(
+    `select u.id, u.email, u.name, u.is_platform_admin, u.preferred_language, u.totp_enabled_at is not null as has_2fa from sessions s join users u on u.id = s.user_id
      where s.token_hash = $1 and s.revoked_at is null and s.expires_at > now() and u.status = 'active'`,
     [sha256(token)],
   );
   const u = rows[0];
-  return u ? { id: u.id, email: u.email, name: u.name, isPlatformAdmin: u.is_platform_admin, preferredLanguage: u.preferred_language } : null;
+  return u ? { id: u.id, email: u.email, name: u.name, isPlatformAdmin: u.is_platform_admin, preferredLanguage: u.preferred_language, hasTwoFactor: u.has_2fa } : null;
 }
 
 export async function requireUser() {
@@ -54,5 +56,7 @@ export async function requireUser() {
 export async function requirePlatformAdmin() {
   const u = await requireUser();
   if (!u.isPlatformAdmin) throw new HttpError(403, "Platform administrator access required", "forbidden");
+  // Platform administration always needs two-step verification (a password alone isn't enough).
+  if (!u.hasTwoFactor) throw new HttpError(403, "Turn on two-step verification in Account & security to use platform administration", "two_factor_required");
   return u;
 }

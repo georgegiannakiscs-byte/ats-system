@@ -5,7 +5,7 @@ import { cvText, contactDetails } from "@/server/cv/text";
 import { assertCvBuilder, publicJob } from "@/server/public";
 import { aiUnavailableReason } from "@/server/ai/claude";
 import { structureCvText } from "@/server/ai/tasks";
-import { maxCvBytes } from "@/server/cv";
+import { assertNoActiveContent, maxCvBytes } from "@/server/cv";
 
 /**
  * "Create a new CV from this file": returns suggested CV data for the candidate to REVIEW.
@@ -23,6 +23,7 @@ export const POST = handler(async (req) => {
   const buf = Buffer.from(await file.arrayBuffer());
   const kind = sniffCv(buf);
   if (!kind) throw new HttpError(415, "Use a PDF or Word (.docx) file", "cv_type");
+  assertNoActiveContent(buf, kind.ext);
   const text = await cvText(buf, kind.mime).catch(() => "");
   if (text.length < 40) return json({ prefill: null, method: "none", note: "We couldn't read text from this file (it may be a scanned image). You can still apply with it, or build your CV from scratch." });
   const contact = contactDetails(text);
