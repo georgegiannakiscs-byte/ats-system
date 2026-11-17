@@ -4,13 +4,25 @@ import { sys, type Q } from "./db";
 import { HttpError } from "./http";
 import { putObject, scanBuffer, sniffCv } from "./storage";
 import { randomToken } from "./security";
+import { cvActiveContent } from "./cv-safety";
+
+export const ACTIVE_CONTENT_MESSAGE = "This file contains active content (macros, scripts or embedded files), which we don't accept for safety. Save it as a plain PDF (File → Save as → PDF) and upload that instead.";
+
+/** Rejects CVs with macros, scripts, embedded files and similar (see cv-safety.ts). */
+export function assertNoActiveContent(buf: Buffer, ext: "pdf" | "docx") {
+  const reason = cvActiveContent(buf, ext);
+  if (reason) {
+    console.warn(`[cv] rejected upload with active content (${reason})`);
+    throw new HttpError(422, ACTIVE_CONTENT_MESSAGE, "cv_active_content");
+  }
+}
 
 export async function maxCvBytes() {
   const [s] = await sys<{ value: { maxCvMb: number } }>("select value from platform_settings where key = 'storage'");
   return (s?.value.maxCvMb ?? 10) * 1024 * 1024;
 }
 
-/** Validates (size, real file type, malware scan when configured) and stores a CV privately. */
+/** Validates (size, real file type, no active content, malware scan when configured) and stores a CV privately. */
 export async function storeCv(orgId: string, file: File) {
   const max = await maxCvBytes();
   if (file.size === 0) throw new HttpError(400, "The CV file is empty", "cv_empty");
@@ -18,6 +30,7 @@ export async function storeCv(orgId: string, file: File) {
   const buf = Buffer.from(await file.arrayBuffer());
   const kind = sniffCv(buf);
   if (!kind) throw new HttpError(415, "Upload your CV as a PDF or Word (.docx) file", "cv_type");
+  assertNoActiveContent(buf, kind.ext);
   const scan = await scanBuffer(buf);
   if (scan === "infected") throw new HttpError(422, "This file was flagged by our malware scanner and can't be accepted", "cv_infected");
   const key = `cv/${orgId}/${crypto.randomUUID()}.${kind.ext}`;

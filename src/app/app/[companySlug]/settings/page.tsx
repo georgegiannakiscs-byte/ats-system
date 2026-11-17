@@ -344,6 +344,28 @@ function CustomCssPanel({ canEdit, enabled }: { canEdit: boolean; enabled: boole
 
 const ROLES: Role[] = ["Admin", "Recruiter", "Hiring Manager", "Interviewer"];
 
+/** Team members → "Require two-step verification": members without it can't open this workspace. */
+function RequireTwoFactor() {
+  const db = useDb();
+  const canEdit = useCan("settings.manage");
+  const [busy, setBusy] = React.useState(false);
+  const on = db.org.requireTwoFactor;
+  const meWithout = db.team.find((m) => m.id === db.currentUserId)?.twoFactor === false;
+  const without = db.team.filter((m) => m.twoFactor === false).length;
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
+      <Shield className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1 space-y-1 text-sm">
+        <p className="font-medium">Require two-step verification</p>
+        <p className="text-muted-foreground">Everyone must sign in with a code from an authenticator app as well as their password. Members who haven&apos;t turned it on are asked to do so before they can open this workspace.</p>
+        {without > 0 && <p className="text-muted-foreground">{without} member{without === 1 ? " doesn't" : "s don't"} use it yet{on ? " and can't open the workspace until they do" : ""}.</p>}
+        {canEdit && !on && meWithout && <p className="text-muted-foreground">Turn it on for your own account first in <a href="/account" className="underline underline-offset-2">Account &amp; security</a>.</p>}
+      </div>
+      <Switch checked={on} disabled={!canEdit || busy || (!on && meWithout)} aria-label="Require two-step verification" onCheckedChange={(v: boolean) => { setBusy(true); api.settings.setRequireTwoFactor(v).then(() => toast.success(v ? "Two-step verification is now required" : "Two-step verification is now optional"), () => {}).finally(() => setBusy(false)); }} />
+    </div>
+  );
+}
+
 function TeamSettings() {
   const db = useDb();
   const canManage = useCan("team.manage");
@@ -356,12 +378,13 @@ function TeamSettings() {
         <p className="text-sm text-muted-foreground">{db.team.length} member{db.team.length === 1 ? "" : "s"} · {db.invitations.length} pending invitation{db.invitations.length === 1 ? "" : "s"}</p>
         {canManage && <Button size="sm" onClick={() => setInvite(true)}><UserPlus />Invite member</Button>}
       </div>
+      <RequireTwoFactor />
       <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-xs">
         {db.team.map((m) => (
           <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
             <Avatar name={m.name} hue={m.hue} size="md" />
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 text-sm font-medium">{m.name}{m.id === db.currentUserId && <Badge tone="muted">You</Badge>}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm font-medium">{m.name}{m.id === db.currentUserId && <Badge tone="muted">You</Badge>}{m.twoFactor === false && <Badge tone={db.org.requireTwoFactor ? "warning" : "muted"}>No two-step verification</Badge>}</p>
               <p className="truncate text-xs text-muted-foreground">{m.email}</p>
             </div>
             {canManage ? (

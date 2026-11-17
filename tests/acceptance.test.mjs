@@ -8,6 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import pg from "pg";
+import { enableTwoFactor } from "./totp.mjs";
+import { clean as cleanCvs, dangerous as dangerousCvs } from "./cv-fixtures.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const DB = process.env.DATABASE_URL ?? "postgres://deceler:deceler_dev@localhost:5432/deceler";
@@ -41,7 +43,8 @@ function client() {
   };
 }
 
-const file = (name, type) => new File([fs.readFileSync(path.join(FIX, name))], name, { type });
+const file = (name, type, buf) => new File([buf ?? fs.readFileSync(path.join(FIX, name))], name, { type });
+const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const id = (p) => `${p}_${crypto.randomBytes(8).toString("hex")}`;
 
 async function signup(c, name, email) {
@@ -50,13 +53,13 @@ async function signup(c, name, email) {
   return r.data;
 }
 
-async function apply(orgSlug, jobSlug, fields, cvName = "cv.pdf", cvType = "application/pdf") {
+async function apply(orgSlug, jobSlug, fields, cvName = "cv.pdf", cvType = "application/pdf", cvBuf) {
   const fd = new FormData();
   fd.append("orgSlug", orgSlug);
   fd.append("jobSlug", jobSlug);
   fd.append("submissionKey", crypto.randomUUID());
   for (const [k, v] of Object.entries(fields)) fd.append(k, v);
-  if (cvName) fd.append("cv", file(cvName, cvType));
+  if (cvName) fd.append("cv", file(cvName, cvType, cvBuf));
   const res = await fetch(`${BASE}/api/public/apply`, { method: "POST", body: fd });
   return { status: res.status, data: await res.json() };
 }
@@ -153,6 +156,28 @@ test("D - validation and abuse protection", async () => {
   await owner.cmd(S.A.id, "jobs.create", { id: draft, input: { title: "Secret Draft Role", status: "draft" } });
   const slug = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.jobs.find((j) => j.id === draft).slug;
   assert.equal((await apply(S.slugA, slug, { fullName: "Early Bird", email: `early-${run}@example.com` })).status, 404);
+});
+
+test("D2 - CVs with scripts, macros or embedded files are refused", async () => {
+  const mime = (n) => (n.endsWith(".pdf") ? "application/pdf" : DOCX);
+  for (const [name, make] of Object.entries(dangerousCvs)) {
+    const r = await apply(S.slugA, S.jobSlugA, { fullName: "Risky File", email: `risky-${run}@example.com` }, name, mime(name), make());
+    assert.equal(r.status, 422, name);
+    assert.equal(r.data.code, "cv_active_content", name);
+    assert.match(r.data.error, /plain PDF/, "the candidate is told what to do");
+  }
+  for (const [name, make] of Object.entries(cleanCvs)) {
+    const r = await apply(S.slugA, S.jobSlugA, { fullName: "Plain File", email: `plain-${name.length}-${run}@example.com` }, name, mime(name), make());
+    assert.equal(r.status, 201, `${name}: ${JSON.stringify(r.data)}`);
+  }
+  // Recruiters uploading a CV to a profile get the same check.
+  const fd = new FormData();
+  fd.append("file", file("macros.docx", DOCX, dangerousCvs["docx-macros.docx"]()));
+  const up = await owner.form(`/api/orgs/${S.A.id}/candidates/${S.candA}/cv`, fd);
+  assert.equal(up.status, 422);
+  // Nothing was stored for the refused files.
+  const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  assert.ok(!snap.candidates.some((c) => c.email === `risky-${run}@example.com`));
 });
 
 test("E - optional information is saved and editable", async () => {
@@ -383,6 +408,8 @@ test("B - platform super admin", async () => {
   await db.connect();
   await db.query("update users set is_platform_admin = true where email = $1", [`owner-${run}@test.example`]);
   await db.end();
+  assert.equal((await owner.get("/api/admin/overview")).data.code, "two_factor_required", "platform administration needs two-step verification");
+  S.owner2fa = await enableTwoFactor(owner, "correct-horse-battery-1");
   const ov = await owner.get("/api/admin/overview");
   assert.equal(ov.status, 200);
   assert.ok(ov.data.metrics.companies >= 3);
@@ -619,10 +646,35 @@ test("L - email: candidate messages, forgot password, sender and reply-to", asyn
   assert.equal((await anon.post("/api/auth/reset", { token: link, password: "a-brand-new-pass-9" })).status, 200);
   assert.equal((await anon.post("/api/auth/reset", { token: link, password: "another-new-pass-9" })).status, 400, "single use");
   const relog = client();
-  assert.equal((await relog.post("/api/auth/login", { email: `owner-${run}@test.example`, password: "a-brand-new-pass-9" })).status, 200);
+  await login(relog, `owner-${run}@test.example`, "a-brand-new-pass-9");
   // keep the rest of the suite working with the original password
   assert.equal((await relog.post("/api/me/password", { currentPassword: "a-brand-new-pass-9", newPassword: "correct-horse-battery-1" })).status, 200);
-  assert.equal((await owner.post("/api/auth/login", { email: `owner-${run}@test.example`, password: "correct-horse-battery-1" })).status, 200);
+  await login(owner, `owner-${run}@test.example`, "correct-horse-battery-1");
+});
+
+/** Signs in, completing the second step with a recovery code when the account has it on (the owner does, as platform admin). */
+async function login(c, email, password) {
+  const r = await c.post("/api/auth/login", { email, password });
+  assert.equal(r.status, 200);
+  if (r.data.mfaRequired) assert.equal((await c.post("/api/auth/login/verify", { ticket: r.data.ticket, code: S.owner2fa.recoveryCodes.pop() })).status, 200);
+}
+
+test("M - a company can require two-step verification for its members", async () => {
+  // The owner has it on (turned on in B); the interviewer in Company A doesn't.
+  assert.equal((await other.cmd(S.A.id, "settings.security", { requireTwoFactor: true })).status, 403, "only admins change it");
+  assert.equal((await other.cmd(S.C.id, "settings.security", { requireTwoFactor: true })).data.code, "two_factor_required", "an admin needs it on themselves first");
+  assert.equal((await owner.cmd(S.A.id, "settings.security", { requireTwoFactor: true })).status, 200);
+  const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  assert.equal(snap.org.requireTwoFactor, true);
+  assert.equal(snap.team.find((m) => m.email === `other-${run}@test.example`).twoFactor, false, "admins can see who doesn't have it");
+  const blocked = await other.get(`/api/orgs/${S.A.id}/snapshot`);
+  assert.equal(blocked.status, 403);
+  assert.equal(blocked.data.code, "two_factor_required");
+  assert.match(await other.get(`/app/${S.slugA}/dashboard`).then((r) => r.data.toString()), /requires two-step verification/, "the workspace explains what to do");
+  assert.equal((await other.get(`/api/orgs/${S.C.id}/snapshot`)).status, 200, "other companies are unaffected");
+  await enableTwoFactor(other, "correct-horse-battery-1");
+  assert.equal((await other.get(`/api/orgs/${S.A.id}/snapshot`)).status, 200, "allowed once it's on");
+  assert.equal((await owner.cmd(S.A.id, "settings.security", { requireTwoFactor: false })).status, 200);
 });
 
 test("Authentication basics", async () => {

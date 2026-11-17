@@ -225,6 +225,15 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
     await tenantTx(orgId, a.user.id, (q) => activity(q, a, "email_sent", `emailed ${c.full_name}: “${v.subject}”`, { candidateId: v.candidateId }));
     return;
   }
+  if (type === "settings.security") {
+    need(a, "settings.manage");
+    const v = z.object({ requireTwoFactor: z.boolean() }).strict().parse(p);
+    // Only someone who has it can require it (otherwise they'd lock themselves out).
+    if (v.requireTwoFactor && !a.user.hasTwoFactor) throw new HttpError(400, "Turn on two-step verification for your own account first (Account & security)", "two_factor_required");
+    await sys("update organizations set require_two_factor = $2 where id = $1", [orgId, v.requireTwoFactor]);
+    await audit({ scope: "org", action: v.requireTwoFactor ? "company.two_factor_required" : "company.two_factor_optional", actorId: a.user.id, orgId });
+    return;
+  }
   if (type === "settings.privacy") {
     need(a, "settings.manage");
     const v = z.object({

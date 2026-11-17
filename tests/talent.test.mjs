@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import pg from "pg";
+import { enableTwoFactor } from "./totp.mjs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const DB = process.env.DATABASE_URL ?? "postgres://deceler:deceler_dev@localhost:5432/deceler";
@@ -46,6 +47,7 @@ test("setup - a platform admin and a regular user", async () => {
   await db.query("update users set is_platform_admin = true where email = $1", [`talent-admin-${run}@test.example`]);
   await db.query("update users set is_platform_admin = false where email = $1", [`talent-user-${run}@test.example`]);
   await db.end();
+  await enableTwoFactor(admin, "correct-horse-battery-1"); // platform administration always needs it
 });
 
 test("landing page renders in English only", async () => {

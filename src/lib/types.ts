@@ -37,6 +37,8 @@ export interface TeamMember {
   /** Hue (0–360) used for the subtle avatar tint. */
   hue: number;
   status: "active" | "invited";
+  /** Two-step verification is on for this member. */
+  twoFactor?: boolean;
 }
 
 export type JobStatus = "draft" | "published" | "on_hold" | "closed" | "archived";
@@ -372,6 +374,8 @@ export interface WorkspaceOrg {
   features: Record<string, boolean>;
   /** LinkedIn Basic Jobs feed opt-in (Settings → Integrations). */
   linkedinFeed: { enabled: boolean; companyId: string; posterEmail: string; country: string };
+  /** Everyone must use two-step verification to open this workspace (Settings → Team members). */
+  requireTwoFactor: boolean;
 }
 
 export interface PendingInvitation {

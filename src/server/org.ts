@@ -19,8 +19,8 @@ const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export async function requireOrg(orgId: string, permission: Permission = "workspace.view"): Promise<OrgAccess> {
   const user = await requireUser();
   if (!uuidRe.test(orgId)) throw new HttpError(404, "Company not found", "not_found");
-  const rows = await sys<{ id: string; slug: string; name: string; status: string; role: OrgRole }>(
-    `select o.id, o.slug, o.name, o.status, m.role from organizations o
+  const rows = await sys<{ id: string; slug: string; name: string; status: string; role: OrgRole; require_two_factor: boolean }>(
+    `select o.id, o.slug, o.name, o.status, m.role, o.require_two_factor from organizations o
      join memberships m on m.org_id = o.id and m.user_id = $2 and m.status = 'active' where o.id = $1`,
     [orgId, user.id],
   );
@@ -28,6 +28,7 @@ export async function requireOrg(orgId: string, permission: Permission = "worksp
   // Same response for "doesn't exist" and "not a member" - avoids leaking which companies exist.
   if (!r) throw new HttpError(404, "Company not found", "not_found");
   if (r.status !== "active") throw new HttpError(423, "This company workspace is archived. Contact your platform administrator.", "suspended");
+  if (r.require_two_factor && !user.hasTwoFactor) throw new HttpError(403, `${r.name} requires two-step verification. Turn it on in Account & security.`, "two_factor_required");
   if (!can(r.role, permission)) throw new HttpError(403, "You don't have permission to do that in this company", "forbidden");
   return { user, org: { id: r.id, slug: r.slug, name: r.name, status: r.status }, role: r.role };
 }
