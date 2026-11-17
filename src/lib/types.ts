@@ -250,6 +250,7 @@ export type ActivityKind =
   | "task_completed"
   | "candidate_updated"
   | "email_drafted"
+  | "email_sent"
   | "talent_pool";
 
 export interface Activity {
@@ -491,6 +492,8 @@ export interface Database {
   savedViews: SavedView[];
   emailTemplates: EmailTemplate[];
   integrations: Record<IntegrationId, IntegrationState>;
+  /** True when the platform can send email (SMTP configured): emails to candidates are really sent. */
+  emailDelivery: boolean;
   notificationPrefs: NotificationPrefs;
   notifications: AppNotification[];
   assessmentQuestions: AssessmentQuestion[];
