@@ -362,6 +362,9 @@ export interface OrgBranding {
   customCss?: string;
   /** Hide "Recruitment powered by Ulysse" at the bottom of the careers pages. */
   hidePoweredBy?: boolean;
+  /** Cover image layout on the careers page (the image is uploaded separately). */
+  coverStyle?: "behind" | "banner";
+  coverPosition?: "top" | "center" | "bottom";
 }
 
 export interface WorkspaceOrg {
@@ -374,6 +377,8 @@ export interface WorkspaceOrg {
   branding: OrgBranding;
   logoUrl: string | null;
   logoDarkUrl: string | null;
+  /** Careers cover image (Settings → Branding & careers). */
+  coverUrl: string | null;
   onboarding: Record<string, boolean>;
   features: Record<string, boolean>;
   /** LinkedIn Basic Jobs feed opt-in (Settings → Integrations). */

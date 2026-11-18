@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { sys } from "@/server/db";
 import { logoUrl } from "@/server/workspace";
+import { coverUrl } from "@/server/branding";
 import { featureEnabled } from "@/server/org";
 import { retentionFor } from "@/server/erasure";
 
@@ -12,7 +13,7 @@ export const getCareersOrg = cache(async (slug: string) => {
   if (!o || o.status !== "active") return null;
   const customBranding = await featureEnabled(o.id, "custom_branding");
   const privacy = { retentionMonths: (await retentionFor(o.id)).months, policyUrl: typeof o.privacy.policyUrl === "string" ? o.privacy.policyUrl : "", contactEmail: typeof o.privacy.contactEmail === "string" ? o.privacy.contactEmail : "" };
-  return { id: o.id, slug: o.slug, name: o.name, about: o.profile.about ?? "", website: o.profile.website ?? "", headquarters: o.profile.headquarters ?? "", branding: o.branding, customBranding, privacy, logoUrl: logoUrl(o.id, o.branding), logoDarkUrl: logoUrl(o.id, o.branding, "dark") };
+  return { id: o.id, slug: o.slug, name: o.name, about: o.profile.about ?? "", website: o.profile.website ?? "", headquarters: o.profile.headquarters ?? "", branding: o.branding, customBranding, privacy, logoUrl: logoUrl(o.id, o.branding), logoDarkUrl: logoUrl(o.id, o.branding, "dark"), coverUrl: coverUrl(o.id, o.branding) };
 });
 
 const JOB_COLS = "id, slug, title, department, location, workplace, employment_type, contract_type, seniority, salary_min, salary_max, currency, summary, responsibilities, requirements, nice_to_have, required_experience, benefits, skills, preferred_skills, screening_questions, published_at, openings";

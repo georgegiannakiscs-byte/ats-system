@@ -162,6 +162,65 @@ function CompanySettings() {
   );
 }
 
+/** Careers cover image: a photo behind the headline or as a banner above it. */
+function CoverSlot() {
+  const db = useDb();
+  const canEdit = useCan("branding.manage");
+  const ref = React.useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [confirm, setConfirm] = React.useState(false);
+  const url = db.org.coverUrl;
+  const style = db.org.branding.coverStyle ?? "behind";
+  const position = db.org.branding.coverPosition ?? "center";
+  const upload = async (file?: File) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      await api.settings.uploadCover(file);
+      toast.success(url ? "Cover image replaced" : "Cover image uploaded", { description: "Open your careers page to see it." });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (ref.current) ref.current.value = "";
+    }
+  };
+  const setOption = (patch: { coverStyle?: "behind" | "banner"; coverPosition?: "top" | "center" | "bottom" }) => api.settings.updateBranding(patch).then(() => toast.success("Cover image updated"), () => {});
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Cover image</p>
+        <span className="text-[11px] text-subtle-foreground">Optional · careers page</span>
+      </div>
+      <div
+        onDragOver={(e) => canEdit && e.preventDefault()}
+        onDrop={(e) => { e.preventDefault(); if (canEdit) upload(e.dataTransfer.files[0]); }}
+        className="relative flex aspect-[4/1] min-h-28 items-center justify-center overflow-hidden rounded-md border border-dashed border-border-strong bg-surface-2"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {url ? <img src={url} alt={`${db.org.name} careers cover`} className="absolute inset-0 size-full object-cover" style={{ objectPosition: `center ${position}` }} /> : <span className="text-xs text-muted-foreground">{canEdit ? "Drop a photo here: your team, your office, your product" : "No cover image"}</span>}
+      </div>
+      <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} aria-label="Upload cover image" />
+      {canEdit && (
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => ref.current?.click()}>{busy ? "Uploading…" : url ? "Replace" : "Upload"}</Button>
+            {url && <Button size="sm" variant="ghost" disabled={busy} onClick={() => setConfirm(true)}><Trash2 />Remove</Button>}
+          </div>
+          {url && (
+            <div className="ml-auto flex flex-wrap gap-3">
+              <Field label="Show it"><Select size="sm" className="w-52" value={style} onValueChange={(v) => setOption({ coverStyle: v as "behind" | "banner" })} options={[{ value: "behind", label: "Behind the headline" }, { value: "banner", label: "As a banner above it" }]} /></Field>
+              <Field label="Keep in view"><Select size="sm" className="w-32" value={position} onValueChange={(v) => setOption({ coverPosition: v as "top" | "center" | "bottom" })} options={[{ value: "top", label: "Top" }, { value: "center", label: "Centre" }, { value: "bottom", label: "Bottom" }]} /></Field>
+            </div>
+          )}
+        </div>
+      )}
+      <p className="text-[11px] text-subtle-foreground">JPG, PNG or WebP · at least 1000 px wide (2400 px is ideal) · up to 10 MB. Location and camera details are removed from the photo. Behind the headline, the text turns white over a dark shade so it stays readable.</p>
+      <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Remove the cover image?" description="Your careers page goes back to the plain header." confirmLabel="Remove image" destructive onConfirm={async () => { await api.settings.removeCover(); toast("Cover image removed"); }} />
+    </div>
+  );
+}
+
 function LogoSlot({ variant }: { variant: "light" | "dark" }) {
   const db = useDb();
   const canEdit = useCan("branding.manage");
@@ -261,6 +320,7 @@ function BrandingSettings() {
         <LogoSlot variant="light" />
         <LogoSlot variant="dark" />
       </div>
+      <CoverSlot />
       <div className="grid items-start gap-4 lg:grid-cols-[1fr_340px]">
         <Panel className="space-y-6" footer={canEdit && <Button disabled={!dirty} onClick={save}>Save branding</Button>}>
           <fieldset disabled={!canEdit || !enabled} className="grid gap-4 sm:grid-cols-2">
@@ -298,7 +358,7 @@ function BrandingSettings() {
         </Panel>
         <div className="space-y-2 lg:sticky lg:top-4">
           <p className="text-xs font-medium text-muted-foreground">Preview{dirty ? " · not saved yet" : ""}</p>
-          <CareersPreview theme={resolveCareersTheme(f, enabled)} name={db.org.name} logoUrl={theme.background && luminance(theme.background) < 0.2 && db.org.logoDarkUrl ? db.org.logoDarkUrl : db.org.logoUrl} headline={f.careersHeadline} intro={f.careersIntro} benefits={benefitList} layout={f.careersLayout} />
+          <CareersPreview theme={resolveCareersTheme(f, enabled)} name={db.org.name} logoUrl={theme.background && luminance(theme.background) < 0.2 && db.org.logoDarkUrl ? db.org.logoDarkUrl : db.org.logoUrl} headline={f.careersHeadline} intro={f.careersIntro} benefits={benefitList} layout={f.careersLayout} cover={db.org.coverUrl ? { url: db.org.coverUrl, style: db.org.branding.coverStyle ?? "behind", position: db.org.branding.coverPosition ?? "center" } : null} />
         </div>
       </div>
       <CustomCssPanel canEdit={canEdit} enabled={enabled} />

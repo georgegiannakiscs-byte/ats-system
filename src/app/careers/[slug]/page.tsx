@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: title },
     description: (org.branding.careersIntro as string) || org.about || `Open positions at ${org.name}.`,
     alternates: { canonical: `${env.appUrl}/careers/${org.slug}` },
-    openGraph: { title, type: "website", url: `${env.appUrl}/careers/${org.slug}`, images: org.logoUrl ? [`${env.appUrl}${org.logoUrl}`] : undefined },
+    openGraph: { title, type: "website", url: `${env.appUrl}/careers/${org.slug}`, images: org.coverUrl ?? org.logoUrl ? [`${env.appUrl}${org.coverUrl ?? org.logoUrl}`] : undefined },
   };
 }
 
@@ -35,24 +35,38 @@ export default async function CareersPage({ params, searchParams }: Props) {
   const jobs = all.filter((j) => (!q || `${j.title} ${j.department} ${j.location}`.toLowerCase().includes(q)) && (!sp.location || j.location === sp.location) && (!sp.type || j.employment_type === sp.type) && (!sp.department || j.department === sp.department));
   const benefits = (org.branding.benefits as string[] | undefined) ?? [];
   const grid = org.branding.careersLayout === "grid";
-  const band = careersTheme(org).hero === "band";
+  // Cover image: behind the headline (white text over a dark gradient) or as a banner above it.
+  const cover = org.coverUrl;
+  const over = !!cover && org.branding.coverStyle !== "banner";
+  const position = { top: "center top", bottom: "center bottom" }[org.branding.coverPosition as string] ?? "center center";
+  const band = !over && careersTheme(org).hero === "band";
+  const tinted = band || over;
   return (
     <CareersFrame org={org} lang={lang} path={`/careers/${org.slug}`}>
-      <div className={cn("careers-hero", band && "careers-hero-band bg-primary text-primary-foreground")}>
-        <section className={cn("mx-auto max-w-4xl px-4", band ? "py-14" : "pb-6 pt-12")}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {cover && !over && <img src={cover} alt="" className="careers-cover careers-cover-banner block h-48 w-full object-cover sm:h-72 lg:h-80" style={{ objectPosition: position }} />}
+      <div className={cn("careers-hero", band && "careers-hero-band bg-primary text-primary-foreground", over && "careers-hero-cover relative isolate flex min-h-[340px] items-end overflow-hidden text-white sm:min-h-[440px]")}>
+        {over && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cover} alt="" className="careers-cover absolute inset-0 -z-20 size-full object-cover" style={{ objectPosition: position }} />
+            <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/75 via-black/45 to-black/15" />
+          </>
+        )}
+        <section className={cn("mx-auto max-w-4xl px-4", over ? "w-full pb-10 pt-24" : band ? "py-14" : "pb-6 pt-12")}>
           <span aria-hidden className="careers-accent-line mb-5 block h-1 w-12 rounded-full bg-[var(--careers-accent)]" />
           <h1 className="careers-headline font-display text-4xl tracking-tight sm:text-5xl">{(org.branding.careersHeadline as string) || (lang === "el" ? `Καριέρα στην ${org.name}` : `Careers at ${org.name}`)}</h1>
-          {((org.branding.careersIntro as string) || org.about) && <p className={cn("careers-intro mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed", band ? "opacity-90" : "text-foreground/80")}>{(org.branding.careersIntro as string) || org.about}</p>}
+          {((org.branding.careersIntro as string) || org.about) && <p className={cn("careers-intro mt-4 max-w-2xl whitespace-pre-line text-base leading-relaxed", tinted ? "opacity-90" : "text-foreground/80")}>{(org.branding.careersIntro as string) || org.about}</p>}
           {benefits.length > 0 && (
             <ul className="careers-benefits mt-6 flex flex-wrap gap-2">{benefits.map((b) => (
-              <li key={b} className={cn("careers-benefit inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm", band ? "border-current/25 bg-current/5" : "border-border bg-surface")}>
+              <li key={b} className={cn("careers-benefit inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm", over ? "border-white/30 bg-black/20 backdrop-blur-sm" : band ? "border-current/25 bg-current/5" : "border-border bg-surface")}>
                 <span aria-hidden className="size-1.5 rounded-full bg-[var(--careers-accent)]" />{b}
               </li>
             ))}</ul>
           )}
         </section>
       </div>
-      <section className={cn("careers-jobs-section mx-auto max-w-4xl px-4 pb-16", band && "pt-10")} aria-labelledby="open-positions">
+      <section className={cn("careers-jobs-section mx-auto max-w-4xl px-4 pb-16", tinted && "pt-10")} aria-labelledby="open-positions">
         <div className="mb-4 flex items-baseline justify-between gap-3">
           <h2 id="open-positions" className="careers-jobs-title text-lg font-semibold">{t.openPositions} <span className="tabular text-muted-foreground">{all.length}</span></h2>
         </div>

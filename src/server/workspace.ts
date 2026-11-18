@@ -42,7 +42,7 @@ export function hueFor(id: string) {
 }
 
 export { logoUrl } from "./branding";
-import { logoUrl } from "./branding";
+import { coverUrl, logoUrl } from "./branding";
 
 const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOString() : undefined);
 
@@ -93,6 +93,7 @@ export async function buildSnapshot(access: OrgAccess) {
       branding: orgRow.branding,
       logoUrl: logoUrl(org.id, orgRow.branding, "light"),
       logoDarkUrl: logoUrl(org.id, orgRow.branding, "dark"),
+      coverUrl: coverUrl(org.id, orgRow.branding),
       onboarding: orgRow.onboarding,
       linkedinFeed: { enabled: false, companyId: "", posterEmail: "", country: "GR", ...orgRow.linkedin_feed },
       requireTwoFactor: orgRow.require_two_factor,
