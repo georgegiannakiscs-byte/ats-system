@@ -46,7 +46,7 @@ export async function deleteObject(key: string) {
 }
 
 /** Prefixes under which a company's files are stored (CVs, CV Builder drafts and photos, logos). */
-export const orgFilePrefixes = (orgId: string) => ["cv", "cv-drafts", "cv-photos", "logos"].map((p) => `${p}/${checkKey(orgId)}/`);
+export const orgFilePrefixes = (orgId: string) => ["cv", "cv-drafts", "cv-photos", "logos", "covers"].map((p) => `${p}/${checkKey(orgId)}/`);
 
 /**
  * Deletes every stored file of a company. With the database driver this runs inside the caller's

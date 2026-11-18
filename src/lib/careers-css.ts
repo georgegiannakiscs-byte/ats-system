@@ -40,6 +40,7 @@ export const CAREERS_CSS_HOOKS = [
   [".careers-header / .careers-logo", "top bar and logo"],
   [".careers-main / .careers-footer", "content area and footer"],
   [".careers-hero / .careers-hero-band", "headline area (band = coloured header)"],
+  [".careers-cover / .careers-hero-cover / .careers-cover-banner", "cover image, headline over the image, cover shown as a banner"],
   [".careers-accent-line", "the short line above the headline"],
   [".careers-headline / .careers-intro", "page headline and introduction"],
   [".careers-benefits / .careers-benefit", "benefit chips"],

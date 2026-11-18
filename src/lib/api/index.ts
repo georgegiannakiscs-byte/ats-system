@@ -316,6 +316,18 @@ const settings = {
     window.dispatchEvent(new Event("deceler:companies-changed"));
     return true;
   },
+  async uploadCover(file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const r = await apiFetch<{ url: string }>(`/api/orgs/${currentOrgId()}/cover`, { method: "POST", body: fd });
+    setState((db) => ({ ...db, org: { ...db.org, coverUrl: r.url } }));
+    return r;
+  },
+  async removeCover() {
+    await apiFetch(`/api/orgs/${currentOrgId()}/cover`, { method: "DELETE" });
+    setState((db) => ({ ...db, org: { ...db.org, coverUrl: null } }));
+    return true;
+  },
   async markOnboarding(step: string, done = true) {
     setState((db) => ({ ...db, org: { ...db.org, onboarding: { ...db.org.onboarding, [step]: done } } }));
     await send("settings.onboarding", { step, done });

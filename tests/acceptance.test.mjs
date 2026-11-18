@@ -406,6 +406,37 @@ test("C3 - optional Nice to have list on the job page", async () => {
   assert.ok(!(await page()).includes(">Nice to have</h2>"), "hidden again once cleared");
 });
 
+test("C5 - careers cover image (photos only, metadata removed, behind the headline or as a banner)", async () => {
+  const { default: sharp } = await import("sharp");
+  const photo = (w, h) => sharp({ create: { width: w, height: h, channels: 3, background: { r: 30, g: 90, b: 140 } } })
+    .jpeg().withMetadata({ exif: { IFD0: { Artist: "Secret Photographer", Copyright: "GPS 37.97N 23.72E" } } }).toBuffer();
+  const up = async (c, buf, name = "cover.jpg", type = "image/jpeg") => { const fd = new FormData(); fd.append("file", new File([buf], name, { type })); return c.form(`/api/orgs/${S.A.id}/cover`, fd); };
+  assert.equal((await up(other, await photo(1600, 600))).status, 403, "only branding admins");
+  assert.equal((await up(owner, await photo(600, 300))).data.code, "too_small");
+  assert.equal((await up(owner, fs.readFileSync(path.join(FIX, "evil.svg")), "x.svg", "image/svg+xml")).status, 415, "no SVG");
+  const ok = await up(owner, await photo(3000, 1000));
+  assert.equal(ok.status, 201);
+  const img = await fetch(BASE + ok.data.url);
+  assert.equal(img.headers.get("content-type"), "image/webp");
+  const served = Buffer.from(await img.arrayBuffer());
+  const meta = await sharp(served).metadata();
+  assert.equal(meta.width, 2400, "resized for the web");
+  assert.ok(!meta.exif && !served.includes(Buffer.from("Secret Photographer")), "metadata removed");
+  const page = () => fetch(`${BASE}/careers/${S.slugA}`).then((r) => r.text());
+  let html = await page();
+  assert.match(html, /careers-hero-cover/, "behind the headline by default");
+  assert.match(html, new RegExp(`og:image" content="[^"]*/api/public/cover/${S.A.id}`), "used for link previews");
+  assert.equal((await owner.cmd(S.A.id, "settings.branding", { coverStyle: "banner", coverPosition: "top" })).status, 200);
+  html = await page();
+  assert.match(html, /careers-cover-banner/);
+  assert.match(html, /object-position:center top/);
+  assert.equal((await owner.cmd(S.A.id, "settings.branding", { coverStyle: "sideways" })).status, 400);
+  assert.equal((await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data.org.coverUrl, ok.data.url);
+  assert.equal((await owner.del(`/api/orgs/${S.A.id}/cover`)).status, 200);
+  assert.equal((await fetch(BASE + ok.data.url)).status, 404);
+  assert.doesNotMatch(await page(), /careers-cover/);
+});
+
 test("B - platform super admin", async () => {
   // The first registered account on a fresh platform is bootstrapped as platform admin in development.
   // Promote the test owner explicitly so this test is independent of ordering.

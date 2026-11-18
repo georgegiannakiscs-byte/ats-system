@@ -165,6 +165,8 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
       backgroundColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]), textColor: z.union([z.string().regex(/^#[0-9a-fA-F]{6}$/), z.literal("")]),
       headingFont: z.enum(CAREERS_FONT_KEYS), bodyFont: z.enum(CAREERS_FONT_KEYS), cornerStyle: z.enum(CORNER_STYLES), heroStyle: z.enum(HERO_STYLES),
       // CSS only (never HTML/JS), checked in careers-css.ts.
+      // Cover image layout (the image itself is uploaded separately): behind the headline or as a banner above it.
+      coverStyle: z.enum(["behind", "banner"]), coverPosition: z.enum(["top", "center", "bottom"]),
       // Hides "Recruitment powered by Ulysse" at the bottom of the careers pages.
       hidePoweredBy: z.boolean(),
       customCss: z.string().max(CUSTOM_CSS_MAX).superRefine((css, ctx) => { for (const m of customCssProblems(css)) ctx.addIssue({ code: "custom", message: `Custom CSS: ${m}` }); }),
