@@ -88,9 +88,9 @@ function Jobs() {
       {jobs.length === 0 ? (
         <EmptyState
           icon={<BriefcaseBusiness />}
-          title={db.jobs.length ? "No jobs match your filters" : "Create your first job"}
-          description={db.jobs.length ? "Try a different search or clear the filters." : "Jobs organise your pipeline, team and candidates."}
-          action={db.jobs.length ? <Button variant="outline" size="sm" onClick={() => (setQ(""), setDepts([]), setStatus("all"))}>Clear filters</Button> : <Button asChild size="sm"><Link href={orgPath("/jobs/new")}><Plus />Create job</Link></Button>}
+          title={db.jobs.length ? "No jobs match your filters" : db.org.seesAllJobs ? "Create your first job" : "No jobs for you yet"}
+          description={db.jobs.length ? "Try a different search or clear the filters." : db.org.seesAllJobs ? "Jobs organise your pipeline, team and candidates." : "You'll see a job and its candidates once an admin or recruiter adds you to its hiring team."}
+          action={db.jobs.length ? <Button variant="outline" size="sm" onClick={() => (setQ(""), setDepts([]), setStatus("all"))}>Clear filters</Button> : db.org.permissions.includes("jobs.manage") ? <Button asChild size="sm"><Link href={orgPath("/jobs/new")}><Plus />Create job</Link></Button> : undefined}
         />
       ) : view === "list" ? (
         <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-xs animate-fade-in">

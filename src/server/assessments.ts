@@ -186,7 +186,7 @@ async function view(q: Q, a: AttemptRow) {
   const branded = await featureEnabled(a.org_id, "custom_branding");
   const base = {
     status: a.status,
-    company: { name: ctx.org_name, slug: ctx.org_slug, theme: resolveCareersTheme(ctx.branding ?? {}, branded), customCss: branded ? safeCustomCss(ctx.branding?.customCss) : "", logoUrl: logoUrl(a.org_id, ctx.branding ?? {}) },
+    company: { name: ctx.org_name, slug: ctx.org_slug, theme: resolveCareersTheme(ctx.branding ?? {}, branded), customCss: branded ? safeCustomCss(ctx.branding?.customCss) : "", hidePoweredBy: branded && ctx.branding?.hidePoweredBy === true, logoUrl: logoUrl(a.org_id, ctx.branding ?? {}) },
     jobSlug: ctx.job_slug,
     jobTitle: ctx.job_title,
     firstName: ctx.first_name,

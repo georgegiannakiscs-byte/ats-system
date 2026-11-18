@@ -49,8 +49,8 @@ const iso = (d: Date | string | null | undefined) => (d ? new Date(d).toISOStrin
 /** Builds the workspace payload consumed by the frontend store - one company only. */
 export async function buildSnapshot(access: OrgAccess) {
   const { org, user, role } = access;
-  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string; linkedin_feed: Record<string, unknown>; require_two_factor: boolean }>(
-    "select name, profile, branding, onboarding, notification_prefs, linkedin_feed, require_two_factor from organizations where id = $1",
+  const [orgRow] = await sys<{ profile: Record<string, unknown>; branding: Record<string, unknown>; onboarding: Record<string, unknown>; notification_prefs: Record<string, boolean>; name: string; linkedin_feed: Record<string, unknown>; require_two_factor: boolean; restrict_to_hiring_team: boolean }>(
+    "select name, profile, branding, onboarding, notification_prefs, linkedin_feed, require_two_factor, restrict_to_hiring_team from organizations where id = $1",
     [org.id],
   );
   const team = await sys<{ id: string; name: string; email: string; role: OrgRole; title: string | null; has_2fa: boolean }>(
@@ -96,6 +96,9 @@ export async function buildSnapshot(access: OrgAccess) {
       onboarding: orgRow.onboarding,
       linkedinFeed: { enabled: false, companyId: "", posterEmail: "", country: "GR", ...orgRow.linkedin_feed },
       requireTwoFactor: orgRow.require_two_factor,
+      restrictToHiringTeam: orgRow.restrict_to_hiring_team,
+      /** false for Hiring Managers/Interviewers limited to their own jobs (the database enforces it; the UI explains it). */
+      seesAllJobs: role === "admin" || role === "recruiter" || !orgRow.restrict_to_hiring_team,
       features: Object.fromEntries(features.map((f) => [f.key, f.enabled])),
     },
     company: {
@@ -119,7 +122,7 @@ export async function buildSnapshot(access: OrgAccess) {
     invitations: invitations.map((i) => ({ id: i.id, email: i.email, role: ROLE_LABEL[i.role], createdAt: iso(i.created_at), expiresAt: iso(i.expires_at) })),
     jobs: data.jobs.map((j) => ({
       id: j.id, slug: j.slug, title: j.title, department: j.department, location: j.location, workplace: j.workplace, employmentType: j.employment_type, contractType: j.contract_type, seniority: j.seniority, status: j.status,
-      hiringManagerId: j.hiring_manager_id ?? "", recruiterId: j.recruiter_id ?? "", openings: j.openings, salaryMin: j.salary_min ?? undefined, salaryMax: j.salary_max ?? undefined, currency: j.currency,
+      hiringManagerId: j.hiring_manager_id ?? "", recruiterId: j.recruiter_id ?? "", hiringTeam: j.hiring_team ?? [], openings: j.openings, salaryMin: j.salary_min ?? undefined, salaryMax: j.salary_max ?? undefined, currency: j.currency,
       summary: j.summary, responsibilities: j.responsibilities, requirements: j.requirements, niceToHave: j.nice_to_have ?? "", requiredExperience: j.required_experience, benefits: j.benefits, skills: j.skills, preferredSkills: j.preferred_skills,
       screeningQuestions: j.screening_questions, channels: j.channels, createdAt: iso(j.created_at), publishedAt: iso(j.published_at), targetHireDate: iso(j.target_hire_date),
     })),

@@ -235,6 +235,7 @@ function BrandingSettings() {
     primaryColor: b.primaryColor ?? DEFAULT_PRIMARY, accentColor: b.accentColor ?? DEFAULT_ACCENT, backgroundColor: b.backgroundColor ?? "", textColor: b.textColor ?? "",
     headingFont: b.headingFont ?? "default", bodyFont: b.bodyFont ?? "default", cornerStyle: b.cornerStyle ?? "rounded", heroStyle: b.heroStyle ?? "plain",
     careersHeadline: b.careersHeadline ?? "", careersIntro: b.careersIntro ?? "", benefits: (b.benefits ?? []).join("\n"), careersLanguage: b.careersLanguage ?? "en", careersLayout: b.careersLayout ?? "list",
+    hidePoweredBy: b.hidePoweredBy === true,
   });
   const [initial, setInitial] = React.useState(() => JSON.stringify(f));
   const dirty = JSON.stringify(f) !== initial;
@@ -281,6 +282,10 @@ function BrandingSettings() {
             <Field label="Text font"><Select value={f.bodyFont} onValueChange={(v) => set("bodyFont", v as CareersFontKey)} options={fontOptions} /></Field>
             <Field label="Corners"><Select value={f.cornerStyle} onValueChange={(v) => set("cornerStyle", v as CornerStyle)} options={[{ value: "sharp", label: "Sharp" }, { value: "rounded", label: "Rounded" }, { value: "round", label: "Extra round" }]} /></Field>
             <Field label="Header"><Select value={f.heroStyle} onValueChange={(v) => set("heroStyle", v as HeroStyle)} options={[{ value: "plain", label: "Plain" }, { value: "band", label: "Coloured band (main colour)" }]} /></Field>
+            <label className="flex items-start justify-between gap-3 sm:col-span-2">
+              <span className="text-sm"><span className="font-medium">Show &ldquo;Recruitment powered by Ulysse&rdquo;</span><span className="block text-xs text-muted-foreground">The small line at the bottom of your careers pages.</span></span>
+              <Switch checked={!f.hidePoweredBy} onCheckedChange={(v: boolean) => set("hidePoweredBy", !v)} aria-label="Show Recruitment powered by Ulysse" />
+            </label>
           </fieldset>
           <div className="border-t border-border" />
           <fieldset disabled={!canEdit} className="grid gap-4 sm:grid-cols-2">
@@ -451,9 +456,12 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
 }
 
 function RolesSettings() {
+  const db = useDb();
+  const canEdit = useCan("settings.manage");
+  const [busy, setBusy] = React.useState(false);
   // Mirrors the permission matrix the server enforces on every request (src/server/permissions.ts).
   const perms: { label: string; roles: [boolean, boolean, boolean, boolean] }[] = [
-    { label: "View jobs and candidates", roles: [true, true, true, true] },
+    { label: db.org.restrictToHiringTeam ? "View jobs and their candidates (Hiring Manager, Interviewer: only jobs they're on)" : "View jobs and candidates", roles: [true, true, true, true] },
     { label: "Write notes, submit scorecards, manage tasks", roles: [true, true, true, true] },
     { label: "Download CVs", roles: [true, true, true, false] },
     { label: "Edit candidates, move them between stages, reject", roles: [true, true, true, false] },
@@ -468,6 +476,14 @@ function RolesSettings() {
   const cell = (v: boolean) => v ? <Check className="mx-auto size-4 text-success" aria-label="Allowed" /> : <Minus className="mx-auto size-4 text-subtle-foreground" aria-label="Not allowed" />;
   return (
     <div className="space-y-3">
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs">
+        <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1 space-y-1 text-sm">
+          <p className="font-medium">Hiring Managers and Interviewers see only their jobs</p>
+          <p className="text-muted-foreground">They see a job, its candidates, CVs, notes, interviews and Quick Checks only when they&apos;re on the job&apos;s hiring team: its hiring manager, its recruiter, or listed under <strong className="font-medium">Hiring team</strong> on the job. Interviewers you schedule are added automatically. Admins and Recruiters always see everything.</p>
+        </div>
+        <Switch checked={db.org.restrictToHiringTeam} disabled={!canEdit || busy} aria-label="Hiring Managers and Interviewers see only their jobs" onCheckedChange={(v: boolean) => { setBusy(true); api.settings.setRestrictToHiringTeam(v).then(() => toast.success(v ? "Hiring Managers and Interviewers now see only their jobs" : "Everyone now sees all jobs"), () => {}).finally(() => setBusy(false)); }} />
+      </div>
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-xs">
         <table className="w-full min-w-[620px] text-sm">
           <thead className="border-b border-border bg-surface-2/60"><tr><th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-subtle-foreground">Permission</th>{ROLES.map((r) => <th key={r} className="px-3 py-2.5 text-center text-xs font-semibold">{r}</th>)}</tr></thead>

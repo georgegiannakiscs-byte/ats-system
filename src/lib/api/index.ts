@@ -286,6 +286,11 @@ const settings = {
     setState((db) => ({ ...db, org: { ...db.org, linkedinFeed: v } }));
     return true;
   },
+  async setRestrictToHiringTeam(restrictToHiringTeam: boolean) {
+    await send("settings.access", { restrictToHiringTeam });
+    setState((db) => ({ ...db, org: { ...db.org, restrictToHiringTeam } }));
+    return true;
+  },
   async setRequireTwoFactor(requireTwoFactor: boolean) {
     await send("settings.security", { requireTwoFactor });
     setState((db) => ({ ...db, org: { ...db.org, requireTwoFactor } }));
