@@ -9,6 +9,7 @@ import { sendMail } from "@/server/mail";
 import { sha256 } from "@/server/security";
 import { createAttempt, emailInvite } from "@/server/assessments";
 import { CvDataSchema, type CvData } from "@/lib/cv/schema";
+import { notifyNewApplication } from "@/server/notify";
 
 /*
  * Public application intake. ONLY three fields are required: full name, email, CV.
@@ -133,8 +134,10 @@ export const POST = handler(async (req) => {
       }
       // Optional Quick Check: invitation created only when the job has an approved, enabled set.
       const quickCheck = await createAttempt(q, { orgId: job.org_id, applicationId, jobId: job.id, candidateId, invitedBy: null });
-      return { applicationId, quickCheck };
+      return { applicationId, candidateId, quickCheck };
     });
+    // Recruiter email: after the commit and without making the candidate wait.
+    void notifyNewApplication(job, result.candidateId, f.fullName).catch((e) => console.error("[notify] new application", e));
     const lang = f.lang ?? "en";
     const subject = lang === "el" ? `Λάβαμε την αίτησή σας - ${job.title}` : `We received your application - ${job.title}`;
     const body = lang === "el"

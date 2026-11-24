@@ -14,6 +14,8 @@ import { clean as cleanCvs, dangerous as dangerousCvs } from "./cv-fixtures.mjs"
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const DB = process.env.DATABASE_URL ?? "postgres://deceler:deceler_dev@localhost:5432/deceler";
+// Set when the server runs with SMTP pointed at a local catcher (emails are then checked too).
+const MAILS = process.env.MAIL_CATCHER_DIR;
 const FIX = path.join(path.dirname(new URL(import.meta.url).pathname), "fixtures");
 const run = crypto.randomBytes(3).toString("hex");
 
@@ -692,7 +694,6 @@ test("K - GDPR: privacy settings, data export, erasure on request and automatic 
 });
 
 test("L - email: candidate messages, forgot password, sender and reply-to", async () => {
-  const MAILS = process.env.MAIL_CATCHER_DIR; // set when the server runs with SMTP to a local catcher
   const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
   const cand = snap.candidates[0];
   const anon = client();
@@ -737,6 +738,79 @@ async function login(c, email, password) {
   assert.equal(r.status, 200);
   if (r.data.mfaRequired) assert.equal((await c.post("/api/auth/login/verify", { ticket: r.data.ticket, code: S.owner2fa.recoveryCodes.pop() })).status, 200);
 }
+
+test("P - recruiter email for new applications, calendar invitations for interviews", async () => {
+  const ownerId = (await owner.get("/api/me")).data.user.id;
+  // Calendar lines longer than 75 bytes are folded (RFC 5545): unfold before matching.
+  const read = () => (MAILS ? fs.readdirSync(MAILS).filter((f) => f.endsWith(".json")).map((f) => JSON.parse(fs.readFileSync(path.join(MAILS, f), "utf8"))).map((m) => ({ ...m, ics: m.ics?.replace(/\r\n /g, "") })) : []);
+  const settle = () => new Promise((r) => setTimeout(r, 700));
+  assert.equal((await owner.cmd(S.A.id, "jobs.update", { id: S.jobA, patch: { recruiterId: ownerId } })).status, 200);
+  let before = read().length;
+  assert.equal((await apply(S.slugA, S.jobSlugA, { fullName: "Nora Notify", email: `nora-${run}@example.com` })).status, 201);
+  await settle();
+  if (MAILS) {
+    const notice = read().slice(before).find((m) => m.subject === "New application: Nora Notify for Data Analyst");
+    assert.ok(notice && notice.to === `owner-${run}@test.example`, "the job's recruiter is emailed");
+    assert.match(notice.text, /\/app\/[^/]+\/candidates\/view\?id=c_/);
+  }
+  // Switched off in Settings → Notifications: no email.
+  assert.equal((await owner.cmd(S.A.id, "settings.notificationPrefs", { newApplication: false })).status, 200);
+  before = read().length;
+  assert.equal((await apply(S.slugA, S.jobSlugA, { fullName: "Quiet Quinn", email: `quinn-${run}@example.com` })).status, 201);
+  await settle();
+  assert.ok(!read().slice(before).some((m) => /Quiet Quinn/.test(m.subject)));
+  assert.equal((await owner.cmd(S.A.id, "settings.notificationPrefs", { newApplication: true })).status, 200);
+
+  // Interview with invitations for the interviewer and the candidate.
+  const snap = (await owner.get(`/api/orgs/${S.A.id}/snapshot`)).data;
+  const nora = snap.candidates.find((c) => c.email === `nora-${run}@example.com`);
+  const app = snap.applications.find((x) => x.candidateId === nora.id);
+  const iv = { candidateId: nora.id, jobId: S.jobA, applicationId: app.id, kind: "HR interview", start: "2030-03-04T08:00:00.000Z", durationMin: 45, meetingType: "Video", location: "https://meet.example/abc", interviewerIds: [ownerId], status: "scheduled", notes: "Ask about SQL", createdAt: new Date().toISOString() };
+  const ivId = `i_${crypto.randomBytes(6).toString("hex")}`;
+  const save = (data, extra = {}) => owner.cmd(S.A.id, "records.upsert", { kind: "interview", id: ivId, data, ...extra });
+  before = read().length;
+  assert.equal((await save(iv, { activity: "scheduled an hr interview", invite: { team: true, candidate: true, timeZone: "Europe/Athens" } })).status, 200);
+  const stored = () => owner.get(`/api/orgs/${S.A.id}/snapshot`).then((r) => r.data.interviews.find((x) => x.id === ivId));
+  assert.deepEqual((await stored()).invites, { team: true, candidate: true, timeZone: "Europe/Athens", sequence: 0 });
+  await settle();
+  if (MAILS) {
+    const sent = read().slice(before);
+    const team = sent.find((m) => m.to === `owner-${run}@test.example` && /^Invitation: HR interview: Nora Notify/.test(m.subject));
+    const cand = sent.find((m) => m.to === `nora-${run}@example.com`);
+    assert.ok(team && cand, "one invitation each");
+    assert.match(team.ics, /METHOD:REQUEST/);
+    assert.match(team.ics, /DTSTART:20300304T080000Z/);
+    assert.match(team.text, /Ask about SQL/);
+    assert.match(cand.ics, /ATTENDEE;CN="Nora Notify"[^\n]*mailto:nora-/);
+    assert.ok(!cand.ics.includes(`owner-${run}`) && !cand.text.includes("Ask about SQL"), "the candidate sees no team addresses or internal notes");
+    assert.match(cand.text, /Monday, 4 March 2030, 10:00–10:45 \(Europe\/Athens time\)/);
+    assert.equal(cand.headers["reply-to"], `owner-${run}@test.example`, "replies go to the scheduler");
+  }
+  // Moving it (the browser's copy has no invitation state): an update with a higher sequence.
+  before = read().length;
+  assert.equal((await save({ ...iv, start: "2030-03-05T09:00:00.000Z" })).status, 200);
+  assert.equal((await stored()).invites.sequence, 1, "state kept by the server");
+  await settle();
+  if (MAILS) {
+    const upd = read().slice(before);
+    assert.equal(upd.length, 2);
+    assert.ok(upd.every((m) => /^Updated: /.test(m.subject) && /SEQUENCE:1/.test(m.ics)));
+  }
+  // A change that isn't about time or place sends nothing.
+  before = read().length;
+  assert.equal((await save({ ...iv, start: "2030-03-05T09:00:00.000Z", notes: "Also ask about dashboards" })).status, 200);
+  await settle();
+  assert.equal(read().length, before);
+  // Cancelling sends a cancellation.
+  assert.equal((await save({ ...iv, start: "2030-03-05T09:00:00.000Z", status: "cancelled" })).status, 200);
+  await settle();
+  if (MAILS) assert.ok(read().slice(before).every((m) => /^Cancelled: /.test(m.subject) && /METHOD:CANCEL/.test(m.ics) && /STATUS:CANCELLED/.test(m.ics)));
+  // Without the invite option nothing is emailed.
+  before = read().length;
+  assert.equal((await owner.cmd(S.A.id, "records.upsert", { kind: "interview", id: `i_${crypto.randomBytes(6).toString("hex")}`, data: iv })).status, 200);
+  await settle();
+  assert.equal(read().length, before);
+});
 
 test("M - a company can require two-step verification for its members", async () => {
   // The owner has it on (turned on in B); the interviewer in Company A doesn't.
