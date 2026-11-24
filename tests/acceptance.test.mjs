@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import zlib from "node:zlib";
 import pg from "pg";
 import { enableTwoFactor } from "./totp.mjs";
 import { clean as cleanCvs, dangerous as dangerousCvs } from "./cv-fixtures.mjs";
@@ -40,6 +41,7 @@ function client() {
     del: (u, b) => call("DELETE", u, b),
     form: (u, fd) => call("POST", u, fd, true),
     cmd: (org, type, payload) => call("POST", `/api/orgs/${org}/commands`, { type, payload }),
+    cookie: () => cookie,
   };
 }
 
@@ -482,6 +484,47 @@ test("B - platform super admin", async () => {
   // no candidate data in admin APIs
   const all = JSON.stringify([ov.data, list.data, users.data, ih.data, audit.data]);
   assert.ok(!all.includes(`eleni-${run}@example.com`), "no candidate personal data in platform admin responses");
+});
+
+test("B3 - encrypted platform backup (Admin → Backups)", async () => {
+  const post = (c, body) => fetch(`${BASE}/api/admin/backup`, { method: "POST", headers: { "content-type": "application/json", cookie: c.cookie() }, body: JSON.stringify(body) });
+  assert.equal((await post(other, { accountPassword: "correct-horse-battery-1", backupPassword: "a-long-backup-pass-1" })).status, 403, "platform admins only");
+  assert.equal((await post(owner, { accountPassword: "correct-horse-battery-1", backupPassword: "short" })).status, 400, "backup password of 12+ characters");
+  assert.equal((await post(owner, { accountPassword: "wrong-password-123", backupPassword: "a-long-backup-pass-1" })).status, 400, "account password asked again");
+  const res = await post(owner, { accountPassword: "correct-horse-battery-1", backupPassword: "a-long-backup-pass-1" });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-disposition"), /ulysse-backup-\d{4}-\d{2}-\d{2}\.ulyssebak/);
+  const file = Buffer.from(await res.arrayBuffer());
+  assert.equal(file.subarray(0, 8).toString(), "ULYBAK01");
+  assert.ok(!file.includes(Buffer.from(`Alpha ${run}`)), "nothing readable without the password");
+  // Decrypt exactly as the restore tool does.
+  const logN = file[8], salt = file.subarray(9, 25), iv = file.subarray(25, 37), tag = file.subarray(file.length - 16);
+  const open = (pw) => {
+    const key = crypto.scryptSync(pw, salt, 32, { N: 2 ** logN, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
+    const d = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    d.setAuthTag(tag);
+    return zlib.gunzipSync(Buffer.concat([d.update(file.subarray(37, file.length - 16)), d.final()])).toString("utf8");
+  };
+  assert.throws(() => open("not-the-right-password"), "a wrong password can't open it");
+  const lines = open("a-long-backup-pass-1").trim().split("\n").map((l) => JSON.parse(l));
+  const meta = lines[0], end = lines.at(-1);
+  assert.equal(meta.type, "meta");
+  assert.ok(meta.migrations.includes("013_hiring_team_scope.sql"));
+  assert.ok(!meta.tables.includes("sessions") && !meta.tables.includes("password_resets"), "sign-in sessions left out");
+  assert.ok(meta.tables.indexOf("organizations") < meta.tables.indexOf("jobs") && meta.tables.indexOf("jobs") < meta.tables.indexOf("applications"), "parents before children");
+  assert.equal(end.type, "end");
+  const rowsOf = (t) => lines.filter((l) => l.type === "rows" && l.table === t).flatMap((l) => l.rows);
+  assert.ok(rowsOf("organizations").some((o) => o.id === S.A.id && o.name === `Alpha ${run}`));
+  assert.ok(rowsOf("candidates").some((c) => c.id === S.candA));
+  assert.equal(rowsOf("candidates").length, end.counts.candidates);
+  const status = await owner.get("/api/admin/backup");
+  assert.ok(Date.now() - new Date(status.data.lastAt).getTime() < 60_000, "last backup recorded for the reminder");
+  const db = new pg.Client({ connectionString: DB });
+  await db.connect();
+  await db.query("begin"); await db.query("select set_config('app.bypass','on',true)");
+  const n = (await db.query("select count(*)::int n from audit_logs where action = 'platform.backup_downloaded' and created_at > now() - interval '1 minute'")).rows[0].n;
+  await db.query("rollback"); await db.end();
+  assert.ok(n >= 1, "audited");
 });
 
 test("B2 - archive and permanent deletion of a company (data and files)", async () => {
