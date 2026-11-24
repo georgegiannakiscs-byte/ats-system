@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles, Inbox, LockKeyhole } from "lucide-react";
+import { Building2, ChartColumn, ArrowLeft, Flag, Plug, ScrollText, Settings, Users, LogOut, Sparkles, Inbox, LockKeyhole, DatabaseBackup } from "lucide-react";
 import { BrandLogo } from "@/components/shell/brand-mark";
 import { signOut } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/integrations", label: "Integrations", icon: Plug },
   { href: "/admin/ai", label: "AI usage", icon: Sparkles },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
+  { href: "/admin/backups", label: "Backups", icon: DatabaseBackup },
   { href: "/admin/settings", label: "Platform settings", icon: Settings },
 ];
 

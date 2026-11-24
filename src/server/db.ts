@@ -62,3 +62,28 @@ export async function tenantTx<T>(orgId: string, userId: string, fn: (q: Q) => P
     client.release();
   }
 }
+
+/**
+ * A read-only, consistent snapshot of the whole database in the system context (backups only).
+ * Every statement sees the same moment in time. The caller MUST call done() (also on errors).
+ */
+export async function openSnapshot() {
+  const client = await pool().connect();
+  try {
+    await client.query("begin isolation level repeatable read read only");
+    await client.query("select set_config('app.bypass', 'on', true)");
+  } catch (e) {
+    client.release();
+    throw e;
+  }
+  let open = true;
+  return {
+    q: wrap(client),
+    done: async () => {
+      if (!open) return;
+      open = false;
+      await client.query("rollback").catch(() => {});
+      client.release();
+    },
+  };
+}

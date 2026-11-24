@@ -61,6 +61,20 @@ Ulysse is a standard Docker image plus PostgreSQL, so the IT team can run it on 
 4. **Lock it down:** after the first admin signs up, go to **Admin → Platform settings** and set **Sign-up → Invitation only** and **Company creation → Platform admins only**. Platform admins must turn on two-step verification under **Account & security** before Admin opens. To require it for everyone in a company: **Settings → Team members → Require two-step verification**.
 5. **Moving data:** to bring data from a test install, use `pg_dump` and `pg_restore`, plus the files (the `files` volume, or nothing extra with `STORAGE_DRIVER=db`). Keep the same `APP_SECRET`, otherwise users have to set up two-step verification again with a recovery code.
 
+## Backups and restore
+
+**Taking a backup:** Admin → **Backups** → enter your account password and a backup password (12+ characters) → **Download backup**. The `.ulyssebak` file holds every company, user, job, candidate, CV, logo and setting from one consistent moment, encrypted with AES-256-GCM (key from the backup password via scrypt). Login sessions and reset links are left out. Each download is audited, and the Admin overview reminds you when the last one is more than 7 days old. Keep the file and its password somewhere private: anyone with both can read all candidate data.
+
+**Restoring** (into a new, empty database, never over a live one):
+
+```bash
+createdb ulysse_restored                                            # or a new Neon project/branch
+DATABASE_URL=postgres://…/ulysse_restored npm run db:migrate
+DATABASE_URL=postgres://…/ulysse_restored npm run restore-backup -- ulysse-backup-2026-11-24.ulyssebak
+```
+
+The tool asks for the backup password (or reads `BACKUP_PASSWORD`). The database part runs in one transaction: a wrong password, a damaged or cut-off file, or a non-empty target writes nothing. Backups taken with `STORAGE_DRIVER=fs` also contain the files: set `STORAGE_DIR` to the folder the restored app will use. Then point the app at the restored database with the **same `APP_SECRET`** (otherwise two-step verification has to be set up again with recovery codes).
+
 Updates: pull the new image and restart. Database migrations run automatically on start (`AUTO_MIGRATE=true`).
 
 ## Production

@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Archive, ArchiveRestore, Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, ShieldOff, Smartphone, Trash2, UserX, UserCheck } from "lucide-react";
+import { Archive, ArchiveRestore, DatabaseBackup, Download, TriangleAlert, Building2, CircleCheck, CircleDashed, Copy, KeyRound, Plus, Search, ShieldCheck, ShieldOff, Smartphone, Trash2, UserX, UserCheck } from "lucide-react";
 import { apiFetch, type ApiError } from "@/lib/api/store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,7 @@ export function AdminOverview() {
   return (
     <>
       <AdminHeader title="Platform overview" description="Aggregated metrics only - no candidate-level data is shown here." />
+      <BackupReminder />
       <Link href="/admin/talent" className="mb-3 flex items-center justify-between rounded-xl border border-border bg-surface p-4 shadow-xs hover:border-border-strong">
         <span><span className="block text-sm font-semibold">Talent leads</span><span className="text-xs text-muted-foreground">People who sent their CV through the /talent page (e.g. from LinkedIn)</span></span>
         <span className="text-right"><span className="tabular block text-2xl font-semibold">{m.talent_leads_new ?? 0}</span><span className="text-xs text-muted-foreground">new · {m.talent_leads ?? 0} total</span></span>
@@ -68,6 +69,99 @@ export function AdminOverview() {
           <div className="mb-3 flex items-center justify-between"><p className="text-sm font-semibold">Recent administrative activity</p><Link href="/admin/audit" className="text-xs text-muted-foreground hover:text-foreground">View all</Link></div>
           <ul className="space-y-2 text-sm">{data.recentAudit.map((a: any, i: number) => <li key={i} className="flex justify-between gap-3"><span className="truncate"><span className="font-mono text-xs">{a.action}</span> <span className="text-muted-foreground">{a.company ? `· ${a.company}` : ""}</span></span><span className="shrink-0 text-xs text-subtle-foreground">{relativeTime(a.created_at)}</span></li>)}</ul>
         </Card>
+      </div>
+    </>
+  );
+}
+
+/* ───────────── Backups ───────────── */
+const BACKUP_DUE_DAYS = 7;
+const backupDue = (lastAt: string | null) => !lastAt || Date.now() - new Date(lastAt).getTime() > BACKUP_DUE_DAYS * 86_400_000;
+
+/** Overview reminder: shown when no backup was downloaded in the last 7 days. */
+function BackupReminder() {
+  const { data } = useAdmin<{ lastAt: string | null }>("/api/admin/backup");
+  if (!data || !backupDue(data.lastAt)) return null;
+  return (
+    <Link href="/admin/backups" className="mb-3 flex items-center gap-3 rounded-xl border border-warning/40 bg-warning-soft p-4 text-sm hover:border-warning">
+      <TriangleAlert className="size-4 shrink-0" />
+      <span className="flex-1"><span className="font-semibold">Time for a backup.</span> {data.lastAt ? `The last one was downloaded ${relativeTime(data.lastAt)}.` : "No backup has been downloaded yet."} It takes a minute.</span>
+      <span className="font-medium underline underline-offset-2">Download a backup</span>
+    </Link>
+  );
+}
+
+export function AdminBackups() {
+  const { data, reload } = useAdmin<{ lastAt: string | null; by: string | null }>("/api/admin/backup");
+  const [f, setF] = React.useState({ accountPassword: "", backupPassword: "", repeat: "", understood: false });
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string>();
+  const problem = f.backupPassword.length > 0 && f.backupPassword.length < 12 ? "Use at least 12 characters" : f.repeat && f.repeat !== f.backupPassword ? "The two backup passwords don't match" : undefined;
+  const ready = f.accountPassword && f.backupPassword.length >= 12 && f.repeat === f.backupPassword && f.understood;
+  const download = async () => {
+    setBusy(true); setError(undefined);
+    try {
+      const res = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ accountPassword: f.accountPassword, backupPassword: f.backupPassword }) });
+      if (!res.ok) {
+        const e = await res.json().catch(() => null);
+        throw new Error(e?.details?.[0]?.message ?? e?.error ?? "The backup couldn't be created");
+      }
+      const blob = await res.blob();
+      const name = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "ulysse-backup.ulyssebak";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setF({ accountPassword: "", backupPassword: "", repeat: "", understood: false });
+      toast.success("Backup downloaded", { description: `${name} · ${bytes(blob.size)}` });
+      reload();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setBusy(false);
+  };
+  return (
+    <>
+      <AdminHeader title="Backups" description="A full copy of the platform: every company, job, candidate, CV and setting." />
+      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+        <Card className="space-y-4 p-5">
+          <div className="flex items-start gap-3">
+            <DatabaseBackup className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            <div className="space-y-1 text-sm">
+              <p className="font-semibold">Download an encrypted backup</p>
+              <p className="text-muted-foreground">The file is locked with a backup password that you choose now. Without that password nobody can open or restore it. Keep the file somewhere private (your computer, or your own secure cloud folder), never in a shared folder or an email.</p>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Your account password" hint="To confirm it's you."><Input type="password" autoComplete="current-password" value={f.accountPassword} onChange={(e) => setF({ ...f, accountPassword: e.target.value })} /></Field>
+            <div className="hidden sm:block" />
+            <Field label="Backup password" hint="At least 12 characters. Different from your account password." error={problem}><Input type="password" autoComplete="new-password" value={f.backupPassword} onChange={(e) => setF({ ...f, backupPassword: e.target.value })} /></Field>
+            <Field label="Repeat the backup password"><Input type="password" autoComplete="new-password" value={f.repeat} onChange={(e) => setF({ ...f, repeat: e.target.value })} /></Field>
+          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" className="mt-1" checked={f.understood} onChange={(e) => setF({ ...f, understood: e.target.checked })} />
+            <span>I&apos;ve saved the backup password somewhere safe (for example a password manager). It can&apos;t be recovered.</span>
+          </label>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="flex items-center gap-3">
+            <Button disabled={!ready || busy} onClick={download}><Download />{busy ? "Preparing the backup…" : "Download backup"}</Button>
+            {busy && <span className="text-xs text-muted-foreground">This can take a minute. Keep this page open.</span>}
+          </div>
+        </Card>
+        <div className="space-y-4">
+          <Card className="p-5 text-sm">
+            <p className="text-xs text-muted-foreground">Last backup</p>
+            <p className="mt-1 text-lg font-semibold">{data ? (data.lastAt ? relativeTime(data.lastAt) : "Never") : "…"}</p>
+            {data?.lastAt && <p className="text-xs text-muted-foreground">{shortDate(data.lastAt)} · {data.by}</p>}
+            {data && backupDue(data.lastAt) && <p className="mt-2 text-xs text-warning">We recommend one every week, and before any big change.</p>}
+          </Card>
+          <Card className="space-y-2 p-5 text-sm">
+            <p className="font-semibold">What&apos;s inside</p>
+            <p className="text-muted-foreground">All companies, users, jobs, candidates, applications, CVs, logos, notes, Quick Checks and settings. Sign-in sessions are left out, so after a restore everyone signs in again.</p>
+            <p className="font-semibold">Restoring</p>
+            <p className="text-muted-foreground">A restore goes into a new, empty database with the restore tool described in the project&apos;s README (<code className="font-mono text-xs">npm run restore-backup</code>). Each download is recorded in the audit log.</p>
+          </Card>
+        </div>
       </div>
     </>
   );
