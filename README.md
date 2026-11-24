@@ -46,6 +46,17 @@ Free limits:
 
 Files are stored in the database (`STORAGE_DRIVER=db`), because free Render services have no disk. Every merge to `main` redeploys automatically.
 
+**Before real candidate data: a database role that can't bypass Row Level Security.** Neon's default owner role (`neondb_owner`) has `BYPASSRLS`, and the logs warn about it. Tenant requests are still isolated (they run as `deceler_app`), but the database then gives no second line of defence. After the first deploy has created `deceler_app`, run these statements one at a time in Neon → **SQL Editor** on database `neondb`. Choose a long password made of letters, digits and hyphens only.
+
+```sql
+CREATE ROLE ulysse_owner LOGIN PASSWORD 'your-long-password' NOBYPASSRLS CREATEROLE;
+GRANT deceler_app TO ulysse_owner WITH ADMIN OPTION;
+GRANT ulysse_owner TO neondb_owner;
+CREATE DATABASE ulysse OWNER ulysse_owner;
+```
+
+Then in the Neon connection string, change three parts: `neondb_owner` → `ulysse_owner`, the password → yours, and `/neondb?` → `/ulysse?`. Put the result in Render as `DATABASE_URL`. The next deploy creates the tables in the new, empty database, and the `[security]` warning is gone. Sign up again: accounts in the old database aren't moved.
+
 ## Run it on your company's servers
 
 Ulysse is a standard Docker image plus PostgreSQL, so the IT team can run it on any server, cloud or Kubernetes cluster, under the company's own domain (e.g. `careers.company.gr`).
