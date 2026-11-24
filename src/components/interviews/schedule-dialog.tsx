@@ -45,6 +45,9 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
   const [interviewers, setInterviewers] = React.useState<ID[]>(() => (job ? [kind.includes("Hiring") || kind.includes("Final") ? job.hiringManagerId : job.recruiterId] : [db.currentUserId]));
   const [notes, setNotes] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
+  const [inviteTeam, setInviteTeam] = React.useState(true);
+  const [inviteCandidate, setInviteCandidate] = React.useState(true);
+  const emailOn = db.emailDelivery;
 
   React.useEffect(() => {
     if (!apps.find((a) => a.id === applicationId)) setApplicationId(apps[0]?.id);
@@ -65,9 +68,11 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
     e.preventDefault();
     setSubmitted(true);
     if (!valid || !app) return;
-    await api.interviews.schedule({ candidateId: app.candidateId, jobId: app.jobId, applicationId: app.id, kind, start: start.toISOString(), durationMin: Number(duration), meetingType, location: location || undefined, interviewerIds: interviewers, notes: notes || undefined });
+    const invite = emailOn ? { team: inviteTeam, candidate: inviteCandidate } : undefined;
+    await api.interviews.schedule({ candidateId: app.candidateId, jobId: app.jobId, applicationId: app.id, kind, start: start.toISOString(), durationMin: Number(duration), meetingType, location: location || undefined, interviewerIds: interviewers, notes: notes || undefined }, invite);
     const c = db.candidates.find((x) => x.id === app.candidateId)!;
-    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · No calendar invite was sent - calendar sync isn't connected.` });
+    const sent = invite && (invite.team || invite.candidate) ? `Calendar invitations are on their way${invite.candidate ? `, including to ${c.firstName}` : ""}.` : "No calendar invitation was sent.";
+    toast.success(`Interview scheduled with ${fullName(c)}`, { description: `${format(start, "EEE d MMM, HH:mm")} · ${sent}` });
     onClose();
   };
 
@@ -113,14 +118,24 @@ function ScheduleForm({ prefill, onClose }: { prefill: SchedulePrefill; onClose:
             </span>
           </div>
         )}
-        <Field label={meetingType === "On-site" ? "Location" : meetingType === "Video" ? "Meeting link" : "Phone number"} hint={meetingType === "Video" ? "Paste a link, or leave empty - links are generated once a calendar is connected." : undefined} className="sm:col-span-2">
+        <Field label={meetingType === "On-site" ? "Location" : meetingType === "Video" ? "Meeting link" : "Phone number"} hint={meetingType === "Video" ? "Paste the Google Meet, Teams or Zoom link. Ulysse doesn't create meeting links." : undefined} className="sm:col-span-2">
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder={meetingType === "On-site" ? `${job?.location ?? "Paris"} office, 3rd floor` : meetingType === "Video" ? "https://meet.example/…" : "+33 …"} />
         </Field>
         <Field label="Notes for interviewers" className="sm:col-span-2">
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Focus areas, materials to review…" className="min-h-16" />
         </Field>
+        {emailOn ? (
+          <fieldset className="space-y-2 sm:col-span-2">
+            <legend className="mb-1 text-sm font-medium">Calendar invitations by email</legend>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={inviteTeam} onChange={(e) => setInviteTeam(e.target.checked)} /><span>Send to the interviewers <span className="text-muted-foreground">(with the candidate&apos;s profile link and your notes)</span></span></label>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-1" checked={inviteCandidate} onChange={(e) => setInviteCandidate(e.target.checked)} /><span>Send to the candidate <span className="text-muted-foreground">(date, format and place or link only; replies come to you)</span></span></label>
+            <p className="text-xs text-muted-foreground">If you later move or cancel the interview, the same people get the update automatically.</p>
+          </fieldset>
+        ) : (
+          <p className="text-xs text-muted-foreground sm:col-span-2">Calendar invitations are emailed once email delivery is set up on the platform.</p>
+        )}
       </DialogBody>
-      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Saved to Ulysse. Calendar invites need a connected calendar.</span>}>
+      <DialogFooter hint={<span className="inline-flex items-center gap-1"><Info className="size-3.5" />Saved to Ulysse{emailOn ? ". Invitations work with Google Calendar, Outlook and Apple Calendar." : "."}</span>}>
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button type="submit">Schedule</Button>
       </DialogFooter>

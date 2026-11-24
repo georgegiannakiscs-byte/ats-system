@@ -6,6 +6,7 @@ import { CUSTOM_CSS_MAX, customCssProblems } from "@/lib/careers-css";
 import { z } from "zod";
 import { sys, tenantTx, type Q } from "./db";
 import { HttpError } from "./http";
+import { planInterviewInvites } from "./interview-invites";
 import { audit, slugify, type OrgAccess } from "./org";
 import { can, ROLE_FROM_LABEL, type Permission } from "./permissions";
 import { runAssessmentCommand } from "./assessment-commands";
@@ -267,7 +268,9 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
   }
 
   /* ── Tenant data (RLS) ── */
-  return tenantTx(orgId, a.user.id, async (q) => {
+  // Emails that must only go out once the change is committed (interview invitations).
+  let afterCommit: (() => Promise<void>) | null = null;
+  const result = await tenantTx(orgId, a.user.id, async (q) => {
     switch (type) {
       case "settings.stages": {
         need(a, "settings.manage");
@@ -462,6 +465,11 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         const data = z.record(z.string(), z.unknown()).parse(p.data);
         if (JSON.stringify(data).length > 100_000) throw new HttpError(413, "Record too large", "too_large");
         if (kind === "saved_view") data.userId = a.user.id;
+        if (kind === "interview") {
+          const [prev] = await q<{ data: Record<string, unknown> }>("select data from workspace_records where kind = 'interview' and id = $1", [id]);
+          const invite = z.object({ team: z.boolean(), candidate: z.boolean(), timeZone: z.string().max(64) }).partial().nullable().optional().parse(p.invite) ?? null;
+          afterCommit = await planInterviewInvites(q, orgId, id, data, prev?.data ?? null, invite, { name: a.user.name, email: a.user.email });
+        }
         await q("insert into workspace_records (org_id, kind, id, data) values ($1,$2,$3,$4) on conflict (org_id, kind, id) do update set data = excluded.data, updated_at = now()", [orgId, kind, id, JSON.stringify(data)]);
         // Interviewers join the job's hiring team, so they can see the candidate they interview.
         if (kind === "interview" && typeof data.jobId === "string" && Array.isArray(data.interviewerIds)) {
@@ -491,4 +499,6 @@ export async function runCommand(a: OrgAccess, type: string, p: Record<string, u
         throw new HttpError(400, `Unknown command ${type}`, "unknown_command");
     }
   });
+  if (afterCommit) void (afterCommit as () => Promise<void>)().catch((e) => console.error("[invites]", e));
+  return result;
 }

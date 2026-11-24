@@ -11,9 +11,14 @@ import { env } from "./env";
  * display name is the company's for company emails, and replies go to a person who reads them:
  * the given replyTo, else the company's data-request email, else the platform support email.
  */
-export interface MailOptions { replyTo?: string; fromName?: string }
+export interface MailOptions {
+  replyTo?: string;
+  fromName?: string;
+  /** A calendar invitation (iCalendar text), shown by Gmail/Outlook as an event with its own buttons. */
+  icalEvent?: { method: "REQUEST" | "CANCEL"; content: string; filename?: string };
+}
 
-const addressOf = (from: string) => (from.match(/<([^>]+)>/)?.[1] ?? from).trim();
+export const addressOf = (from: string) => (from.match(/<([^>]+)>/)?.[1] ?? from).trim();
 const quoteName = (name: string) => `"${name.replace(/["\\\r\n]/g, "").slice(0, 80)}"`;
 
 async function defaults(orgId: string | null) {
@@ -36,7 +41,7 @@ export async function sendMail(orgId: string | null, to: string, subject: string
     const replyTo = opts.replyTo || d.replyTo || undefined;
     const nodemailer = await import("nodemailer");
     const transport = nodemailer.createTransport(env.smtpUrl);
-    await transport.sendMail({ from, to, subject, text: body, html, replyTo });
+    await transport.sendMail({ from, to, subject, text: body, html, replyTo, ...(opts.icalEvent ? { icalEvent: { method: opts.icalEvent.method.toLowerCase(), content: opts.icalEvent.content, filename: opts.icalEvent.filename ?? "invite.ics" } } : {}) });
     await sys("update email_outbox set status = 'sent', sent_at = now() where id = $1", [row.id]);
     return "sent" as const;
   } catch (e) {

@@ -187,10 +187,12 @@ async function removeRecord(kind: string, key: keyof Database, id: string) {
 /* ─────────────────────── Interviews ────────────────────── */
 export type InterviewInput = Omit<Interview, "id" | "createdAt" | "status">;
 const interviews = {
-  schedule(input: InterviewInput) {
+  /** `invite`: email calendar invitations (interviewers and/or the candidate) when email delivery is set up. */
+  schedule(input: InterviewInput, invite?: { team: boolean; candidate: boolean }) {
     const interview: Interview = { ...input, id: uid("i"), status: "scheduled", createdAt: now() };
     const c = getState().candidates.find((x) => x.id === input.candidateId);
-    return upsert("interview", "interviews", interview, { activity: `scheduled a ${input.kind.toLowerCase()} with ${c ? `${c.firstName} ${c.lastName}` : "a candidate"}` });
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return upsert("interview", "interviews", interview, { activity: `scheduled a ${input.kind.toLowerCase()} with ${c ? `${c.firstName} ${c.lastName}` : "a candidate"}`, ...(invite ? { invite: { ...invite, timeZone } } : {}) });
   },
   async update(id: ID, patch: Partial<Interview>) {
     const cur = getState().interviews.find((i) => i.id === id)!;

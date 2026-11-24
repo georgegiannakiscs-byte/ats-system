@@ -649,7 +649,7 @@ function TemplateEditor({ template, onClose }: { template: EmailTemplate | null;
 function NotificationSettings() {
   const db = useDb();
   const items: { key: keyof NotificationPrefs; label: string; description: string }[] = [
-    { key: "newApplication", label: "New applications", description: "When someone applies to a job you recruit for." },
+    { key: "newApplication", label: "New applications", description: "Emails the job's recruiter when someone applies (and shows it in the app)." },
     { key: "stageChange", label: "Stage changes", description: "When candidates on your jobs move forward." },
     { key: "interviewReminder", label: "Interview reminders", description: "30 minutes before interviews you're part of." },
     { key: "scorecardDue", label: "Scorecard reminders", description: "If your feedback is still missing after 24 hours." },
@@ -669,7 +669,7 @@ function NotificationSettings() {
           </li>
         ))}
       </ul>
-      <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">Preferences are saved. Delivery (in-app and email) starts once the notification service is connected.</p>
+      <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">{db.emailDelivery ? "New applications are emailed to the job's recruiter." : "New applications will be emailed to the job's recruiter once email delivery is set up on the platform."} Interview invitations are chosen when you schedule each interview. The other preferences are saved, but their emails aren&apos;t built yet.</p>
     </Panel>
   );
 }
